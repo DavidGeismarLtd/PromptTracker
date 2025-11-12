@@ -79,7 +79,7 @@
         document.addEventListener('DOMContentLoaded', function() {
           const ctx = document.getElementById('qualityTrendChart').getContext('2d');
           const data = <%= raw @quality_by_day.sort.to_h.to_json %>;
-          
+
           new Chart(ctx, {
             type: 'line',
             data: {
@@ -157,12 +157,14 @@
               </tbody>
             </table>
           </div>
-          <canvas id="evaluationTypeChart" height="200"></canvas>
+          <div style="height: 300px; max-height: 300px;">
+            <canvas id="evaluationTypeChart"></canvas>
+          </div>
           <script>
             document.addEventListener('DOMContentLoaded', function() {
               const ctx = document.getElementById('evaluationTypeChart').getContext('2d');
               const data = <%= raw @evaluations_by_type.to_json %>;
-              
+
               new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -205,12 +207,14 @@
       </div>
       <div class="card-body">
         <% if @score_distribution.any? %>
-          <canvas id="scoreDistributionChart" height="280"></canvas>
+          <div style="height: 300px; max-height: 300px;">
+            <canvas id="scoreDistributionChart"></canvas>
+          </div>
           <script>
             document.addEventListener('DOMContentLoaded', function() {
               const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
               const data = <%= raw @score_distribution.to_json %>;
-              
+
               new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -338,4 +342,3 @@
     </div>
   </div>
 </div>
-

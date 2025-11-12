@@ -73,7 +73,7 @@
         document.addEventListener('DOMContentLoaded', function() {
           const ctx = document.getElementById('responseTrendChart').getContext('2d');
           const data = <%= raw @response_time_by_day.sort.to_h.to_json %>;
-          
+
           new Chart(ctx, {
             type: 'line',
             data: {
@@ -154,12 +154,14 @@
               </tbody>
             </table>
           </div>
-          <canvas id="providerPerformanceChart" height="200"></canvas>
+          <div style="height: 300px; max-height: 300px;">
+            <canvas id="providerPerformanceChart"></canvas>
+          </div>
           <script>
             document.addEventListener('DOMContentLoaded', function() {
               const ctx = document.getElementById('providerPerformanceChart').getContext('2d');
               const data = <%= raw @response_time_by_provider.to_json %>;
-              
+
               new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -319,4 +321,3 @@
     </div>
   </div>
 </div>
-

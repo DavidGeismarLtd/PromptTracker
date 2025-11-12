@@ -154,6 +154,18 @@ module PromptTracker
       status == "draft"
     end
 
+    # Returns a display name for this version.
+    #
+    # @return [String] formatted version name
+    #
+    # @example
+    #   version.display_name  # => "v1 (active)"
+    def display_name
+      name = "v#{version_number}"
+      name += " (#{status})" if status != "active"
+      name
+    end
+
     # Checks if this version came from a file.
     #
     # @return [Boolean] true if source is "file"

@@ -5,7 +5,7 @@ gemspec
 
 gem "puma"
 
-gem "sqlite3"
+gem "pg", "~> 1.5"
 
 gem "sprockets-rails"
 

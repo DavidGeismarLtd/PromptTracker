@@ -47,7 +47,7 @@ module PromptTracker
 
       # Get all categories and tags for filters
       @categories = Prompt.distinct.pluck(:category).compact.sort
-      @tags = Prompt.distinct.pluck(:tags).flatten.compact.uniq.sort
+      @tags = Prompt.pluck(:tags).flatten.compact.uniq.sort
     end
 
     # GET /prompts/:id

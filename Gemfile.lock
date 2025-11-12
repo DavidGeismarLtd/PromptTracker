@@ -153,6 +153,7 @@ GEM
     parser (3.3.10.0)
       ast (~> 2.4.1)
       racc
+    pg (1.6.2-arm64-darwin)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -255,7 +256,6 @@ GEM
       actionpack (>= 6.1)
       activesupport (>= 6.1)
       sprockets (>= 3.0.0)
-    sqlite3 (1.7.3-arm64-darwin)
     stringio (3.1.7)
     thor (1.4.0)
     timeout (0.4.4)
@@ -276,12 +276,12 @@ PLATFORMS
   arm64-darwin
 
 DEPENDENCIES
+  pg (~> 1.5)
   prompt_tracker!
   pry-byebug
   puma
   rubocop-rails-omakase
   sprockets-rails
-  sqlite3
 
 BUNDLED WITH
    2.6.3

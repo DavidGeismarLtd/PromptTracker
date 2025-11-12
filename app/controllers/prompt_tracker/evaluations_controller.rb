@@ -66,5 +66,34 @@ module PromptTracker
       @version = @response.prompt_version
       @prompt = @version.prompt
     end
+
+    # POST /evaluations
+    # Create a new evaluation
+    def create
+      @response = LlmResponse.find(params[:evaluation][:llm_response_id])
+
+      @evaluation = @response.evaluations.build(evaluation_params)
+
+      if @evaluation.save
+        redirect_to llm_response_path(@response), notice: "Evaluation created successfully!"
+      else
+        redirect_to llm_response_path(@response), alert: "Error creating evaluation: #{@evaluation.errors.full_messages.join(', ')}"
+      end
+    rescue ActiveRecord::RecordNotFound
+      redirect_to llm_responses_path, alert: "Response not found"
+    end
+
+    private
+
+    def evaluation_params
+      params.require(:evaluation).permit(
+        :evaluator_type,
+        :evaluator_id,
+        :score,
+        :score_min,
+        :score_max,
+        :feedback
+      )
+    end
   end
 end

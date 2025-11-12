@@ -40,17 +40,17 @@ class CreatePromptTrackerPromptVersions < ActiveRecord::Migration[7.2]
       t.string :source, null: false, default: "file", index: true
 
       # Schema for variables used in the template
-      # Stored as JSON for flexibility
+      # Stored as JSONB for flexibility
       # Example: [
       #   { "name": "customer_name", "type": "string", "required": true },
       #   { "name": "issue", "type": "string", "required": false }
       # ]
-      t.json :variables_schema, default: []
+      t.jsonb :variables_schema, default: []
 
       # Model configuration (temperature, max_tokens, etc.)
-      # Stored as JSON for flexibility across different providers
+      # Stored as JSONB for flexibility across different providers
       # Example: { "temperature": 0.7, "max_tokens": 150, "top_p": 1.0 }
-      t.json :model_config, default: {}
+      t.jsonb :model_config, default: {}
 
       # Notes about this version (what changed, why, etc.)
       t.text :notes
@@ -74,4 +74,3 @@ class CreatePromptTrackerPromptVersions < ActiveRecord::Migration[7.2]
               name: "index_prompt_versions_on_prompt_and_version_number"
   end
 end
-

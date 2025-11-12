@@ -29,6 +29,11 @@ module PromptTracker
              dependent: :destroy,
              inverse_of: :prompt
 
+    has_many :ab_tests,
+             class_name: "PromptTracker::AbTest",
+             dependent: :destroy,
+             inverse_of: :prompt
+
     has_many :llm_responses,
              through: :prompt_versions,
              class_name: "PromptTracker::LlmResponse"
@@ -74,7 +79,7 @@ module PromptTracker
     # @param tag [String] the tag to search for
     # @return [ActiveRecord::Relation<Prompt>]
     scope :with_tag, lambda { |tag|
-      where("JSON_CONTAINS(tags, ?)", [tag].to_json)
+      where("tags @> ?", [tag].to_json)
     }
 
     # Instance Methods

@@ -28,18 +28,18 @@ class CreatePromptTrackerLlmResponses < ActiveRecord::Migration[7.2]
       t.text :rendered_prompt, null: false
 
       # The variables that were used to render the prompt
-      # Stored as JSON for flexibility
+      # Stored as JSONB for flexibility
       # Example: { "name": "John", "issue": "billing" }
-      t.json :variables_used, default: {}
+      t.jsonb :variables_used, default: {}
 
       # The response from the LLM
       # Null if the call failed before getting a response
       t.text :response_text
 
       # Additional metadata from the LLM response
-      # Stored as JSON for flexibility across providers
+      # Stored as JSONB for flexibility across providers
       # Example: { "finish_reason": "stop", "model": "gpt-4-0125-preview" }
-      t.json :response_metadata, default: {}
+      t.jsonb :response_metadata, default: {}
 
       # Status of the LLM call
       # - pending: Call initiated but not yet complete
@@ -69,7 +69,7 @@ class CreatePromptTrackerLlmResponses < ActiveRecord::Migration[7.2]
       t.string :user_id, index: true      # User who triggered this call
       t.string :session_id, index: true   # Session identifier
       t.string :environment, index: true  # e.g., "production", "staging"
-      t.json :context, default: {}        # Additional context data
+      t.jsonb :context, default: {}        # Additional context data
 
       # Standard Rails timestamps
       t.timestamps
@@ -86,4 +86,3 @@ class CreatePromptTrackerLlmResponses < ActiveRecord::Migration[7.2]
               name: "index_llm_responses_on_provider_model_created_at"
   end
 end
-

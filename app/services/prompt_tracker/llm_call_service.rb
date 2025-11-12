@@ -4,14 +4,19 @@ module PromptTracker
   # Main service for tracking LLM API calls.
   #
   # This service orchestrates the entire tracking flow:
-  # 1. Find prompt and version
+  # 1. Find prompt and version (with A/B test support)
   # 2. Render template with variables
-  # 3. Create LlmResponse record (status: pending)
+  # 3. Create LlmResponse record (status: pending, with A/B test tracking)
   # 4. Execute LLM call (via block)
   # 5. Measure performance
   # 6. Extract response data
   # 7. Calculate cost
   # 8. Update LlmResponse record (status: success/error)
+  #
+  # A/B Testing:
+  # When no specific version is requested, the service automatically checks
+  # for running A/B tests and selects a variant based on traffic split.
+  # The A/B test and variant are transparently tracked in the LlmResponse.
   #
   # @example Basic usage
   #   result = LlmCallService.track(
@@ -58,7 +63,7 @@ module PromptTracker
     class NoBlockGivenError < StandardError; end
 
     attr_reader :prompt_name, :version_number, :variables, :provider, :model,
-                :user_id, :session_id, :environment, :metadata
+                :user_id, :session_id, :environment, :metadata, :ab_test, :ab_variant
 
     # Track an LLM call
     #
@@ -115,6 +120,8 @@ module PromptTracker
       @session_id = session_id
       @environment = environment || default_environment
       @metadata = metadata || {}
+      @ab_test = nil
+      @ab_variant = nil
     end
 
     # Execute the tracking flow
@@ -189,19 +196,36 @@ module PromptTracker
 
     # Find the version (specific or active)
     #
+    # If a specific version is requested, use that.
+    # Otherwise, check for A/B test and select variant, or use active version.
+    #
     # @param prompt [Prompt] the prompt
     # @return [PromptVersion] the version
     # @raise [VersionNotFoundError] if not found
     def find_version(prompt)
-      version = if version_number
-                  prompt.prompt_versions.find_by(version_number: version_number)
-                else
-                  prompt.active_version
-                end
+      # If specific version requested, use it (no A/B testing)
+      if version_number
+        version = prompt.prompt_versions.find_by(version_number: version_number)
+        if version.nil?
+          raise VersionNotFoundError, "version #{version_number} not found for prompt '#{prompt_name}'"
+        end
+        return version
+      end
 
+      # No specific version - check for A/B test
+      selection = AbTestCoordinator.select_version_for(prompt)
+
+      if selection.nil?
+        raise VersionNotFoundError, "active version not found for prompt '#{prompt_name}'"
+      end
+
+      # Store A/B test info for later use
+      @ab_test = selection[:ab_test]
+      @ab_variant = selection[:variant]
+
+      version = selection[:version]
       if version.nil?
-        version_info = version_number ? "version #{version_number}" : "active version"
-        raise VersionNotFoundError, "#{version_info} not found for prompt '#{prompt_name}'"
+        raise VersionNotFoundError, "active version not found for prompt '#{prompt_name}'"
       end
 
       version
@@ -230,7 +254,9 @@ module PromptTracker
         user_id: user_id,
         session_id: session_id,
         environment: environment,
-        context: metadata
+        context: metadata,
+        ab_test: ab_test,
+        ab_variant: ab_variant
       )
     end
 

@@ -43,6 +43,11 @@ module PromptTracker
                class_name: "PromptTracker::PromptVersion",
                inverse_of: :llm_responses
 
+    belongs_to :ab_test,
+               class_name: "PromptTracker::AbTest",
+               optional: true,
+               inverse_of: :llm_responses
+
     has_one :prompt,
             through: :prompt_version,
             class_name: "PromptTracker::Prompt"
@@ -257,4 +262,3 @@ module PromptTracker
     end
   end
 end
-

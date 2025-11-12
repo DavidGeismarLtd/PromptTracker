@@ -1,0 +1,176 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item active">A/B Tests</li>
+<% end %>
+
+<div class="row mb-4">
+  <div class="col">
+    <h1>
+      <i class="bi bi-graph-up"></i> A/B Tests
+      <span class="badge bg-secondary"><%= @ab_tests.total_count %></span>
+    </h1>
+    <p class="text-muted">Manage and analyze prompt A/B tests</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: ab_tests_path, method: :get, local: true, class: "row g-3" do |f| %>
+      <div class="col-md-4">
+        <%= f.label :q, "Search", class: "form-label" %>
+        <%= f.text_field :q, value: params[:q], class: "form-control", placeholder: "Search by name..." %>
+      </div>
+
+      <div class="col-md-3">
+        <%= f.label :prompt_id, "Prompt", class: "form-label" %>
+        <%= f.select :prompt_id, options_for_select([["All", ""]] + @prompts.map { |p| [p.name, p.id] }, params[:prompt_id]), {}, class: "form-select" %>
+      </div>
+
+      <div class="col-md-3">
+        <%= f.label :status, "Status", class: "form-label" %>
+        <%= f.select :status, options_for_select([
+          ["All", ""],
+          ["Draft", "draft"],
+          ["Running", "running"],
+          ["Paused", "paused"],
+          ["Completed", "completed"],
+          ["Cancelled", "cancelled"]
+        ], params[:status]), {}, class: "form-select" %>
+      </div>
+
+      <div class="col-12">
+        <%= f.submit "Apply Filters", class: "btn btn-primary" %>
+        <%= link_to "Clear", ab_tests_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- A/B Tests Table -->
+<div class="card">
+  <div class="card-body">
+    <% if @ab_tests.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Prompt</th>
+              <th>Status</th>
+              <th>Metric</th>
+              <th>Variants</th>
+              <th>Traffic Split</th>
+              <th class="text-end">Responses</th>
+              <th>Duration</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @ab_tests.each do |ab_test| %>
+              <tr>
+                <td>
+                  <strong><%= link_to ab_test.name, ab_test_path(ab_test) %></strong>
+                  <% if ab_test.description.present? %>
+                    <br><small class="text-muted"><%= truncate(ab_test.description, length: 60) %></small>
+                  <% end %>
+                </td>
+                <td>
+                  <%= link_to ab_test.prompt.name, prompt_path(ab_test.prompt) %>
+                </td>
+                <td>
+                  <% case ab_test.status %>
+                  <% when "draft" %>
+                    <span class="badge bg-secondary">Draft</span>
+                  <% when "running" %>
+                    <span class="badge bg-success">Running</span>
+                  <% when "paused" %>
+                    <span class="badge bg-warning">Paused</span>
+                  <% when "completed" %>
+                    <span class="badge bg-primary">Completed</span>
+                  <% when "cancelled" %>
+                    <span class="badge bg-dark">Cancelled</span>
+                  <% end %>
+                </td>
+                <td>
+                  <%= ab_test.metric_to_optimize.humanize %>
+                  <% if ab_test.optimization_direction == "maximize" %>
+                    <i class="bi bi-arrow-up text-success"></i>
+                  <% else %>
+                    <i class="bi bi-arrow-down text-primary"></i>
+                  <% end %>
+                </td>
+                <td>
+                  <% ab_test.variant_names.each do |variant| %>
+                    <span class="badge bg-light text-dark"><%= variant %></span>
+                  <% end %>
+                </td>
+                <td>
+                  <small>
+                    <% ab_test.traffic_split.each do |variant, percentage| %>
+                      <%= variant %>: <%= percentage %>%<br>
+                    <% end %>
+                  </small>
+                </td>
+                <td class="text-end">
+                  <%= ab_test.total_responses %>
+                  <% if ab_test.minimum_sample_size %>
+                    <br><small class="text-muted">/ <%= ab_test.minimum_sample_size %></small>
+                  <% end %>
+                </td>
+                <td>
+                  <% if ab_test.duration_days %>
+                    <%= ab_test.duration_days.round(1) %> days
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <%= link_to ab_test_path(ab_test), class: "btn btn-outline-primary", title: "View" do %>
+                      <i class="bi bi-eye"></i>
+                    <% end %>
+                    
+                    <% if ab_test.draft? %>
+                      <%= link_to edit_ab_test_path(ab_test), class: "btn btn-outline-secondary", title: "Edit" do %>
+                        <i class="bi bi-pencil"></i>
+                      <% end %>
+                      <%= button_to start_ab_test_path(ab_test), method: :post, class: "btn btn-outline-success", title: "Start", data: { confirm: "Start this A/B test?" } do %>
+                        <i class="bi bi-play-fill"></i>
+                      <% end %>
+                    <% elsif ab_test.running? %>
+                      <%= button_to pause_ab_test_path(ab_test), method: :post, class: "btn btn-outline-warning", title: "Pause" do %>
+                        <i class="bi bi-pause-fill"></i>
+                      <% end %>
+                    <% elsif ab_test.paused? %>
+                      <%= button_to resume_ab_test_path(ab_test), method: :post, class: "btn btn-outline-success", title: "Resume" do %>
+                        <i class="bi bi-play-fill"></i>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="mt-3">
+        <%= paginate @ab_tests %>
+      </div>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="bi bi-graph-up" style="font-size: 3rem; color: var(--bs-secondary);"></i>
+        <h3 class="mt-3">No A/B Tests Found</h3>
+        <p class="text-muted">
+          <% if params[:q].present? || params[:status].present? || params[:prompt_id].present? %>
+            Try adjusting your filters.
+          <% else %>
+            Create your first A/B test to start optimizing your prompts.
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div>
+

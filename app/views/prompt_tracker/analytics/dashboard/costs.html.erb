@@ -164,7 +164,9 @@
               </tbody>
             </table>
           </div>
-          <canvas id="providerCostChart" height="200"></canvas>
+          <div style="height: 300px; max-height: 300px;">
+            <canvas id="providerCostChart"></canvas>
+          </div>
           <script>
             document.addEventListener('DOMContentLoaded', function() {
               const ctx = document.getElementById('providerCostChart').getContext('2d');

@@ -1,0 +1,297 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item"><%= link_to "A/B Tests", ab_tests_path %></li>
+  <li class="breadcrumb-item active"><%= @ab_test.name %></li>
+<% end %>
+
+<div class="row mb-4">
+  <div class="col">
+    <h1>
+      <i class="bi bi-graph-up"></i> <%= @ab_test.name %>
+      <% case @ab_test.status %>
+      <% when "draft" %>
+        <span class="badge bg-secondary">Draft</span>
+      <% when "running" %>
+        <span class="badge bg-success">Running</span>
+      <% when "paused" %>
+        <span class="badge bg-warning">Paused</span>
+      <% when "completed" %>
+        <span class="badge bg-primary">Completed</span>
+      <% when "cancelled" %>
+        <span class="badge bg-dark">Cancelled</span>
+      <% end %>
+    </h1>
+    <p class="text-muted">
+      <%= link_to @ab_test.prompt.name, prompt_path(@ab_test.prompt) %> • 
+      <%= @ab_test.metric_to_optimize.humanize %> 
+      (<%= @ab_test.optimization_direction %>)
+    </p>
+  </div>
+  <div class="col-auto">
+    <div class="btn-group">
+      <% if @ab_test.draft? %>
+        <%= link_to edit_ab_test_path(@ab_test), class: "btn btn-outline-secondary" do %>
+          <i class="bi bi-pencil"></i> Edit
+        <% end %>
+        <%= button_to start_ab_test_path(@ab_test), method: :post, class: "btn btn-success", data: { confirm: "Start this A/B test?" } do %>
+          <i class="bi bi-play-fill"></i> Start Test
+        <% end %>
+      <% elsif @ab_test.running? %>
+        <%= button_to pause_ab_test_path(@ab_test), method: :post, class: "btn btn-warning" do %>
+          <i class="bi bi-pause-fill"></i> Pause
+        <% end %>
+      <% elsif @ab_test.paused? %>
+        <%= button_to resume_ab_test_path(@ab_test), method: :post, class: "btn btn-success" do %>
+          <i class="bi bi-play-fill"></i> Resume
+        <% end %>
+        <%= button_to cancel_ab_test_path(@ab_test), method: :post, class: "btn btn-outline-danger", data: { confirm: "Cancel this test?" } do %>
+          <i class="bi bi-x-circle"></i> Cancel
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Test Details -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted">Total Responses</h6>
+        <h2><%= @ab_test.total_responses %></h2>
+        <% if @ab_test.minimum_sample_size %>
+          <small class="text-muted">Target: <%= @ab_test.minimum_sample_size %></small>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted">Duration</h6>
+        <h2>
+          <% if @ab_test.duration_days %>
+            <%= @ab_test.duration_days.round(1) %>
+          <% else %>
+            -
+          <% end %>
+        </h2>
+        <small class="text-muted">days</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted">Confidence Level</h6>
+        <h2><%= (@ab_test.confidence_level * 100).round(0) %>%</h2>
+        <small class="text-muted">required</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted">Started</h6>
+        <h2>
+          <% if @ab_test.started_at %>
+            <%= @ab_test.started_at.strftime("%b %d") %>
+          <% else %>
+            -
+          <% end %>
+        </h2>
+        <small class="text-muted">
+          <% if @ab_test.started_at %>
+            <%= @ab_test.started_at.strftime("%Y") %>
+          <% end %>
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Variants Comparison -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">Variant Performance</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Variant</th>
+            <th>Version</th>
+            <th>Traffic</th>
+            <th class="text-end">Responses</th>
+            <th class="text-end">Success Rate</th>
+            <th class="text-end">Avg Response Time</th>
+            <th class="text-end">Avg Cost</th>
+            <th class="text-end">Avg Tokens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @variants.each do |variant| %>
+            <% variant_name = variant["name"] %>
+            <% stats = @variant_stats[variant_name] || {} %>
+            <% version = @ab_test.version_for_variant(variant_name) %>
+            <tr>
+              <td>
+                <strong><%= variant_name %></strong>
+                <% if @ab_test.results && @ab_test.results["winner"] == variant_name %>
+                  <span class="badge bg-success ms-2">Winner</span>
+                <% end %>
+              </td>
+              <td>
+                <% if version %>
+                  <%= link_to "v#{version.version_number}", prompt_prompt_version_path(@ab_test.prompt, version) %>
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+              <td><%= @ab_test.traffic_split[variant_name] %>%</td>
+              <td class="text-end"><%= stats[:count] || 0 %></td>
+              <td class="text-end">
+                <% if stats[:success_rate] %>
+                  <%= stats[:success_rate] %>%
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+              <td class="text-end">
+                <% if stats[:avg_response_time] %>
+                  <%= stats[:avg_response_time] %> ms
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+              <td class="text-end">
+                <% if stats[:avg_cost] %>
+                  $<%= stats[:avg_cost] %>
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+              <td class="text-end">
+                <% if stats[:avg_tokens] %>
+                  <%= stats[:avg_tokens] %>
+                <% else %>
+                  <span class="text-muted">-</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Statistical Analysis -->
+<% if @analysis && @analysis[:significant] %>
+  <div class="card mb-4 border-success">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0"><i class="bi bi-check-circle"></i> Statistically Significant Result</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <h6 class="text-muted">Winner</h6>
+          <h2><%= @analysis[:winner] %></h2>
+        </div>
+        <div class="col-md-3">
+          <h6 class="text-muted">Improvement</h6>
+          <h2><%= @analysis[:improvement] %>%</h2>
+        </div>
+        <div class="col-md-3">
+          <h6 class="text-muted">Confidence</h6>
+          <h2><%= (@analysis[:confidence] * 100).round(1) %>%</h2>
+        </div>
+        <div class="col-md-3">
+          <h6 class="text-muted">P-Value</h6>
+          <h2><%= @analysis[:p_value].round(4) %></h2>
+        </div>
+      </div>
+      
+      <% if @ab_test.running? %>
+        <hr>
+        <%= form_with url: complete_ab_test_path(@ab_test), method: :post, class: "d-inline" do |f| %>
+          <%= f.hidden_field :winner, value: @analysis[:winner] %>
+          <div class="form-check mb-3">
+            <%= f.check_box :promote_winner, class: "form-check-input", value: "true" %>
+            <%= f.label :promote_winner, "Promote winner to active version", class: "form-check-label" %>
+          </div>
+          <%= f.submit "Complete Test & Declare Winner", class: "btn btn-success", data: { confirm: "Complete this test and declare #{@analysis[:winner]} as the winner?" } %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% elsif @analysis %>
+  <div class="card mb-4 border-warning">
+    <div class="card-header bg-warning">
+      <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Not Yet Significant</h5>
+    </div>
+    <div class="card-body">
+      <p>The test is running but hasn't reached statistical significance yet.</p>
+      <div class="row">
+        <div class="col-md-3">
+          <h6 class="text-muted">Current Leader</h6>
+          <h3><%= @analysis[:winner] || "N/A" %></h3>
+        </div>
+        <div class="col-md-3">
+          <h6 class="text-muted">Improvement</h6>
+          <h3><%= @analysis[:improvement] %>%</h3>
+        </div>
+        <div class="col-md-3">
+          <h6 class="text-muted">Confidence</h6>
+          <h3><%= (@analysis[:confidence] * 100).round(1) %>%</h3>
+        </div>
+        <div class="col-md-3">
+          <h6 class="text-muted">P-Value</h6>
+          <h3><%= @analysis[:p_value].round(4) %></h3>
+        </div>
+      </div>
+      <p class="text-muted mt-3">
+        <small>Continue running the test to gather more data. Target confidence: <%= (@ab_test.confidence_level * 100).round(0) %>%</small>
+      </p>
+    </div>
+  </div>
+<% end %>
+
+<!-- Test Configuration -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Test Configuration</h5>
+  </div>
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Description</dt>
+      <dd class="col-sm-9"><%= @ab_test.description || "-" %></dd>
+
+      <dt class="col-sm-3">Metric to Optimize</dt>
+      <dd class="col-sm-9"><%= @ab_test.metric_to_optimize.humanize %></dd>
+
+      <dt class="col-sm-3">Optimization Direction</dt>
+      <dd class="col-sm-9"><%= @ab_test.optimization_direction.humanize %></dd>
+
+      <dt class="col-sm-3">Confidence Level</dt>
+      <dd class="col-sm-9"><%= (@ab_test.confidence_level * 100).round(0) %>%</dd>
+
+      <dt class="col-sm-3">Minimum Sample Size</dt>
+      <dd class="col-sm-9"><%= @ab_test.minimum_sample_size || "Not set" %></dd>
+
+      <dt class="col-sm-3">Created</dt>
+      <dd class="col-sm-9"><%= @ab_test.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+
+      <% if @ab_test.started_at %>
+        <dt class="col-sm-3">Started</dt>
+        <dd class="col-sm-9"><%= @ab_test.started_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+      <% end %>
+
+      <% if @ab_test.completed_at %>
+        <dt class="col-sm-3">Completed</dt>
+        <dd class="col-sm-9"><%= @ab_test.completed_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+      <% end %>
+    </dl>
+  </div>
+</div>
+

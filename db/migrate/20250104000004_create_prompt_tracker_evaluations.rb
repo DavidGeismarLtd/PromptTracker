@@ -37,7 +37,7 @@ class CreatePromptTrackerEvaluations < ActiveRecord::Migration[7.2]
       #   "accuracy": 4.5,
       #   "conciseness": 3
       # }
-      t.json :criteria_scores, default: {}
+      t.jsonb :criteria_scores, default: {}
 
       # Type of evaluator
       # - human: Manual evaluation by a person
@@ -61,7 +61,7 @@ class CreatePromptTrackerEvaluations < ActiveRecord::Migration[7.2]
       #   "confidence": 0.85,
       #   "reasoning": "Response was helpful but too verbose"
       # }
-      t.json :metadata, default: {}
+      t.jsonb :metadata, default: {}
 
       # Standard Rails timestamps
       t.timestamps
@@ -78,4 +78,3 @@ class CreatePromptTrackerEvaluations < ActiveRecord::Migration[7.2]
               name: "index_evaluations_on_score"
   end
 end
-

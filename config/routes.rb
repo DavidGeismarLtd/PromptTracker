@@ -11,10 +11,25 @@ PromptTracker::Engine.routes.draw do
         get :compare
       end
     end
+
+    # A/B tests nested under prompts for creation
+    resources :ab_tests, only: [:new, :create], path: "ab-tests"
   end
 
   resources :llm_responses, only: [:index, :show], path: "responses"
-  resources :evaluations, only: [:index, :show]
+  resources :evaluations, only: [:index, :show, :create]
+
+  # A/B tests at top level for management
+  resources :ab_tests, only: [:index, :show, :edit, :update, :destroy], path: "ab-tests" do
+    member do
+      post :start
+      post :pause
+      post :resume
+      post :complete
+      post :cancel
+      get :analyze
+    end
+  end
 
   # Analytics & Reports
   namespace :analytics do

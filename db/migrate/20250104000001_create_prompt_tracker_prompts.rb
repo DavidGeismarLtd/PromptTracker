@@ -23,9 +23,9 @@ class CreatePromptTrackerPrompts < ActiveRecord::Migration[7.2]
       # Category for grouping prompts (e.g., "support", "sales", "content")
       t.string :category, index: true
 
-      # Flexible tagging system stored as JSON array
+      # Flexible tagging system stored as JSONB array
       # Example: ["customer-facing", "high-priority", "production"]
-      t.json :tags, default: []
+      t.jsonb :tags, default: []
 
       # Who created this prompt (user email, system name, etc.)
       t.string :created_by
@@ -39,4 +39,3 @@ class CreatePromptTrackerPrompts < ActiveRecord::Migration[7.2]
     end
   end
 end
-

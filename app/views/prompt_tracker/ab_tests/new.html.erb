@@ -1,0 +1,186 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item"><%= link_to "Prompts", prompts_path %></li>
+  <li class="breadcrumb-item"><%= link_to @prompt.name, prompt_path(@prompt) %></li>
+  <li class="breadcrumb-item active">New A/B Test</li>
+<% end %>
+
+<div class="row mb-4">
+  <div class="col">
+    <h1><i class="bi bi-graph-up"></i> Create A/B Test</h1>
+    <p class="text-muted">Test different versions of <%= @prompt.name %> to optimize performance</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <%= form_with model: @ab_test, url: prompt_ab_tests_path(@prompt), local: true do |f| %>
+      <% if @ab_test.errors.any? %>
+        <div class="alert alert-danger">
+          <h5>Please fix the following errors:</h5>
+          <ul class="mb-0">
+            <% @ab_test.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- Basic Info -->
+      <div class="mb-4">
+        <h5>Basic Information</h5>
+        
+        <div class="mb-3">
+          <%= f.label :name, "Test Name", class: "form-label" %>
+          <%= f.text_field :name, class: "form-control", placeholder: "e.g., Shorter vs Detailed Greeting" %>
+          <small class="form-text text-muted">A descriptive name for this A/B test</small>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :description, "Description (optional)", class: "form-label" %>
+          <%= f.text_area :description, class: "form-control", rows: 3, placeholder: "What are you testing and why?" %>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Optimization Settings -->
+      <div class="mb-4">
+        <h5>Optimization Settings</h5>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <%= f.label :metric_to_optimize, "Metric to Optimize", class: "form-label" %>
+            <%= f.select :metric_to_optimize, 
+              options_for_select([
+                ["Response Time", "response_time"],
+                ["Cost", "cost"],
+                ["Token Count", "token_count"],
+                ["Success Rate", "success_rate"],
+                ["Evaluation Score", "evaluation_score"]
+              ], @ab_test.metric_to_optimize),
+              {}, 
+              class: "form-select" 
+            %>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <%= f.label :optimization_direction, "Direction", class: "form-label" %>
+            <%= f.select :optimization_direction,
+              options_for_select([
+                ["Minimize (lower is better)", "minimize"],
+                ["Maximize (higher is better)", "maximize"]
+              ], @ab_test.optimization_direction),
+              {},
+              class: "form-select"
+            %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <%= f.label :confidence_level, "Confidence Level", class: "form-label" %>
+            <%= f.select :confidence_level,
+              options_for_select([
+                ["90% (0.90)", 0.90],
+                ["95% (0.95)", 0.95],
+                ["99% (0.99)", 0.99]
+              ], @ab_test.confidence_level),
+              {},
+              class: "form-select"
+            %>
+            <small class="form-text text-muted">Statistical confidence required to declare a winner</small>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <%= f.label :minimum_sample_size, "Minimum Sample Size", class: "form-label" %>
+            <%= f.number_field :minimum_sample_size, class: "form-control", min: 10, placeholder: "100" %>
+            <small class="form-text text-muted">Minimum responses before declaring a winner</small>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Variants -->
+      <div class="mb-4">
+        <h5>Variants</h5>
+        <p class="text-muted">Select which prompt versions to test</p>
+
+        <div id="variants-container">
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Variant A</label>
+              <%= f.fields_for :variants, @ab_test.variants[0] || {} do |variant_fields| %>
+                <%= variant_fields.hidden_field :name, value: "A" %>
+                <%= variant_fields.select :version_id,
+                  options_from_collection_for_select(@available_versions, :id, :display_name, @ab_test.variants[0]&.dig("version_id")),
+                  { prompt: "Select version..." },
+                  class: "form-select"
+                %>
+              <% end %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Traffic %</label>
+              <%= f.fields_for :traffic_split do |ts_fields| %>
+                <%= ts_fields.number_field :A, value: @ab_test.traffic_split["A"], class: "form-control", min: 0, max: 100 %>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Variant B</label>
+              <%= f.fields_for :variants, @ab_test.variants[1] || {} do |variant_fields| %>
+                <%= variant_fields.hidden_field :name, value: "B" %>
+                <%= variant_fields.select :version_id,
+                  options_from_collection_for_select(@available_versions, :id, :display_name, @ab_test.variants[1]&.dig("version_id")),
+                  { prompt: "Select version..." },
+                  class: "form-select"
+                %>
+              <% end %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Traffic %</label>
+              <%= f.fields_for :traffic_split do |ts_fields| %>
+                <%= ts_fields.number_field :B, value: @ab_test.traffic_split["B"], class: "form-control", min: 0, max: 100 %>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Traffic split must total 100%. For example: A=50%, B=50% or A=80%, B=20%
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Actions -->
+      <div class="d-flex justify-content-between">
+        <%= link_to "Cancel", prompt_path(@prompt), class: "btn btn-outline-secondary" %>
+        <%= f.submit "Create A/B Test", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% content_for :javascript do %>
+<script>
+  // Auto-calculate traffic split to ensure it totals 100%
+  document.addEventListener('DOMContentLoaded', function() {
+    const trafficInputs = document.querySelectorAll('input[type="number"][id*="traffic_split"]');
+    
+    trafficInputs.forEach(input => {
+      input.addEventListener('input', function() {
+        const total = Array.from(trafficInputs).reduce((sum, inp) => sum + (parseInt(inp.value) || 0), 0);
+        if (total !== 100) {
+          trafficInputs.forEach(inp => inp.classList.add('is-invalid'));
+        } else {
+          trafficInputs.forEach(inp => inp.classList.remove('is-invalid'));
+        }
+      });
+    });
+  });
+</script>
+<% end %>
+

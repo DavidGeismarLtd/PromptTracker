@@ -182,8 +182,8 @@
           <tbody>
             <% @evaluations.each do |evaluation| %>
               <tr>
-                <td><%= status_badge(evaluation.evaluation_type) %></td>
-                <td><code><%= evaluation.evaluator_name %></code></td>
+                <td><%= status_badge(evaluation.evaluator_type) %></td>
+                <td><code><%= evaluation.evaluator_id || 'N/A' %></code></td>
                 <td>
                   <strong><%= evaluation.score %></strong>
                   <% if evaluation.score_min && evaluation.score_max %>
@@ -230,3 +230,154 @@
   </div>
 <% end %>
 
+<!-- Create Evaluation Card -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">
+      <button class="btn btn-link text-decoration-none p-0 w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#evaluationForm" aria-expanded="false" aria-controls="evaluationForm">
+        <i class="bi bi-plus-circle"></i> Add New Evaluation
+        <i class="bi bi-chevron-down float-end"></i>
+      </button>
+    </h5>
+  </div>
+  <div class="collapse" id="evaluationForm">
+    <div class="card-body">
+      <%= form_with model: PromptTracker::Evaluation.new, url: evaluations_path, method: :post, local: true do |f| %>
+        <%= f.hidden_field :llm_response_id, value: @response.id %>
+
+        <div class="row">
+          <!-- Evaluator Type -->
+          <div class="col-md-6 mb-3">
+            <%= f.label :evaluator_type, "Evaluator Type", class: "form-label" %>
+            <%= f.select :evaluator_type,
+                         options_for_select([
+                           ['Human', 'human'],
+                           ['Automated', 'automated'],
+                           ['LLM Judge', 'llm_judge']
+                         ], 'human'),
+                         {},
+                         class: "form-select" %>
+            <small class="form-text text-muted">Who or what is performing this evaluation?</small>
+          </div>
+
+          <!-- Evaluator ID -->
+          <div class="col-md-6 mb-3">
+            <%= f.label :evaluator_id, "Evaluator ID", class: "form-label" %>
+            <%= f.text_field :evaluator_id,
+                            class: "form-control",
+                            placeholder: "e.g., john@example.com or gpt-4" %>
+            <small class="form-text text-muted">Email for humans, model name for LLM judges, system name for automated</small>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Score -->
+          <div class="col-md-4 mb-3">
+            <%= f.label :score, "Score", class: "form-label" %>
+            <%= f.number_field :score,
+                              class: "form-control",
+                              step: 0.1,
+                              min: 0,
+                              max: 5,
+                              value: 3,
+                              required: true %>
+          </div>
+
+          <!-- Score Min -->
+          <div class="col-md-4 mb-3">
+            <%= f.label :score_min, "Min Score", class: "form-label" %>
+            <%= f.number_field :score_min,
+                              class: "form-control",
+                              step: 0.1,
+                              value: 0,
+                              required: true %>
+          </div>
+
+          <!-- Score Max -->
+          <div class="col-md-4 mb-3">
+            <%= f.label :score_max, "Max Score", class: "form-label" %>
+            <%= f.number_field :score_max,
+                              class: "form-control",
+                              step: 0.1,
+                              value: 5,
+                              required: true %>
+          </div>
+        </div>
+
+        <!-- Score Range Display -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Score Range:</small>
+            <input type="range" class="form-range" id="scoreRange" min="0" max="5" step="0.1" value="3">
+            <span class="badge bg-primary ms-2" id="scoreDisplay">3.0</span>
+          </div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="mb-3">
+          <%= f.label :feedback, "Feedback (Optional)", class: "form-label" %>
+          <%= f.text_area :feedback,
+                         class: "form-control",
+                         rows: 4,
+                         placeholder: "Provide detailed feedback about this response..." %>
+          <small class="form-text text-muted">Any comments or observations about the quality of this response</small>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="d-flex gap-2">
+          <%= f.submit "Create Evaluation", class: "btn btn-primary" %>
+          <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#evaluationForm">Cancel</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Sync the range slider with the score input field
+  document.addEventListener('DOMContentLoaded', function() {
+    const scoreInput = document.querySelector('input[name="evaluation[score]"]');
+    const scoreRange = document.getElementById('scoreRange');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const scoreMin = document.querySelector('input[name="evaluation[score_min]"]');
+    const scoreMax = document.querySelector('input[name="evaluation[score_max]"]');
+
+    function updateRange() {
+      if (scoreMin && scoreMax && scoreRange) {
+        scoreRange.min = scoreMin.value;
+        scoreRange.max = scoreMax.value;
+        scoreRange.value = scoreInput.value;
+      }
+    }
+
+    function updateScore(value) {
+      scoreInput.value = value;
+      scoreDisplay.textContent = parseFloat(value).toFixed(1);
+    }
+
+    if (scoreRange && scoreInput && scoreDisplay) {
+      // Update score when range slider changes
+      scoreRange.addEventListener('input', function() {
+        updateScore(this.value);
+      });
+
+      // Update range when score input changes
+      scoreInput.addEventListener('input', function() {
+        scoreRange.value = this.value;
+        scoreDisplay.textContent = parseFloat(this.value).toFixed(1);
+      });
+
+      // Update range limits when min/max changes
+      if (scoreMin) {
+        scoreMin.addEventListener('input', updateRange);
+      }
+      if (scoreMax) {
+        scoreMax.addEventListener('input', updateRange);
+      }
+
+      // Initialize
+      updateRange();
+      scoreDisplay.textContent = parseFloat(scoreInput.value).toFixed(1);
+    }
+  });
+</script>

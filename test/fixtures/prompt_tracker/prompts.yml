@@ -1,0 +1,16 @@
+greeting:
+  name: greeting
+  description: Customer greeting prompt
+  category: support
+  tags: ["customer-facing", "support"]
+  created_by: test@example.com
+  archived_at: null
+
+summary:
+  name: summary
+  description: Conversation summary prompt
+  category: support
+  tags: ["internal", "analytics"]
+  created_by: test@example.com
+  archived_at: null
+

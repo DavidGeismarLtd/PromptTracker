@@ -21,31 +21,20 @@ module PromptTracker
         return
       end
 
-      # Run all enabled tests ASYNCHRONOUSLY
-      # Each test will:
-      # 1. Execute LLM call synchronously
-      # 2. Enqueue background job to run evaluators
-      # 3. Return immediately with "running" status
+      # Enqueue background jobs for each test
+      # Each test will run completely in the background (LLM call + evaluators)
       enabled_tests.each do |test|
-        runner = PromptTestRunner.new(test, @version, metadata: { triggered_by: "run_all", user: "web_ui" })
-        runner.run! do |rendered_prompt|
-          if use_real_llm?
-            call_real_llm(rendered_prompt, test.model_config)
-          else
-            generate_mock_llm_response(rendered_prompt, test.model_config)
-          end
-        end
+        RunTestJob.perform_later(
+          test.id,
+          @version.id,
+          use_real_llm: use_real_llm?,
+          metadata: { triggered_by: "run_all", user: "web_ui" }
+        )
       end
 
       # Redirect immediately - tests are running in background
       redirect_to prompt_prompt_version_prompt_tests_path(@prompt, @version),
-                  notice: "Started #{enabled_tests.count} tests! They are running in the background..."
-    rescue LlmClientService::MissingApiKeyError => e
-      redirect_to prompt_prompt_version_prompt_tests_path(@prompt, @version),
-                  alert: "API key missing: #{e.message}. Please configure your API keys in .env file."
-    rescue LlmClientService::ApiError => e
-      redirect_to prompt_prompt_version_prompt_tests_path(@prompt, @version),
-                  alert: "LLM API error: #{e.message}"
+                  notice: "Started #{enabled_tests.count} test#{enabled_tests.count > 1 ? 's' : ''} in the background!"
     end
 
     # GET /prompts/:prompt_id/versions/:prompt_version_id/tests/:id
@@ -96,33 +85,17 @@ module PromptTracker
 
     # POST /prompts/:prompt_id/versions/:prompt_version_id/tests/:id/run
     def run
-      # Run test against this specific version
-      runner = PromptTestRunner.new(@test, @version, metadata: { triggered_by: "manual", user: "web_ui" })
+      # Enqueue background job to run the test
+      RunTestJob.perform_later(
+        @test.id,
+        @version.id,
+        use_real_llm: use_real_llm?,
+        metadata: { triggered_by: "manual", user: "web_ui" }
+      )
 
-      # Log the mode for debugging
-      Rails.logger.info "🔍 PROMPT_TRACKER_USE_REAL_LLM = #{ENV['PROMPT_TRACKER_USE_REAL_LLM'].inspect}"
-      Rails.logger.info "🔍 use_real_llm? = #{use_real_llm?}"
-
-      # Execute the test asynchronously - evaluators run in background
-      test_run = runner.run! do |rendered_prompt|
-        if use_real_llm?
-          Rails.logger.info "🚀 Using REAL LLM API"
-          call_real_llm(rendered_prompt, @test.model_config)
-        else
-          Rails.logger.info "🎭 Using MOCK LLM response"
-          generate_mock_llm_response(rendered_prompt, @test.model_config)
-        end
-      end
-
-      # Redirect to test run page to show progress
-      redirect_to prompt_test_run_path(test_run),
-                  notice: "Test started! Evaluators are running in the background..."
-    rescue LlmClientService::MissingApiKeyError => e
+      # Redirect to test detail page - test will run in background
       redirect_to prompt_prompt_version_prompt_test_path(@prompt, @version, @test),
-                  alert: "API key missing: #{e.message}. Please configure your API keys in .env file."
-    rescue LlmClientService::ApiError => e
-      redirect_to prompt_prompt_version_prompt_test_path(@prompt, @version, @test),
-                  alert: "LLM API error: #{e.message}"
+                  notice: "Test started in the background! The page will update automatically when complete."
     end
 
     private

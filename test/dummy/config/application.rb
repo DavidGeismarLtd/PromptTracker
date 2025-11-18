@@ -2,6 +2,10 @@ require_relative "boot"
 
 require "rails/all"
 
+# Fix for Sidekiq 7.3.9 - must be loaded after rails/all but before Bundler.require
+# See: https://github.com/sidekiq/sidekiq/issues/6668
+require "sidekiq/rails"
+
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)

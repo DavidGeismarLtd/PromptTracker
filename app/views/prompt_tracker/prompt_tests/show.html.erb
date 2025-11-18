@@ -157,9 +157,13 @@
               <tr>
                 <td><%= format_timestamp(run.created_at) %></td>
                 <td>v<%= run.prompt_version.version_number %></td>
-                <td>
-                  <% if run.passed? %>
+                <td class="test-run-status" data-test-run-id="<%= run.id %>">
+                  <% if run.running? %>
+                    <span class="badge bg-warning"><span class="spinner-border spinner-border-sm me-1"></span>Running</span>
+                  <% elsif run.passed? %>
                     <span class="badge bg-success">Passed</span>
+                  <% elsif run.error? %>
+                    <span class="badge bg-danger">Error</span>
                   <% else %>
                     <span class="badge bg-danger">Failed</span>
                   <% end %>
@@ -193,5 +197,62 @@
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+
+    // Subscribe to PromptVersionChannel for real-time test updates
+    const subscription = App.cable.subscriptions.create(
+      {
+        channel: "PromptTracker::PromptVersionChannel",
+        prompt_version_id: <%= @version.id %>
+      },
+      {
+        received(data) {
+          console.log("📡 Test update received:", data);
+
+          // Only update if this is our test
+          if (data.test_id === <%= @test.id %>) {
+            updateTestStatus(data);
+          }
+        }
+      }
+    );
   });
+
+  // Update test status and reload if completed
+  function updateTestStatus(data) {
+    console.log("Updating test status:", data.status);
+
+    // Update status card
+    const statusCard = document.querySelector('.metric-card .metric-value');
+    if (statusCard) {
+      if (data.status === 'running') {
+        statusCard.innerHTML = '<span class="text-warning"><span class="spinner-border spinner-border-sm me-1"></span>Running</span>';
+      } else if (data.status === 'passed') {
+        statusCard.innerHTML = '<span class="text-success">✓ Passing</span>';
+        // Reload page to show updated stats and new test run
+        setTimeout(() => window.location.reload(), 1000);
+      } else if (data.status === 'failed') {
+        statusCard.innerHTML = '<span class="text-danger">✗ Failing</span>';
+        // Reload page to show updated stats and new test run
+        setTimeout(() => window.location.reload(), 1000);
+      } else if (data.status === 'error') {
+        statusCard.innerHTML = '<span class="text-danger">✗ Error</span>';
+        // Reload page to show error details
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    }
+
+    // Update test run row in recent runs table if it exists
+    const runRow = document.querySelector(`tr .test-run-status[data-test-run-id="${data.test_run_id}"]`);
+    if (runRow) {
+      if (data.status === 'running') {
+        runRow.innerHTML = '<span class="badge bg-warning"><span class="spinner-border spinner-border-sm me-1"></span>Running</span>';
+      } else if (data.status === 'passed') {
+        runRow.innerHTML = '<span class="badge bg-success">Passed</span>';
+      } else if (data.status === 'failed') {
+        runRow.innerHTML = '<span class="badge bg-danger">Failed</span>';
+      } else if (data.status === 'error') {
+        runRow.innerHTML = '<span class="badge bg-danger">Error</span>';
+      }
+    }
+  }
 </script>

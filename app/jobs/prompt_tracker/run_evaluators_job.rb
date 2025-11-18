@@ -140,6 +140,7 @@ module PromptTracker
     #
     # @param test_run [PromptTestRun] the test run that was updated
     def broadcast_test_run_update(test_run)
+      # Broadcast to TestRunChannel (for individual test run page)
       TestRunChannel.broadcast_to(
         test_run,
         {
@@ -149,6 +150,22 @@ module PromptTracker
           failed_evaluators: test_run.failed_evaluators,
           total_evaluators: test_run.total_evaluators,
           message: "Test run #{test_run.status}"
+        }
+      )
+
+      # Broadcast to PromptVersionChannel (for tests index page)
+      PromptVersionChannel.broadcast_to(
+        test_run.prompt_version,
+        {
+          test_id: test_run.prompt_test_id,
+          test_run_id: test_run.id,
+          status: test_run.status,
+          passed: test_run.passed,
+          execution_time_ms: test_run.execution_time_ms,
+          passed_evaluators: test_run.passed_evaluators,
+          failed_evaluators: test_run.failed_evaluators,
+          total_evaluators: test_run.total_evaluators,
+          cost_usd: test_run.cost_usd
         }
       )
     end

@@ -98,7 +98,7 @@
           </thead>
           <tbody>
             <% @tests.each do |test| %>
-              <tr>
+              <tr data-test-id="<%= test.id %>">
                 <td>
                   <strong><%= test.name %></strong>
                   <% unless test.enabled? %>
@@ -108,7 +108,7 @@
                     <br><small class="text-muted"><%= truncate(test.description, length: 80) %></small>
                   <% end %>
                 </td>
-                <td>
+                <td class="test-status" data-test-id="<%= test.id %>">
                   <% if test.last_run %>
                     <% if test.passing? %>
                       <span class="badge bg-success">Passing</span>
@@ -166,5 +166,48 @@
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+
+    // Subscribe to PromptVersionChannel for real-time test updates
+    const subscription = App.cable.subscriptions.create(
+      {
+        channel: "PromptTracker::PromptVersionChannel",
+        prompt_version_id: <%= @version.id %>
+      },
+      {
+        received(data) {
+          console.log("📡 Test update received:", data);
+          updateTestRow(data);
+        }
+      }
+    );
   });
+
+  // Update test row with real-time data
+  function updateTestRow(data) {
+    const row = document.querySelector(`tr[data-test-id="${data.test_id}"]`);
+    if (!row) {
+      console.warn(`Test row not found for test_id ${data.test_id}`);
+      return;
+    }
+
+    const statusCell = row.querySelector('.test-status');
+    if (!statusCell) return;
+
+    // Update status badge
+    if (data.status === 'running') {
+      statusCell.innerHTML = '<span class="badge bg-warning"><span class="spinner-border spinner-border-sm me-1"></span>Running</span>';
+    } else if (data.status === 'passed') {
+      statusCell.innerHTML = '<span class="badge bg-success">Passing</span>';
+      // Reload page after a short delay to update all stats
+      setTimeout(() => window.location.reload(), 1000);
+    } else if (data.status === 'failed') {
+      statusCell.innerHTML = '<span class="badge bg-danger">Failing</span>';
+      // Reload page after a short delay to update all stats
+      setTimeout(() => window.location.reload(), 1000);
+    } else if (data.status === 'error') {
+      statusCell.innerHTML = '<span class="badge bg-danger">Error</span>';
+      // Reload page after a short delay to update all stats
+      setTimeout(() => window.location.reload(), 1000);
+    }
+  }
 </script>

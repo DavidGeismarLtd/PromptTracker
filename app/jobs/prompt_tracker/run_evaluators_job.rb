@@ -136,37 +136,67 @@ module PromptTracker
       results
     end
 
-    # Broadcast test run update via ActionCable
+    # Broadcast test run update via Turbo Streams
     #
     # @param test_run [PromptTestRun] the test run that was updated
     def broadcast_test_run_update(test_run)
-      # Broadcast to TestRunChannel (for individual test run page)
-      TestRunChannel.broadcast_to(
-        test_run,
-        {
-          status: test_run.status,
-          passed: test_run.passed,
-          passed_evaluators: test_run.passed_evaluators,
-          failed_evaluators: test_run.failed_evaluators,
-          total_evaluators: test_run.total_evaluators,
-          message: "Test run #{test_run.status}"
-        }
+      test = test_run.prompt_test
+      version = test_run.prompt_version
+      prompt = version.prompt
+
+      # Broadcast to test run detail page (trigger refresh)
+      Turbo::StreamsChannel.broadcast_refresh_to("test_run_#{test_run.id}")
+
+      # Broadcast to tests index page - update test row
+      broadcast_turbo_stream_replace(
+        stream: "prompt_version_#{version.id}",
+        target: "test_row_#{test.id}",
+        partial: "prompt_tracker/prompt_tests/test_row",
+        locals: { test: test, prompt: prompt, version: version }
       )
 
-      # Broadcast to PromptVersionChannel (for tests index page)
-      PromptVersionChannel.broadcast_to(
-        test_run.prompt_version,
-        {
-          test_id: test_run.prompt_test_id,
-          test_run_id: test_run.id,
-          status: test_run.status,
-          passed: test_run.passed,
-          execution_time_ms: test_run.execution_time_ms,
-          passed_evaluators: test_run.passed_evaluators,
-          failed_evaluators: test_run.failed_evaluators,
-          total_evaluators: test_run.total_evaluators,
-          cost_usd: test_run.cost_usd
-        }
+      # Broadcast to tests index page - update overall status card
+      all_tests = version.prompt_tests.order(created_at: :desc)
+      broadcast_turbo_stream_replace(
+        stream: "prompt_version_#{version.id}",
+        target: "overall_status_card",
+        partial: "prompt_tracker/prompt_tests/overall_status_card",
+        locals: { tests: all_tests }
+      )
+
+      # Broadcast to individual test detail page - update status card
+      broadcast_turbo_stream_replace(
+        stream: "prompt_test_#{test.id}",
+        target: "test_status_card",
+        partial: "prompt_tracker/prompt_tests/test_status_card",
+        locals: { test: test }
+      )
+
+      # Broadcast to individual test detail page - update test run row in recent runs table
+      broadcast_turbo_stream_replace(
+        stream: "prompt_test_#{test.id}",
+        target: "test_run_row_#{test_run.id}",
+        partial: "prompt_tracker/prompt_tests/test_run_row",
+        locals: { run: test_run }
+      )
+    end
+
+    # Helper to broadcast Turbo Stream replace with proper route context
+    #
+    # @param stream [String] the stream name
+    # @param target [String] the DOM target ID
+    # @param partial [String] the partial path
+    # @param locals [Hash] the locals to pass to the partial
+    def broadcast_turbo_stream_replace(stream:, target:, partial:, locals:)
+      # Render with ApplicationController to include helpers
+      html = PromptTracker::ApplicationController.render(
+        partial: partial,
+        locals: locals
+      )
+      Turbo::StreamsChannel.broadcast_replace_to(
+        stream,
+        target: target,
+        html: html
       )
     end
   end

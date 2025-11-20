@@ -1,37 +1,8 @@
 <% content_for :title, "Test Run ##{@test_run.id}" %>
 
-<!-- Real-time updates via ActionCable -->
+<%# Subscribe to Turbo Stream updates for this test run %>
 <% if @test_run.running? %>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Create ActionCable subscription for this test run
-      const subscription = App.cable.subscriptions.create(
-        {
-          channel: "PromptTracker::TestRunChannel",
-          test_run_id: <%= @test_run.id %>
-        },
-        {
-          received(data) {
-            console.log("Test run update received:", data);
-
-            // Reload the page when test completes
-            if (data.status === "passed" || data.status === "failed" || data.status === "error") {
-              console.log("Test completed, reloading page...");
-              window.location.reload();
-            }
-          },
-
-          connected() {
-            console.log("Connected to TestRunChannel for test run <%= @test_run.id %>");
-          },
-
-          disconnected() {
-            console.log("Disconnected from TestRunChannel");
-          }
-        }
-      );
-    });
-  </script>
+  <%= turbo_stream_from "test_run_#{@test_run.id}" %>
 <% end %>
 
 <!-- Breadcrumb -->

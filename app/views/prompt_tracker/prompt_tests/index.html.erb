@@ -5,6 +5,9 @@
   <li class="breadcrumb-item active">Tests</li>
 <% end %>
 
+<%# Subscribe to Turbo Stream updates for this prompt version %>
+<%= turbo_stream_from "prompt_version_#{@version.id}" %>
+
 <div class="row mb-4">
   <div class="col">
     <h1>
@@ -28,6 +31,9 @@
 <!-- Test Stats -->
 <div class="row mb-4">
   <div class="col-md-3">
+    <%= render "overall_status_card", tests: @tests %>
+  </div>
+  <div class="col-md-3">
     <div class="card metric-card">
       <div class="metric-value"><%= @tests.count %></div>
       <div class="metric-label">Total Tests</div>
@@ -48,25 +54,6 @@
       <div class="metric-label">Passing</div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card metric-card">
-      <div class="metric-value">
-        <% if @tests.any? %>
-          <%= number_to_percentage(@tests.sum { |t| t.pass_rate } / @tests.count, precision: 0) %>
-        <% else %>
-          N/A
-        <% end %>
-      </div>
-      <div class="metric-label">
-        Avg Pass Rate
-        <i class="bi bi-info-circle text-muted"
-           data-bs-toggle="tooltip"
-           data-bs-placement="top"
-           title="Percentage of test runs that passed all evaluators and assertions. Calculated across all historical runs for each test."
-           style="cursor: help;"></i>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Tests List -->
@@ -81,7 +68,14 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Status</th>
+              <th>
+                Status
+                <i class="bi bi-info-circle text-muted"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="top"
+                   title="Status of the latest test run for this test"
+                   style="cursor: help;"></i>
+              </th>
               <th>Last Run</th>
               <th class="text-end">
                 Pass Rate
@@ -98,51 +92,7 @@
           </thead>
           <tbody>
             <% @tests.each do |test| %>
-              <tr data-test-id="<%= test.id %>">
-                <td>
-                  <strong><%= test.name %></strong>
-                  <% unless test.enabled? %>
-                    <span class="badge bg-secondary ms-2">Disabled</span>
-                  <% end %>
-                  <% if test.description.present? %>
-                    <br><small class="text-muted"><%= truncate(test.description, length: 80) %></small>
-                  <% end %>
-                </td>
-                <td class="test-status" data-test-id="<%= test.id %>">
-                  <% if test.last_run %>
-                    <% if test.passing? %>
-                      <span class="badge bg-success">Passing</span>
-                    <% else %>
-                      <span class="badge bg-danger">Failing</span>
-                    <% end %>
-                  <% else %>
-                    <span class="badge bg-secondary">Not Run</span>
-                  <% end %>
-                </td>
-                <td>
-                  <% if test.last_run %>
-                    <%= time_ago_in_words(test.last_run.created_at) %> ago
-                  <% else %>
-                    <span class="text-muted">Never</span>
-                  <% end %>
-                </td>
-                <td class="text-end">
-                  <%= number_to_percentage(test.pass_rate, precision: 0) %>
-                </td>
-                <td class="text-end">
-                  <%= test.prompt_test_runs.count %>
-                </td>
-                <td>
-                  <% test.tags.each do |tag| %>
-                    <span class="badge bg-info"><%= tag %></span>
-                  <% end %>
-                </td>
-                <td>
-                  <%= link_to "View", prompt_prompt_version_prompt_test_path(@prompt, @version, test), class: "btn btn-sm btn-outline-primary" %>
-                  <%= link_to "Edit", edit_prompt_prompt_version_prompt_test_path(@prompt, @version, test), class: "btn btn-sm btn-outline-secondary" %>
-                  <%= button_to "Run", run_prompt_prompt_version_prompt_test_path(@prompt, @version, test), method: :post, class: "btn btn-sm btn-outline-success", form: { style: "display: inline-block;" } %>
-                </td>
-              </tr>
+              <%= render "test_row", test: test, prompt: @prompt, version: @version %>
             <% end %>
           </tbody>
         </table>
@@ -158,56 +108,3 @@
     <% end %>
   </div>
 </div>
-
-<script>
-  // Initialize Bootstrap tooltips
-  document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
-    // Subscribe to PromptVersionChannel for real-time test updates
-    const subscription = App.cable.subscriptions.create(
-      {
-        channel: "PromptTracker::PromptVersionChannel",
-        prompt_version_id: <%= @version.id %>
-      },
-      {
-        received(data) {
-          console.log("📡 Test update received:", data);
-          updateTestRow(data);
-        }
-      }
-    );
-  });
-
-  // Update test row with real-time data
-  function updateTestRow(data) {
-    const row = document.querySelector(`tr[data-test-id="${data.test_id}"]`);
-    if (!row) {
-      console.warn(`Test row not found for test_id ${data.test_id}`);
-      return;
-    }
-
-    const statusCell = row.querySelector('.test-status');
-    if (!statusCell) return;
-
-    // Update status badge
-    if (data.status === 'running') {
-      statusCell.innerHTML = '<span class="badge bg-warning"><span class="spinner-border spinner-border-sm me-1"></span>Running</span>';
-    } else if (data.status === 'passed') {
-      statusCell.innerHTML = '<span class="badge bg-success">Passing</span>';
-      // Reload page after a short delay to update all stats
-      setTimeout(() => window.location.reload(), 1000);
-    } else if (data.status === 'failed') {
-      statusCell.innerHTML = '<span class="badge bg-danger">Failing</span>';
-      // Reload page after a short delay to update all stats
-      setTimeout(() => window.location.reload(), 1000);
-    } else if (data.status === 'error') {
-      statusCell.innerHTML = '<span class="badge bg-danger">Error</span>';
-      // Reload page after a short delay to update all stats
-      setTimeout(() => window.location.reload(), 1000);
-    }
-  }
-</script>

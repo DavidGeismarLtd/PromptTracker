@@ -3,6 +3,7 @@
  */
 class PromptPlayground {
   constructor(options) {
+    alert("playground")
     this.promptId = options.promptId;
     this.versionId = options.versionId || null;
     this.versionHasResponses = options.versionHasResponses || false;

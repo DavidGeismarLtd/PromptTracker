@@ -21,14 +21,21 @@ module PromptTracker
         return
       end
 
-      # Enqueue background jobs for each test
-      # Each test will run completely in the background (LLM call + evaluators)
+      # Create test runs and enqueue background jobs for each test
       enabled_tests.each do |test|
-        RunTestJob.perform_later(
-          test.id,
-          @version.id,
-          use_real_llm: use_real_llm?,
+        # Create test run immediately with "running" status
+        # The after_create_commit callback will broadcast Turbo Stream updates
+        test_run = PromptTestRun.create!(
+          prompt_test: test,
+          prompt_version: @version,
+          status: "running",
           metadata: { triggered_by: "run_all", user: "web_ui" }
+        )
+
+        # Enqueue background job to execute the test
+        RunTestJob.perform_later(
+          test_run.id,
+          use_real_llm: use_real_llm?
         )
       end
 
@@ -85,15 +92,21 @@ module PromptTracker
 
     # POST /prompts/:prompt_id/versions/:prompt_version_id/tests/:id/run
     def run
-      # Enqueue background job to run the test
-      RunTestJob.perform_later(
-        @test.id,
-        @version.id,
-        use_real_llm: use_real_llm?,
+      # Create test run immediately with "running" status for instant UI feedback
+      test_run = PromptTestRun.create!(
+        prompt_test: @test,
+        prompt_version: @version,
+        status: 'running',
         metadata: { triggered_by: "manual", user: "web_ui" }
       )
 
-      # Redirect to test detail page - test will run in background
+
+      # Enqueue background job to execute the test
+      RunTestJob.perform_later(
+        test_run.id,
+        use_real_llm: use_real_llm?
+      )
+
       redirect_to prompt_prompt_version_prompt_test_path(@prompt, @version, @test),
                   notice: "Test started in the background! The page will update automatically when complete."
     end

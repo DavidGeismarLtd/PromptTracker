@@ -46,7 +46,6 @@ module PromptTracker
     # @return [PromptTestRun] the test run result
     def run!(&block)
       start_time = Time.current
-
       # Create test run record
       @test_run = PromptTestRun.create!(
         prompt_test: prompt_test,
@@ -270,7 +269,7 @@ module PromptTracker
       passed_evaluators = evaluator_results.count { |r| r[:passed] }
       failed_evaluators = evaluator_results.count { |r| !r[:passed] }
 
-      @test_run.update!(
+    @test_run.update!(
         llm_response: llm_response,
         status: passed ? 'passed' : 'failed',
         passed: passed,

@@ -19,6 +19,13 @@ gem "ruby_llm"
 gem "sidekiq", "~> 7.0"
 gem "redis", "~> 5.0"
 
+# Hotwire's SPA-like page accelerator and real-time updates
+gem "turbo-rails"
+gem "stimulus-rails"
+
+# Import maps for JavaScript modules
+gem "importmap-rails"
+
 # Development
 group :development do
   gem "annotate", "~> 3.2"

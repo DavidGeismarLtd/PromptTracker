@@ -1,3 +1,5 @@
 //= link_tree ../images
 //= link_directory ../stylesheets .css
-//= link prompt_tracker_manifest.js
+//= link bootstrap.min.css
+//= link bootstrap-icons.css
+//= link application.js

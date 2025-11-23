@@ -233,4 +233,3 @@ LLM API error: OpenAI API error: [error message from OpenAI]
 3. **Monitor costs** on OpenAI dashboard
 4. **Switch back to mock mode** for regular development
 5. **Use real mode** only when validating production prompts
-

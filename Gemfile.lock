@@ -184,7 +184,7 @@ GEM
     marcel (1.1.0)
     method_source (1.1.0)
     mini_mime (1.1.5)
-    minitest (5.26.0)
+    minitest (5.26.2)
     multipart-post (2.4.1)
     net-http (0.8.0)
       uri (>= 0.11.1)
@@ -200,12 +200,15 @@ GEM
     nio4r (2.7.5)
     nokogiri (1.18.10-arm64-darwin)
       racc (~> 1.4)
+    nokogiri (1.18.10-x86_64-linux-gnu)
+      racc (~> 1.4)
     ostruct (0.6.0)
     parallel (1.27.0)
     parser (3.3.10.0)
       ast (~> 2.4.1)
       racc
     pg (1.6.2-arm64-darwin)
+    pg (1.6.2-x86_64-linux)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -338,8 +341,8 @@ GEM
       zeitwerk (~> 2)
     ruby_llm-schema (0.2.5)
     securerandom (0.4.1)
-    shoulda-matchers (6.5.0)
-      activesupport (>= 5.2.0)
+    shoulda-matchers (7.0.1)
+      activesupport (>= 7.1)
     sidekiq (7.3.9)
       base64
       connection_pool (>= 2.3.0)
@@ -391,6 +394,7 @@ GEM
 
 PLATFORMS
   arm64-darwin
+  x86_64-linux
 
 DEPENDENCIES
   annotate (~> 3.2)
@@ -409,7 +413,7 @@ DEPENDENCIES
   rspec-rails (~> 6.1)
   rubocop-rails-omakase
   ruby_llm
-  shoulda-matchers (~> 6.0)
+  shoulda-matchers (~> 7.0)
   sidekiq (~> 7.0)
   simplecov
   sprockets-rails

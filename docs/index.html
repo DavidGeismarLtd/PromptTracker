@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptTracker - LLM Prompt Management for Rails</title>
+    <meta name="description" content="A comprehensive Rails engine for managing, tracking, and analyzing LLM prompts with automated evaluation and A/B testing.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #64748b;
+            --gray-light: #cbd5e1;
+            --bg: #ffffff;
+            --bg-alt: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: var(--bg);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.4;
+        }
+
+        header .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.875rem 2rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: var(--dark);
+            color: white;
+            padding: 2rem 0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Features Section */
+        section {
+            padding: 5rem 0;
+        }
+
+        section:nth-child(even) {
+            background: var(--bg-alt);
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: var(--dark);
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--gray);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-light);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--dark);
+        }
+
+        .feature-card p {
+            color: var(--gray);
+            line-height: 1.7;
+        }
+
+        /* Code Block */
+        .code-example {
+            background: var(--dark);
+            color: #e2e8f0;
+            padding: 2rem;
+            border-radius: 1rem;
+            overflow-x: auto;
+            margin: 2rem 0;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .code-example pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .code-comment {
+            color: #94a3b8;
+        }
+
+        .code-keyword {
+            color: #c084fc;
+        }
+
+        .code-string {
+            color: #86efac;
+        }
+
+        .code-number {
+            color: #fbbf24;
+        }
+
+        /* Installation */
+        .install-box {
+            background: var(--dark);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2rem 0;
+        }
+
+        .install-command {
+            font-size: 1.1rem;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .tagline {
+                font-size: 1.2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <h1>🎯 PromptTracker</h1>
+            <p class="tagline">End-to-end platform to make your AI applications performant and reliable</p>
+            <p style="font-size: 1.25rem; opacity: 0.95; margin-bottom: 1.5rem; font-weight: 500;">
+                Test at scale before release • Monitor live with auto-evals • Iterate scientifically
+            </p>
+            <p style="font-size: 1.05rem; opacity: 0.9; margin-bottom: 2rem; max-width: 800px; margin-left: auto; margin-right: auto;">
+                Enable your team to adopt a scientific, iterative approach to AI development for continuous improvement
+            </p>
+            <div class="cta-buttons">
+                <a href="https://github.com/DavidGeismarLtd/PromptTracker" class="btn btn-primary">View on GitHub</a>
+                <a href="#installation" class="btn btn-secondary">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="container">
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-number">~683</span>
+                    <span class="stat-label">Test Cases</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">89.64%</span>
+                    <span class="stat-label">Line Coverage</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Core Coverage</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">Rails 7.2+</span>
+                    <span class="stat-label">Framework</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Value Propositions -->
+    <section id="value-props" style="background: white; padding: 4rem 0;">
+        <div class="container">
+            <h2 style="margin-bottom: 3rem;">The Complete AI Development Lifecycle</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2.5rem; margin-top: 3rem;">
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🧪</div>
+                    <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--primary);">Test at Scale</h3>
+                    <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.7;">
+                        Run comprehensive test suites before release. Validate prompts against multiple evaluators.
+                        Catch issues before they reach production.
+                    </p>
+                </div>
+
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">📡</div>
+                    <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--secondary);">Monitor Live</h3>
+                    <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.7;">
+                        Continuously run auto-evaluations on production traffic. Track quality, cost, and performance
+                        in real-time. Get alerted when things go wrong.
+                    </p>
+                </div>
+
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🔬</div>
+                    <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--accent);">Iterate Scientifically</h3>
+                    <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.7;">
+                        A/B test changes with statistical rigor. Make data-driven decisions.
+                        Continuously improve with measurable results.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features">
+        <div class="container">
+            <h2>Everything You Need for AI Application Development</h2>
+            <p class="section-subtitle">
+                A comprehensive Rails engine that brings software engineering best practices to AI development
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Prompts as Code</h3>
+                    <p>Store prompts in YAML files with Liquid templating. Version control with Git. Deploy with confidence.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Response Tracking</h3>
+                    <p>Track every LLM call with detailed metrics: tokens, cost, latency, provider, model, and more.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Auto-Evaluation</h3>
+                    <p>Automated quality checks with multiple evaluator types. Sync and async execution with dependency chains.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🧪</div>
+                    <h3>A/B Testing</h3>
+                    <p>Built-in A/B testing with statistical significance analysis. Optimize prompts with data-driven decisions.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Analytics Dashboard</h3>
+                    <p>Beautiful Bootstrap 5.3 UI with comprehensive analytics, cost tracking, and performance metrics.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Background Jobs</h3>
+                    <p>Async evaluation with Sidekiq. Real-time UI updates with Turbo Streams. Retry logic built-in.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start Section -->
+    <section id="quickstart">
+        <div class="container">
+            <h2>Quick Start</h2>
+            <p class="section-subtitle">Get up and running in minutes</p>
+
+            <div class="code-example">
+<pre><span class="code-comment"># 1. Track an LLM call with automatic evaluation</span>
+<span class="code-keyword">class</span> CustomerSupportController &lt; ApplicationController
+  <span class="code-keyword">include</span> PromptTracker::Trackable
+
+  <span class="code-keyword">def</span> generate_greeting
+    result = <span class="code-keyword">track_llm_call</span>(
+      <span class="code-string">"customer_support_greeting"</span>,
+      variables: { customer_name: params[:name] },
+      provider: <span class="code-string">"openai"</span>,
+      model: <span class="code-string">"gpt-4"</span>
+    ) <span class="code-keyword">do</span> |prompt|
+      OpenAI::Client.new.chat(
+        messages: [{ role: <span class="code-string">"user"</span>, content: prompt }]
+      )
+    <span class="code-keyword">end</span>
+
+    <span class="code-comment"># Auto-evaluation runs automatically!</span>
+    <span class="code-comment"># Access: result[:overall_score], result[:evaluation_breakdown]</span>
+
+    render json: { greeting: result[:response_text] }
+  <span class="code-keyword">end</span>
+<span class="code-keyword">end</span></pre>
+            </div>
+
+            <div class="code-example">
+<pre><span class="code-comment"># 2. Configure evaluators for your prompt</span>
+prompt = PromptTracker::Prompt.find_by(name: <span class="code-string">"customer_support_greeting"</span>)
+
+<span class="code-comment"># Length check (15% weight)</span>
+prompt.evaluator_configs.create!(
+  evaluator_key: <span class="code-keyword">:length_check</span>,
+  weight: <span class="code-number">0.15</span>,
+  run_mode: <span class="code-string">"sync"</span>,
+  config: { min_length: <span class="code-number">50</span>, max_length: <span class="code-number">500</span> }
+)
+
+<span class="code-comment"># Keyword check (30% weight)</span>
+prompt.evaluator_configs.create!(
+  evaluator_key: <span class="code-keyword">:keyword_check</span>,
+  weight: <span class="code-number">0.30</span>,
+  run_mode: <span class="code-string">"sync"</span>,
+  config: { required_keywords: [<span class="code-string">"hello"</span>, <span class="code-string">"help"</span>] }
+)
+
+<span class="code-comment"># LLM judge (55% weight, only runs if keyword check passes)</span>
+prompt.evaluator_configs.create!(
+  evaluator_key: <span class="code-keyword">:gpt4_judge</span>,
+  weight: <span class="code-number">0.55</span>,
+  run_mode: <span class="code-string">"async"</span>,
+  depends_on: <span class="code-string">"keyword_check"</span>,
+  min_dependency_score: <span class="code-number">80</span>
+)</pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section id="installation">
+        <div class="container">
+            <h2>Installation</h2>
+            <p class="section-subtitle">Add to your Rails 7.2+ application</p>
+
+            <div class="install-box">
+                <code class="install-command">gem "prompt_tracker"</code>
+                <button class="copy-btn" onclick="copyToClipboard('gem &quot;prompt_tracker&quot;')">Copy</button>
+            </div>
+
+            <div class="code-example">
+<pre><span class="code-comment"># Install and setup</span>
+$ bundle install
+$ bin/rails prompt_tracker:install:migrations
+$ bin/rails db:migrate
+
+<span class="code-comment"># Mount the engine in config/routes.rb</span>
+mount PromptTracker::Engine => <span class="code-string">"/prompt_tracker"</span>
+
+<span class="code-comment"># Start the server</span>
+$ bin/rails server
+
+<span class="code-comment"># Visit the dashboard</span>
+<span class="code-comment"># http://localhost:3000/prompt_tracker</span></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" style="background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);">
+        <div class="container">
+            <h2>How PromptTracker Enables Scientific AI Development</h2>
+            <p class="section-subtitle">
+                A systematic approach to building reliable AI applications
+            </p>
+
+            <div style="max-width: 900px; margin: 3rem auto;">
+                <div style="display: flex; gap: 2rem; margin-bottom: 3rem; align-items: start;">
+                    <div style="background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; flex-shrink: 0;">1</div>
+                    <div>
+                        <h3 style="font-size: 1.6rem; margin-bottom: 0.75rem; color: var(--dark);">🧪 Pre-Release Testing</h3>
+                        <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                            Test your prompts at scale before deployment. Run comprehensive test suites with multiple evaluators.
+                            Validate against edge cases, check for quality issues, and ensure consistency. Catch problems before users do.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 2rem; margin-bottom: 3rem; align-items: start;">
+                    <div style="background: var(--secondary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; flex-shrink: 0;">2</div>
+                    <div>
+                        <h3 style="font-size: 1.6rem; margin-bottom: 0.75rem; color: var(--dark);">📡 Production Monitoring</h3>
+                        <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                            Continuously evaluate every production LLM call in real-time. Auto-evaluators run automatically on live traffic.
+                            Track quality metrics, detect regressions, monitor costs, and get alerted when performance degrades.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 2rem; margin-bottom: 3rem; align-items: start;">
+                    <div style="background: var(--accent); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; flex-shrink: 0;">3</div>
+                    <div>
+                        <h3 style="font-size: 1.6rem; margin-bottom: 0.75rem; color: var(--dark);">🔬 Scientific Iteration</h3>
+                        <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                            A/B test prompt changes with statistical rigor. Compare variants with automatic traffic splitting.
+                            Measure impact on quality, cost, and performance. Make data-driven decisions backed by real metrics.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 2rem; align-items: start;">
+                    <div style="background: var(--success); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; flex-shrink: 0;">4</div>
+                    <div>
+                        <h3 style="font-size: 1.6rem; margin-bottom: 0.75rem; color: var(--dark);">📈 Continuous Improvement</h3>
+                        <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                            Build a culture of continuous improvement. Track trends over time, identify optimization opportunities,
+                            and iterate based on real production data. Turn AI development from art into engineering.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Features Deep Dive -->
+    <section id="features-detail">
+        <div class="container">
+            <h2>Powerful Features for Teams</h2>
+
+            <div style="max-width: 800px; margin: 3rem auto;">
+                <div style="margin-bottom: 3rem;">
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--primary);">🎯 Multi-Evaluator System</h3>
+                    <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                        Configure multiple evaluators per prompt with weighted scoring, dependency chains, and sync/async execution.
+                        Built-in evaluators for length, keywords, format validation, and LLM-as-judge. Easily create custom evaluators.
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 3rem;">
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--secondary);">📈 A/B Testing with Stats</h3>
+                    <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                        Run controlled experiments with automatic traffic splitting. Statistical significance testing with configurable
+                        confidence levels. Track multiple metrics: response time, cost, token count, evaluation scores, and success rates.
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 3rem;">
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--accent);">💰 Cost & Performance Tracking</h3>
+                    <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                        Monitor costs across providers and models. Track response times, token usage, and success rates.
+                        Identify expensive prompts and optimize for cost and performance.
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 3rem;">
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--success);">🔄 Real-time Updates</h3>
+                    <p style="font-size: 1.1rem; color: var(--gray); line-height: 1.8;">
+                        Turbo Streams integration for real-time UI updates. Watch evaluations complete in real-time.
+                        Sidekiq for background job processing with retry logic and error handling.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section id="use-cases">
+        <div class="container">
+            <h2>Perfect For</h2>
+            <p class="section-subtitle">Common use cases where PromptTracker excels</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>💬 Customer Support</h3>
+                    <p>Track support response quality, ensure consistent tone, monitor response times, and A/B test different approaches.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📧 Email Generation</h3>
+                    <p>Validate email format, check for required elements, test subject lines, and optimize for engagement.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📝 Content Creation</h3>
+                    <p>Ensure content quality, check for brand guidelines, validate formatting, and track content performance.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🔍 Data Extraction</h3>
+                    <p>Validate extraction accuracy, ensure format compliance, track success rates, and optimize for cost.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🤖 Chatbots</h3>
+                    <p>Monitor conversation quality, track user satisfaction, A/B test personalities, and optimize response times.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📊 Analytics & Insights</h3>
+                    <p>Generate reports, summarize data, validate insights, and track generation quality over time.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation -->
+    <section id="documentation">
+        <div class="container">
+            <h2>Documentation & Resources</h2>
+            <p class="section-subtitle">Everything you need to get started and master PromptTracker</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>📚 Getting Started Guide</h3>
+                    <p>Step-by-step guide to setting up PromptTracker, creating your first prompt, and configuring evaluators.</p>
+                    <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/docs/GETTING_STARTED.md" style="color: var(--primary); font-weight: 600;">Read Guide →</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🏗️ Architecture Overview</h3>
+                    <p>Understand the system design, evaluator architecture, and how all the pieces fit together.</p>
+                    <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/docs/ARCHITECTURE.md" style="color: var(--primary); font-weight: 600;">View Architecture →</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🧪 Testing Guide</h3>
+                    <p>Learn about the comprehensive test suite with 683 tests and 89.64% coverage.</p>
+                    <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/TESTING.md" style="color: var(--primary); font-weight: 600;">Testing Docs →</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>⚙️ Evaluator System</h3>
+                    <p>Deep dive into the multi-evaluator system, creating custom evaluators, and advanced configurations.</p>
+                    <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/docs/EVALUATOR_SYSTEM_DESIGN.md" style="color: var(--primary); font-weight: 600;">Learn More →</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🔄 Sidekiq Setup</h3>
+                    <p>Configure background jobs, Redis, and real-time updates for async evaluation processing.</p>
+                    <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/SIDEKIQ_SETUP.md" style="color: var(--primary); font-weight: 600;">Setup Guide →</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📊 A/B Testing</h3>
+                    <p>Learn how to run experiments, analyze results, and make data-driven prompt improvements.</p>
+                    <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/docs/AB_TESTING_DESIGN.md" style="color: var(--primary); font-weight: 600;">A/B Testing →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; text-align: center;">
+        <div class="container">
+            <h2 style="color: white; font-size: 2.5rem;">Ready to Build Reliable AI Applications?</h2>
+            <p style="font-size: 1.3rem; margin-bottom: 1rem; opacity: 0.95;">
+                Join teams who are shipping AI features with confidence
+            </p>
+            <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
+                Test at scale • Monitor continuously • Iterate scientifically
+            </p>
+            <div class="cta-buttons">
+                <a href="https://github.com/DavidGeismarLtd/PromptTracker" class="btn btn-primary">
+                    ⭐ Star on GitHub
+                </a>
+                <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/docs/GETTING_STARTED.md" class="btn btn-secondary">
+                    📚 Read the Docs
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+                <strong>PromptTracker</strong> - End-to-end platform for performant and reliable AI applications
+            </p>
+            <p style="opacity: 0.8; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                Test at scale • Monitor live • Iterate scientifically
+            </p>
+            <p style="opacity: 0.8; margin-bottom: 1rem;">
+                Built with ❤️ by <a href="https://github.com/DavidGeismarLtd">David Geismar</a>
+            </p>
+            <p style="opacity: 0.7; font-size: 0.9rem;">
+                <a href="https://github.com/DavidGeismarLtd/PromptTracker">GitHub</a> •
+                <a href="https://github.com/DavidGeismarLtd/PromptTracker/blob/master/docs/GETTING_STARTED.md">Documentation</a> •
+                <a href="https://github.com/DavidGeismarLtd/PromptTracker/issues">Issues</a> •
+                <a href="https://opensource.org/licenses/MIT">MIT License</a>
+            </p>
+            <p style="opacity: 0.6; font-size: 0.85rem; margin-top: 2rem;">
+                Rails 7.2+ • ~683 Tests • 89.64% Coverage • Production Ready
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

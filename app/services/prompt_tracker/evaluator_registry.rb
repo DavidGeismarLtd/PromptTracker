@@ -13,12 +13,12 @@ module PromptTracker
   # @example Getting all available evaluators
   #   EvaluatorRegistry.all
   #   # => {
-  #   #   length_check: { name: "Length Validator", class: LengthEvaluator, ... },
-  #   #   keyword_check: { name: "Keyword Checker", class: KeywordEvaluator, ... }
+  #   #   length: { name: "Length Validator", class: LengthEvaluator, ... },
+  #   #   keyword: { name: "Keyword Checker", class: KeywordEvaluator, ... }
   #   # }
   #
   # @example Building an evaluator instance
-  #   evaluator = EvaluatorRegistry.build(:length_check, llm_response, { min_length: 50 })
+  #   evaluator = EvaluatorRegistry.build(:length, llm_response, { min_length: 50 })
   #   result = evaluator.evaluate
   #
   # @example Registering a custom evaluator
@@ -142,34 +142,49 @@ module PromptTracker
         @registry = {}
 
         # Register built-in evaluators
+        register_human_evaluator
         register_length_evaluator
         register_keyword_evaluator
         register_format_evaluator
+        register_pattern_match_evaluator
+        register_exact_match_evaluator
         register_llm_judge_evaluator
 
         @registry
       end
 
+      # Registers the human evaluator
+      def register_human_evaluator
+        register(
+          key: :human,
+          name: "Human Review",
+          description: "Manual evaluation by a human reviewer",
+          evaluator_class: Evaluators::BaseEvaluator, # Human doesn't use a specific evaluator class
+          category: :quality,
+          icon: "person-circle",
+          evaluator_type: "human",
+          form_template: "prompt_tracker/evaluators/forms/human",
+          config_schema: {},
+          default_config: {}
+        )
+      end
+
       # Registers the length evaluator
       def register_length_evaluator
         register(
-          key: :length_check,
+          key: :length,
           name: "Length Validator",
-          description: "Validates response length against min/max and ideal ranges",
+          description: "Validates response length against min/max ranges",
           evaluator_class: Evaluators::LengthEvaluator,
           category: :format,
           icon: "rulers",
           config_schema: {
             min_length: { type: :integer, default: 10, description: "Minimum acceptable length" },
-            max_length: { type: :integer, default: 2000, description: "Maximum acceptable length" },
-            ideal_min: { type: :integer, default: 50, description: "Ideal minimum length" },
-            ideal_max: { type: :integer, default: 500, description: "Ideal maximum length" }
+            max_length: { type: :integer, default: 2000, description: "Maximum acceptable length" }
           },
           default_config: {
             min_length: 10,
-            max_length: 2000,
-            ideal_min: 50,
-            ideal_max: 500
+            max_length: 2000
           }
         )
       end
@@ -177,7 +192,7 @@ module PromptTracker
       # Registers the keyword evaluator
       def register_keyword_evaluator
         register(
-          key: :keyword_check,
+          key: :keyword,
           name: "Keyword Checker",
           description: "Checks for required and forbidden keywords in the response",
           evaluator_class: Evaluators::KeywordEvaluator,
@@ -199,7 +214,7 @@ module PromptTracker
       # Registers the format evaluator
       def register_format_evaluator
         register(
-          key: :format_check,
+          key: :format,
           name: "Format Validator",
           description: "Validates response format (JSON, Markdown, etc.)",
           evaluator_class: Evaluators::FormatEvaluator,
@@ -216,28 +231,70 @@ module PromptTracker
         )
       end
 
+      # Registers the pattern match evaluator
+      def register_pattern_match_evaluator
+        register(
+          key: :pattern_match,
+          name: "Pattern Match",
+          description: "Checks if response matches regex patterns (typically used in binary mode)",
+          evaluator_class: Evaluators::PatternMatchEvaluator,
+          category: :content,
+          icon: "regex",
+          config_schema: {
+            patterns: { type: :array, default: [], description: "Array of regex patterns (e.g., '/Hello/', '/world/i')" },
+            match_all: { type: :boolean, default: true, description: "Whether all patterns must match (true) or any pattern (false)" }
+          },
+          default_config: {
+            patterns: [],
+            match_all: true
+          }
+        )
+      end
+
+      # Registers the exact match evaluator
+      def register_exact_match_evaluator
+        register(
+          key: :exact_match,
+          name: "Exact Match",
+          description: "Checks if response exactly matches expected text (typically used in binary mode)",
+          evaluator_class: Evaluators::ExactMatchEvaluator,
+          category: :content,
+          icon: "check-circle",
+          config_schema: {
+            expected_text: { type: :string, default: "", description: "The exact text to match" },
+            case_sensitive: { type: :boolean, default: false, description: "Whether matching is case-sensitive" },
+            trim_whitespace: { type: :boolean, default: true, description: "Whether to trim whitespace before comparing" }
+          },
+          default_config: {
+            expected_text: "",
+            case_sensitive: false,
+            trim_whitespace: true
+          }
+        )
+      end
+
       # Registers the LLM judge evaluator
       def register_llm_judge_evaluator
         register(
-          key: :gpt4_judge,
-          name: "GPT-4 Judge",
-          description: "Uses GPT-4 to evaluate response quality",
+          key: :llm_judge,
+          name: "LLM Judge",
+          description: "Uses an LLM to evaluate response quality",
           evaluator_class: Evaluators::LlmJudgeEvaluator,
           category: :quality,
           icon: "robot",
           evaluator_type: "llm_judge",
           form_template: "prompt_tracker/evaluators/forms/llm_judge",
           config_schema: {
-            judge_model: { type: :string, default: "gpt-4", description: "LLM model to use as judge" },
-            criteria: { type: :array, default: [ "accuracy", "helpfulness", "clarity" ], description: "Criteria to evaluate" },
-            custom_instructions: { type: :string, default: "", description: "Additional instructions for the judge" },
+            judge_model: { type: :string, default: "gpt-4o", description: "LLM model to use as judge" },
+            custom_instructions: { type: :string, default: "", description: "Instructions for the judge" },
+            threshold_score: { type: :integer, default: 70, description: "Minimum score to pass (0-100)" },
             score_min: { type: :integer, default: 0, description: "Minimum score" },
             score_max: { type: :integer, default: 100, description: "Maximum score" }
           },
           default_config: {
-            judge_model: "gpt-4",
-            criteria: [ "accuracy", "helpfulness", "clarity" ],
+            judge_model: "gpt-4o",
             custom_instructions: "",
+            threshold_score: 70,
             score_min: 0,
             score_max: 100
           }

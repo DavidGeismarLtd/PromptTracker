@@ -24,90 +24,42 @@
     </div>
 
     <% if @version.evaluator_configs.any? %>
-      <!-- Aggregation Strategy -->
-      <div class="alert alert-secondary mb-3">
-        <strong>Score Aggregation:</strong>
-        <span class="badge bg-primary"><%= @prompt.score_aggregation_strategy&.titleize || "Weighted Average" %></span>
-        <small class="d-block mt-1">
-          <% case @prompt.score_aggregation_strategy %>
-          <% when "weighted_average" %>
-            Overall score is calculated using weighted average based on evaluator weights.
-          <% when "simple_average" %>
-            Overall score is the simple average of all evaluations (equal weight).
-          <% when "minimum" %>
-            Overall score is the minimum score across all evaluations (all must pass).
-          <% when "custom" %>
-            Overall score uses custom business logic.
-          <% else %>
-            Overall score is calculated using weighted average (default).
-          <% end %>
-        </small>
-      </div>
-
       <!-- Evaluator Configs Table -->
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
             <tr>
-              <th style="width: 5%;">
-                <i class="bi bi-sort-numeric-down" title="Priority"></i>
-              </th>
-              <th style="width: 25%;">Evaluator</th>
-              <th style="width: 15%;">Weight</th>
-              <th style="width: 10%;">Mode</th>
-              <th style="width: 15%;">Dependency</th>
-              <th style="width: 10%;">Status</th>
-              <th style="width: 20%;">Actions</th>
+              <th style="width: 30%;">Evaluator</th>
+              <th style="width: 15%;">Mode</th>
+              <th style="width: 15%;">Threshold</th>
+              <th style="width: 15%;">Status</th>
+              <th style="width: 25%;">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <% @version.evaluator_configs.by_priority.each do |config| %>
+            <% @version.evaluator_configs.order(:created_at).each do |config| %>
               <tr class="<%= 'table-secondary' unless config.enabled? %>">
-                <td class="text-center">
-                  <span class="badge bg-secondary"><%= config.priority %></span>
-                </td>
                 <td>
                   <strong><%= config.name %></strong>
                   <br>
                   <small class="text-muted"><%= config.description %></small>
                 </td>
                 <td>
-                  <div class="d-flex align-items-center">
-                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
-                      <div class="progress-bar" role="progressbar"
-                           style="width: <%= (config.weight * 100).round(1) %>%"
-                           aria-valuenow="<%= (config.weight * 100).round(1) %>"
-                           aria-valuemin="0" aria-valuemax="100">
-                        <%= (config.weight * 100).round(1) %>%
-                      </div>
-                    </div>
-                  </div>
-                  <% if @prompt.score_aggregation_strategy == "weighted_average" %>
-                    <small class="text-muted">
-                      Normalized: <%= (config.normalized_weight * 100).round(1) %>%
-                    </small>
-                  <% end %>
-                </td>
-                <td>
-                  <% if config.sync? %>
+                  <% if config.scored? %>
+                    <span class="badge bg-primary">
+                      <i class="bi bi-graph-up"></i> Scored
+                    </span>
+                  <% else %>
                     <span class="badge bg-success">
-                      <i class="bi bi-lightning-fill"></i> Sync
-                    </span>
-                  <% else %>
-                    <span class="badge bg-info">
-                      <i class="bi bi-clock"></i> Async
+                      <i class="bi bi-check-circle"></i> Binary
                     </span>
                   <% end %>
                 </td>
                 <td>
-                  <% if config.has_dependency? %>
-                    <span class="badge bg-warning text-dark" title="Requires <%= config.depends_on %> >= <%= config.min_dependency_score || 80 %>">
-                      <i class="bi bi-link-45deg"></i> <%= config.depends_on %>
-                    </span>
-                    <br>
-                    <small class="text-muted">≥ <%= config.min_dependency_score || 80 %></small>
+                  <% if config.scored? && config.threshold.present? %>
+                    <span class="badge bg-info">≥ <%= config.threshold %></span>
                   <% else %>
-                    <span class="text-muted">None</span>
+                    <span class="text-muted">N/A</span>
                   <% end %>
                 </td>
                 <td>
@@ -137,23 +89,6 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Weight Distribution Summary -->
-      <% if @prompt.score_aggregation_strategy == "weighted_average" %>
-        <div class="alert alert-light mt-3">
-          <strong>Total Weight:</strong> <%= @version.evaluator_configs.enabled.sum(:weight).round(2) %>
-          <% total_weight = @version.evaluator_configs.enabled.sum(:weight) %>
-          <% if total_weight > 0 %>
-            <span class="text-success">
-              <i class="bi bi-check-circle"></i> Weights will be normalized
-            </span>
-          <% else %>
-            <span class="text-warning">
-              <i class="bi bi-exclamation-triangle"></i> No enabled evaluators with weight
-            </span>
-          <% end %>
-        </div>
-      <% end %>
     <% else %>
       <div class="text-center py-5">
         <i class="bi bi-robot text-muted" style="font-size: 3rem;"></i>

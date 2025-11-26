@@ -4,21 +4,17 @@
 #
 # Table name: prompt_tracker_prompt_tests
 #
-#  created_at           :datetime         not null
-#  description          :text
-#  enabled              :boolean          default(TRUE), not null
-#  evaluator_configs    :jsonb            not null
-#  expected_output      :text
-#  expected_patterns    :jsonb            not null
-#  id                   :bigint           not null, primary key
-#  metadata             :jsonb            not null
-#  model_config         :jsonb            not null
-#  name                 :string           not null
-#  prompt_test_suite_id :bigint
-#  prompt_version_id    :bigint           not null
-#  tags                 :jsonb            not null
-#  template_variables   :jsonb            not null
-#  updated_at           :datetime         not null
+#  created_at         :datetime         not null
+#  description        :text
+#  enabled            :boolean          default(TRUE), not null
+#  id                 :bigint           not null, primary key
+#  metadata           :jsonb            not null
+#  model_config       :jsonb            not null
+#  name               :string           not null
+#  prompt_version_id  :bigint           not null
+#  tags               :jsonb            not null
+#  template_variables :jsonb            not null
+#  updated_at         :datetime         not null
 #
 require "rails_helper"
 
@@ -31,7 +27,6 @@ module PromptTracker
              prompt_version: version,
              name: "test_greeting",
              template_variables: { name: "Alice" },
-             expected_patterns: ["/Hello/", "/Alice/"],
              model_config: { provider: "openai", model: "gpt-4" })
     end
 

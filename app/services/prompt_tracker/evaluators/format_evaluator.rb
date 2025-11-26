@@ -53,19 +53,6 @@ module PromptTracker
         end
       end
 
-      def evaluate_criteria
-        case config[:format]
-        when :json
-          json_criteria
-        when :markdown
-          markdown_criteria
-        when :plain_text
-          plain_text_criteria
-        else
-          {}
-        end
-      end
-
       def generate_feedback
         case config[:format]
         when :json
@@ -141,20 +128,6 @@ module PromptTracker
 
       def parse_json
         JSON.parse(response_text)
-      end
-
-      def json_criteria
-        valid = json_valid?
-        criteria = { "valid_json" => valid ? 100 : 0 }
-
-        if valid && config[:required_keys].any?
-          parsed = parse_json
-          config[:required_keys].each do |key|
-            criteria["has_key_#{key}"] = parsed.key?(key) ? 100 : 0
-          end
-        end
-
-        criteria
       end
 
       def json_feedback
@@ -322,13 +295,6 @@ module PromptTracker
         response_text.match?(/^[#]{1,6}\s+.+/)
       end
 
-      def markdown_criteria
-        {
-          "has_headers" => has_markdown_headers? ? 100 : 0,
-          "has_markdown_syntax" => response_text.match?(/[#*_\[\]`]/) ? 100 : 0
-        }
-      end
-
       def markdown_feedback
         parts = []
 
@@ -342,12 +308,6 @@ module PromptTracker
       # Plain text format evaluation
       def evaluate_plain_text_format
         response_text.length > 0 ? 100 : 0
-      end
-
-      def plain_text_criteria
-        {
-          "has_content" => response_text.length > 0 ? 100 : 0
-        }
       end
 
       def plain_text_feedback

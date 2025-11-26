@@ -43,14 +43,8 @@ module PromptTracker
       evaluator_results = run_evaluators(prompt_test, llm_response)
       Rails.logger.info "📊 Evaluators completed: #{evaluator_results.length} results"
 
-      # Run assertions
-      assertion_results = check_assertions(prompt_test, llm_response)
-      Rails.logger.info "✅ Assertions checked: #{assertion_results.length} assertions"
-
-      # Determine if test passed
-      evaluators_passed = evaluator_results.all? { |r| r[:passed] }
-      assertions_passed = assertion_results.values.all?
-      passed = evaluators_passed && assertions_passed
+      # Determine if test passed (all evaluators must pass)
+      passed = evaluator_results.all? { |r| r[:passed] }
 
       # Update test run with results
       passed_evaluators = evaluator_results.count { |r| r[:passed] }
@@ -60,7 +54,6 @@ module PromptTracker
         status: passed ? "passed" : "failed",
         passed: passed,
         evaluator_results: evaluator_results,
-        assertion_results: assertion_results,
         passed_evaluators: passed_evaluators,
         failed_evaluators: failed_evaluators,
         total_evaluators: evaluator_results.length
@@ -82,13 +75,14 @@ module PromptTracker
     # @return [Array<Hash>] array of evaluator results
     def run_evaluators(prompt_test, llm_response)
       results = []
-      evaluator_configs = prompt_test.evaluator_configs || []
+      # Get evaluator configs, ordered by priority (binary evaluators first)
+      evaluator_configs = prompt_test.evaluator_configs.enabled.order(priority: :desc, evaluation_mode: :desc)
 
       evaluator_configs.each do |config|
-        config = config.with_indifferent_access
-        evaluator_key = config[:evaluator_key].to_sym
-        threshold = config[:threshold] || 0
-        evaluator_config = config[:config] || {}
+        evaluator_key = config.evaluator_key.to_sym
+        evaluation_mode = config.evaluation_mode
+        threshold = config.threshold
+        evaluator_config = config.config || {}
 
         # Build and run evaluator
         evaluator = EvaluatorRegistry.build(evaluator_key, llm_response, evaluator_config)
@@ -97,40 +91,23 @@ module PromptTracker
         # All evaluators now use RubyLLM directly - no block needed!
         evaluation = evaluator.evaluate
 
-        # Check if score meets threshold
-        passed = evaluation.score >= threshold
+        # Determine if evaluator passed based on mode
+        passed = if evaluation_mode == "binary"
+          # Binary mode: check if evaluator has passed? method, otherwise use score > 0
+          evaluator.respond_to?(:passed?) ? evaluator.passed? : evaluation.score > 0
+        else
+          # Scored mode: check if score meets threshold
+          evaluation.score >= (threshold || 0)
+        end
 
         results << {
           evaluator_key: evaluator_key.to_s,
+          evaluation_mode: evaluation_mode,
           score: evaluation.score,
           threshold: threshold,
           passed: passed,
           feedback: evaluation.feedback
         }
-      end
-
-      results
-    end
-
-    # Check all configured assertions
-    #
-    # @param prompt_test [PromptTest] the test configuration
-    # @param llm_response [LlmResponse] the LLM response to check
-    # @return [Hash] hash of assertion name => passed (boolean)
-    def check_assertions(prompt_test, llm_response)
-      results = {}
-      response_text = llm_response.response_text || ""
-
-      # Check expected output (exact match)
-      if prompt_test.expected_output.present?
-        results["expected_output"] = response_text.strip == prompt_test.expected_output.strip
-      end
-
-      # Check expected patterns (regex)
-      if prompt_test.expected_patterns.present?
-        prompt_test.expected_patterns.each_with_index do |pattern, index|
-          results["pattern_#{index + 1}"] = Regexp.new(pattern).match?(response_text)
-        end
       end
 
       results

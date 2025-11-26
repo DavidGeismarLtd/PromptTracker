@@ -4,27 +4,23 @@
 #
 # Table name: prompt_tracker_evaluator_configs
 #
-#  config               :jsonb            not null
-#  created_at           :datetime         not null
-#  depends_on           :string
-#  enabled              :boolean          default(TRUE), not null
-#  evaluator_key        :string           not null
-#  id                   :bigint           not null, primary key
-#  min_dependency_score :integer
-#  priority             :integer          default(0), not null
-#  prompt_id            :bigint           not null
-#  run_mode             :string           default("async"), not null
-#  updated_at           :datetime         not null
-#  weight               :decimal(5, 2)    default(1.0), not null
+#  config            :jsonb            not null
+#  configurable_id   :bigint           not null
+#  configurable_type :string           not null
+#  created_at        :datetime         not null
+#  enabled           :boolean          default(TRUE), not null
+#  evaluation_mode   :string           default("scored"), not null
+#  evaluator_key     :string           not null
+#  id                :bigint           not null, primary key
+#  threshold         :integer
+#  updated_at        :datetime         not null
 #
 FactoryBot.define do
   factory :evaluator_config, class: "PromptTracker::EvaluatorConfig" do
-    association :prompt, factory: :prompt
-    evaluator_key { "length_check" }
+    association :configurable, factory: :prompt_version
+    evaluator_key { "length" }
     enabled { true }
-    run_mode { "sync" }
-    priority { 100 }
-    weight { 1.0 }
+    evaluation_mode { "scored" }
     config do
       {
         "min_length" => 50,
@@ -32,24 +28,35 @@ FactoryBot.define do
       }
     end
 
+    # Trait to associate with a prompt (creates a version automatically)
+    trait :for_prompt do
+      transient do
+        prompt { nil }
+      end
+
+      configurable do
+        if prompt
+          prompt.prompt_versions.first || association(:prompt_version, prompt: prompt)
+        else
+          association(:prompt_version)
+        end
+      end
+    end
+
     trait :disabled do
       enabled { false }
     end
 
-    trait :async do
-      run_mode { "async" }
+    trait :binary do
+      evaluation_mode { "binary" }
     end
 
-    trait :high_priority do
-      priority { 200 }
-    end
-
-    trait :low_priority do
-      priority { 50 }
+    trait :with_threshold do
+      threshold { 80 }
     end
 
     trait :keyword_evaluator do
-      evaluator_key { "keyword_check" }
+      evaluator_key { "keyword" }
       config do
         {
           "required_keywords" => [ "hello", "help" ],
@@ -59,7 +66,7 @@ FactoryBot.define do
     end
 
     trait :format_evaluator do
-      evaluator_key { "format_check" }
+      evaluator_key { "format" }
       config do
         {
           "format" => "json",
@@ -72,20 +79,24 @@ FactoryBot.define do
     end
 
     trait :llm_judge do
-      evaluator_key { "gpt4_judge" }
-      run_mode { "async" }
+      evaluator_key { "llm_judge" }
       config do
         {
-          "model" => "gpt-4",
-          "criteria" => [ "accuracy", "helpfulness", "tone" ]
+          "judge_model" => "gpt-4o",
+          "custom_instructions" => "Evaluate the response quality",
+          "threshold_score" => 70
         }
       end
     end
 
-    trait :with_dependency do
-      evaluator_key { "keyword_check" }
-      depends_on { "length_check" }
-      min_dependency_score { 80 }
+    trait :exact_match do
+      evaluator_key { "exact_match" }
+      evaluation_mode { "binary" }
+      config do
+        {
+          "expected_output" => "Hello, world!"
+        }
+      end
     end
   end
 end

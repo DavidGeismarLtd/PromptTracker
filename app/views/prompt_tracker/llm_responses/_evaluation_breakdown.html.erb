@@ -36,9 +36,6 @@
                       <%= score.round(1) %>%
                     </div>
                   </div>
-                  <small class="text-muted mt-1 d-block">
-                    Strategy: <strong><%= @prompt.score_aggregation_strategy&.titleize || "Weighted Average" %></strong>
-                  </small>
                 </div>
                 <div class="col-md-3 text-center">
                   <% if @response.passes_threshold?(80) %>
@@ -117,28 +114,7 @@
                   </div>
                 <% end %>
 
-                <!-- Criteria Scores -->
-                <% if eval_data[:criteria_scores].present? && eval_data[:criteria_scores].any? %>
-                  <div class="mt-2">
-                    <small class="text-muted d-block mb-1"><strong>Criteria Breakdown:</strong></small>
-                    <% eval_data[:criteria_scores].each do |criterion, criterion_score| %>
-                      <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small><%= criterion.to_s.titleize %></small>
-                        <div class="d-flex align-items-center">
-                          <div class="progress me-2" style="width: 100px; height: 15px;">
-                            <% crit_color = criterion_score >= 80 ? 'success' : (criterion_score >= 60 ? 'warning' : 'danger') %>
-                            <div class="progress-bar bg-<%= crit_color %>" role="progressbar"
-                                 style="width: <%= criterion_score %>%"
-                                 aria-valuenow="<%= criterion_score %>"
-                                 aria-valuemin="0" aria-valuemax="100">
-                            </div>
-                          </div>
-                          <small class="text-muted" style="min-width: 40px;"><%= criterion_score.round(1) %></small>
-                        </div>
-                      </div>
-                    <% end %>
-                  </div>
-                <% end %>
+
 
                 <!-- Timestamp -->
                 <div class="mt-2">

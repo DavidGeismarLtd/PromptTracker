@@ -11,19 +11,34 @@ module PromptTracker
     def config_form
       evaluator_key = params[:evaluator_key]
 
-      # Try to render the specific config form for this evaluator
-      template_path = "prompt_tracker/evaluators/configs/#{evaluator_key}"
+      # Try to render the specific form for this evaluator
+      template_path = "prompt_tracker/evaluators/forms/#{evaluator_key}"
 
-      render partial: template_path
+      # Render the partial wrapped in a turbo-frame tag
+      partial_content = render_to_string(partial: template_path)
+
+      render html: <<~HTML.html_safe, layout: false
+        <turbo-frame id="evaluator_config_container">
+          #{partial_content}
+        </turbo-frame>
+      HTML
     rescue ActionView::MissingTemplate
-      # If no custom form exists, return a message
-      render plain: "No custom configuration form available for this evaluator.", status: :not_found
+      # If no custom form exists, return a message in turbo-frame
+      render html: <<~HTML.html_safe, layout: false
+        <turbo-frame id="evaluator_config_container">
+          <div class="alert alert-warning">
+            <i class="bi bi-info-circle"></i>
+            <strong>No custom configuration form available</strong>
+            <p class="mb-0 mt-2">This evaluator will use default configuration values.</p>
+          </div>
+        </turbo-frame>
+      HTML
     end
 
     # GET /prompts/:prompt_id/evaluators
     # List all evaluator configs for a prompt version (returns JSON for AJAX)
     def index
-      @evaluator_configs = @version.evaluator_configs.by_priority
+      @evaluator_configs = @version.evaluator_configs.order(:created_at)
       @available_evaluators = EvaluatorRegistry.all
 
       respond_to do |format|
@@ -115,11 +130,8 @@ module PromptTracker
       params.require(:evaluator_config).permit(
         :evaluator_key,
         :enabled,
-        :run_mode,
-        :priority,
-        :weight,
-        :depends_on,
-        :min_dependency_score,
+        :evaluation_mode,
+        :threshold,
         config: {}
       )
     end

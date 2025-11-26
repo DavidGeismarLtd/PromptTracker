@@ -70,28 +70,6 @@ module PromptTracker
         end
       end
 
-      def evaluate_criteria
-        required = config[:required_keywords] || []
-        forbidden = config[:forbidden_keywords] || []
-        text = config[:case_sensitive] ? response_text : response_text.downcase
-
-        criteria = {}
-
-        # Check each required keyword
-        required.each do |keyword|
-          search_keyword = config[:case_sensitive] ? keyword : keyword.downcase
-          criteria["required_#{keyword}"] = text.include?(search_keyword) ? 100 : 0
-        end
-
-        # Check each forbidden keyword
-        forbidden.each do |keyword|
-          search_keyword = config[:case_sensitive] ? keyword : keyword.downcase
-          criteria["forbidden_#{keyword}"] = text.include?(search_keyword) ? 0 : 100
-        end
-
-        criteria
-      end
-
       def generate_feedback
         required = config[:required_keywords] || []
         forbidden = config[:forbidden_keywords] || []

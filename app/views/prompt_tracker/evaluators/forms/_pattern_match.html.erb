@@ -1,0 +1,51 @@
+<%# Unified form for Pattern Match Evaluator - works for both test configuration and manual evaluation %>
+<% existing_config ||= nil %>
+<% config = existing_config&.config || {} %>
+<% evaluator_key ||= 'pattern_match' %>
+
+<div class="alert alert-info mb-3">
+  <i class="bi bi-regex"></i>
+  <strong>Pattern Match</strong>
+  <p class="mb-0 mt-1">Checks if response matches regex patterns. Binary pass/fail evaluator.</p>
+</div>
+
+<!-- Hidden fields for evaluator type and context -->
+<input type="hidden" name="evaluation[evaluator_type]" value="automated">
+<input type="hidden" name="evaluation[evaluator_id]" value="<%= evaluator_key %>">
+<input type="hidden" name="evaluation[evaluation_context]" value="manual">
+
+<!-- Patterns -->
+<div class="mb-3">
+  <label class="form-label">Regex Patterns</label>
+  <textarea name="config[patterns]"
+            class="form-control font-monospace"
+            rows="4"
+            placeholder="Enter regex patterns, one per line&#10;Example:&#10;/Hello/&#10;/world/i&#10;/\d{3}-\d{4}/"><%= (config['patterns'] || config[:patterns] || []).join("\n") %></textarea>
+  <small class="form-text text-muted">
+    Enter regex patterns, one per line. Use /pattern/ or /pattern/flags format (e.g., /hello/i for case-insensitive).
+  </small>
+</div>
+
+<!-- Match All -->
+<div class="mb-3 form-check">
+  <input type="checkbox"
+         name="config[match_all]"
+         class="form-check-input"
+         id="<%= evaluator_key %>_match_all"
+         value="true"
+         <%= 'checked' if (config['match_all'] || config[:match_all]).nil? || (config['match_all'] || config[:match_all]) %>>
+  <label class="form-check-label" for="<%= evaluator_key %>_match_all">
+    All patterns must match
+  </label>
+  <div class="form-text">
+    If checked, ALL patterns must match for a pass. If unchecked, ANY pattern matching will pass.
+  </div>
+</div>
+
+<div class="alert alert-secondary">
+  <strong>Binary Scoring:</strong>
+  <ul class="mb-0 mt-2">
+    <li><strong>Match All mode:</strong> PASS (100 points) if all patterns match, FAIL (0 points) otherwise</li>
+    <li><strong>Match Any mode:</strong> PASS (100 points) if any pattern matches, FAIL (0 points) otherwise</li>
+  </ul>
+</div>

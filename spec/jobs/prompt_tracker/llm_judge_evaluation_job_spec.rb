@@ -47,13 +47,13 @@ RSpec.describe PromptTracker::LlmJudgeEvaluationJob, type: :job do
       }.to change(PromptTracker::Evaluation, :count).by(1)
     end
 
-    it "uses the gpt4_judge evaluator" do
+    it "uses the llm_judge evaluator" do
       allow(PromptTracker::EvaluatorRegistry).to receive(:build).and_call_original
 
       described_class.new.perform(llm_response.id, config)
 
       expect(PromptTracker::EvaluatorRegistry).to have_received(:build).with(
-        :gpt4_judge,
+        :llm_judge,
         llm_response,
         config
       )

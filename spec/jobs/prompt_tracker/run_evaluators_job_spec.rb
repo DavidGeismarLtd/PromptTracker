@@ -12,19 +12,17 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
   end
 
   let(:test) do
-    create(:prompt_test,
-           prompt_version: version,
-           template_variables: { name: "John" },
-           evaluator_configs: [
-             {
-               evaluator_key: "keyword_check",
-               threshold: 1,
-               config: {
-                 required_keywords: [ "Hello", "help" ]
-               }
-             }
-           ],
-           expected_patterns: [ "Hello.*help" ])
+    test = create(:prompt_test,
+                  prompt_version: version,
+                  template_variables: { name: "John" })
+    create(:evaluator_config,
+           configurable: test,
+           evaluator_key: "keyword",
+           threshold: 1,
+           config: {
+             required_keywords: [ "Hello", "help" ]
+           })
+    test
   end
 
   let(:test_run) do
@@ -43,7 +41,6 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
       expect(test_run.status).to eq("passed")
       expect(test_run.passed).to be true
       expect(test_run.evaluator_results).to be_present
-      expect(test_run.assertion_results).to be_present
     end
 
     it "sets evaluator counts" do
@@ -55,27 +52,19 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
       expect(test_run.failed_evaluators).to eq(0)
     end
 
-    it "checks assertions" do
-      described_class.new.perform(test_run.id)
-
-      test_run.reload
-      expect(test_run.assertion_results).to include("pattern_1" => true)
-    end
-
     context "when evaluators fail" do
       let(:test) do
-        create(:prompt_test,
-               prompt_version: version,
-               template_variables: { name: "John" },
-               evaluator_configs: [
-                 {
-                   evaluator_key: "keyword_check",
-                   threshold: 2,
-                   config: {
-                     required_keywords: [ "goodbye", "farewell" ]
-                   }
-                 }
-               ])
+        test = create(:prompt_test,
+                      prompt_version: version,
+                      template_variables: { name: "John" })
+        create(:evaluator_config,
+               configurable: test,
+               evaluator_key: "keyword",
+               threshold: 100,
+               config: {
+                 required_keywords: [ "goodbye", "farewell" ]
+               })
+        test
       end
 
       it "marks test as failed" do
@@ -90,11 +79,18 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
 
     context "when assertions fail" do
       let(:test) do
-        create(:prompt_test,
-               prompt_version: version,
-               template_variables: { name: "John" },
-               evaluator_configs: [],
-               expected_output: "Goodbye!")
+        test = create(:prompt_test,
+                      prompt_version: version,
+                      template_variables: { name: "John" })
+        # Create an evaluator that will fail
+        create(:evaluator_config,
+               configurable: test,
+               evaluator_key: "exact_match",
+               threshold: 100,
+               config: {
+                 expected_text: "Goodbye!"
+               })
+        test
       end
 
       it "marks test as failed" do
@@ -103,7 +99,6 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
         test_run.reload
         expect(test_run.status).to eq("failed")
         expect(test_run.passed).to be false
-        expect(test_run.assertion_results["expected_output"]).to be false
       end
     end
 

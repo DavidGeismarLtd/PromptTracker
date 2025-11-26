@@ -29,7 +29,6 @@ module PromptTracker
   # Records all details about test execution including:
   # - Pass/fail status
   # - Evaluator results
-  # - Assertion results
   # - Performance metrics
   # - Error details
   #
@@ -103,27 +102,6 @@ module PromptTracker
     # @return [Array<Hash>] array of passed evaluator results
     def passed_evaluator_details
       (evaluator_results || []).select { |r| r['passed'] }
-    end
-
-    # Get assertion failures
-    #
-    # @return [Array<String>] array of failed assertion messages
-    def assertion_failures
-      (assertion_results || {}).select { |_k, v| !v }.keys
-    end
-
-    # Get assertion successes
-    #
-    # @return [Array<String>] array of passed assertion names
-    def assertion_successes
-      (assertion_results || {}).select { |_k, v| v }.keys
-    end
-
-    # Check if all assertions passed
-    #
-    # @return [Boolean]
-    def all_assertions_passed?
-      assertion_failures.empty? && assertion_results.present?
     end
 
     # Check if all evaluators passed

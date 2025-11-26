@@ -1,5 +1,7 @@
 <!-- Create Evaluation Card -->
-<div class="card mb-4">
+<div class="card mb-4"
+     data-controller="evaluator-form"
+     data-evaluator-form-response-id-value="<%= @response.id %>">
   <div class="card-header">
     <h5 class="mb-0">
       <button class="btn btn-link text-decoration-none p-0 w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#evaluationForm" aria-expanded="false" aria-controls="evaluationForm">
@@ -16,17 +18,15 @@
         <!-- Evaluator Selection -->
         <div class="mb-3">
           <label class="form-label">Select Evaluator</label>
-          <select id="evaluator_select" class="form-select">
+          <select id="evaluator_select"
+                  class="form-select"
+                  data-evaluator-form-target="select"
+                  data-action="change->evaluator-form#loadForm">
             <option value="">Choose an evaluator...</option>
 
-            <!-- Manual Evaluation -->
-            <option value="human" data-type="human">👤 Human Review</option>
-            <option value="llm_judge" data-type="llm_judge">🤖 LLM Judge</option>
-
-            <!-- Registry Evaluators -->
+            <!-- All Evaluators from Registry -->
             <% PromptTracker::EvaluatorRegistry.all.each do |key, metadata| %>
-              <% next if metadata[:evaluator_type] == 'llm_judge' %> <!-- LLM Judge already listed above -->
-              <option value="<%= key %>" data-type="registry">
+              <option value="<%= key %>" data-evaluator-type="<%= metadata[:evaluator_type] %>">
                 <% if metadata[:icon] %>
                   <i class="bi bi-<%= metadata[:icon] %>"></i>
                 <% end %>
@@ -35,18 +35,17 @@
             <% end %>
           </select>
           <small class="form-text text-muted">
-            Choose a human review, LLM judge, or run a specific evaluator on this response.
+            Choose an evaluator to run on this response.
           </small>
         </div>
 
-        <!-- Dynamic Form Container -->
-        <div id="dynamic_form_container">
-          <!-- Form template will be loaded here via AJAX -->
+        <!-- Dynamic Form Container (Turbo Frame) -->
+        <turbo-frame id="evaluator_form_container">
           <div class="text-center py-4 text-muted">
             <i class="bi bi-arrow-up"></i>
             <p>Select an evaluator above to begin</p>
           </div>
-        </div>
+        </turbo-frame>
 
         <!-- Submit Buttons -->
         <div class="d-flex gap-2 mt-3">
@@ -57,79 +56,3 @@
     </div>
   </div>
 </div>
-
-<script>
-  // Dynamic form template loading for evaluator selection
-  document.addEventListener('DOMContentLoaded', function() {
-    const evaluatorSelect = document.getElementById('evaluator_select');
-    const dynamicFormContainer = document.getElementById('dynamic_form_container');
-    const llmResponseId = <%= @response.id %>;
-
-    // Function to load form template via AJAX
-    function loadFormTemplate(evaluatorValue, evaluatorType) {
-      if (!dynamicFormContainer || !evaluatorValue) return;
-
-      // Show loading spinner
-      dynamicFormContainer.innerHTML = `
-        <div class="text-center py-4">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading form...</span>
-          </div>
-        </div>
-      `;
-
-      // Determine the evaluator type for the form template
-      let formType = evaluatorType;
-
-      // Map evaluator types to form templates
-      if (evaluatorType === 'registry') {
-        formType = 'registry';
-      }
-
-      // Fetch the form template
-      const url = `/prompt_tracker/evaluations/form_template?evaluator_type=${formType}&evaluator_key=${evaluatorValue}&llm_response_id=${llmResponseId}`;
-
-      fetch(url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Form template not found');
-          }
-          return response.text();
-        })
-        .then(html => {
-          dynamicFormContainer.innerHTML = html;
-        })
-        .catch(error => {
-          console.error('Error loading form template:', error);
-          dynamicFormContainer.innerHTML = `
-            <div class="alert alert-danger">
-              <i class="bi bi-exclamation-triangle"></i>
-              Error loading form template. Please try again.
-            </div>
-          `;
-        });
-    }
-
-    // Handle evaluator selection changes
-    if (evaluatorSelect && dynamicFormContainer) {
-      evaluatorSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.value) {
-          const evaluatorValue = selectedOption.value;
-          const evaluatorType = selectedOption.dataset.type;
-
-          loadFormTemplate(evaluatorValue, evaluatorType);
-        } else {
-          // Reset to empty state
-          dynamicFormContainer.innerHTML = `
-            <div class="text-center py-4 text-muted">
-              <i class="bi bi-arrow-up"></i>
-              <p>Select an evaluator above to begin</p>
-            </div>
-          `;
-        }
-      });
-    }
-  });
-</script>
-

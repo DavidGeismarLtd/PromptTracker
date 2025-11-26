@@ -11,8 +11,8 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
   let(:evaluator_config) do
     create(:evaluator_config,
            :disabled,
-           prompt: prompt,
-           evaluator_key: "length_check",
+           configurable: version,
+           evaluator_key: "length",
            config: { min_length: 10, max_length: 1000 })
   end
 
@@ -57,15 +57,15 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
         # Create configs with dependency (disabled to prevent auto-evaluation)
         length_config = create(:evaluator_config,
                                :disabled,
-                               prompt: prompt,
-                               evaluator_key: "length_check",
+                               configurable: version,
+                               evaluator_key: "length",
                                config: { min_length: 10, max_length: 1000 })
 
         dependency_config = create(:evaluator_config,
                                    :disabled,
-                                   prompt: prompt,
-                                   evaluator_key: "keyword_check",
-                                   depends_on: "length_check",
+                                   configurable: version,
+                                   evaluator_key: "keyword",
+                                   depends_on: "length",
                                    min_dependency_score: 80,
                                    config: { required_keywords: [ "test" ] })
 
@@ -85,15 +85,15 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
         # Create configs with dependency (disabled to prevent auto-evaluation)
         length_config = create(:evaluator_config,
                                :disabled,
-                               prompt: prompt,
-                               evaluator_key: "length_check",
+                               configurable: version,
+                               evaluator_key: "length",
                                config: { min_length: 10, max_length: 1000 })
 
         dependency_config = create(:evaluator_config,
                                    :disabled,
-                                   prompt: prompt,
-                                   evaluator_key: "keyword_check",
-                                   depends_on: "length_check",
+                                   configurable: version,
+                                   evaluator_key: "keyword",
+                                   depends_on: "length",
                                    min_dependency_score: 80,
                                    config: { required_keywords: [ "test" ] })
 
@@ -114,15 +114,15 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
         # Create configs with dependency (disabled to prevent auto-evaluation)
         length_config = create(:evaluator_config,
                                :disabled,
-                               prompt: prompt,
-                               evaluator_key: "length_check",
+                               configurable: version,
+                               evaluator_key: "length",
                                config: { min_length: 10, max_length: 1000 })
 
         dependency_config = create(:evaluator_config,
                                    :disabled,
-                                   prompt: prompt,
-                                   evaluator_key: "keyword_check",
-                                   depends_on: "length_check",
+                                   configurable: version,
+                                   evaluator_key: "keyword",
+                                   depends_on: "length",
                                    min_dependency_score: 80,
                                    config: { required_keywords: [ "test" ] })
 

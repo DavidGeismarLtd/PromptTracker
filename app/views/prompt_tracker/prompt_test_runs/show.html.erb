@@ -80,19 +80,6 @@
       <div class="metric-label">Evaluators (Pass/Fail)</div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card metric-card">
-      <div class="metric-value">
-        <%
-          passed_assertions = @test_run.assertion_results&.count { |_, passed| passed } || 0
-          failed_assertions = @test_run.assertion_results&.count { |_, passed| !passed } || 0
-        %>
-        <span class="text-success"><%= passed_assertions %></span> /
-        <span class="text-danger"><%= failed_assertions %></span>
-      </div>
-      <div class="metric-label">Assertions (Pass/Fail)</div>
-    </div>
-  </div>
   <div class="col-md-2">
     <div class="card metric-card">
       <div class="metric-value">
@@ -244,66 +231,6 @@
   </div>
 <% end %>
 
-<!-- Assertion Results -->
-<% if @test_run.assertion_results.present? && @test_run.assertion_results.any? %>
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="mb-0">Assertion Results</h5>
-    </div>
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Assertion Type</th>
-              <th>Details</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @test_run.assertion_results.each do |name, passed| %>
-              <tr>
-                <td>
-                  <strong>
-                    <% if name == "expected_output" %>
-                      <i class="bi bi-text-paragraph"></i> Exact Match
-                    <% elsif name.start_with?("pattern_") %>
-                      <i class="bi bi-regex"></i> Regex Pattern <%= name.gsub("pattern_", "#") %>
-                    <% else %>
-                      <%= name.humanize %>
-                    <% end %>
-                  </strong>
-                </td>
-                <td>
-                  <% if name == "expected_output" && @test.expected_output.present? %>
-                    <small class="text-muted">
-                      Expected: <code><%= truncate(@test.expected_output, length: 100) %></code>
-                    </small>
-                  <% elsif name.start_with?("pattern_") %>
-                    <% pattern_index = name.gsub("pattern_", "").to_i - 1 %>
-                    <% if @test.expected_patterns && @test.expected_patterns[pattern_index] %>
-                      <small class="text-muted">
-                        Pattern: <code><%= @test.expected_patterns[pattern_index] %></code>
-                      </small>
-                    <% end %>
-                  <% end %>
-                </td>
-                <td>
-                  <% if passed %>
-                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Passed</span>
-                  <% else %>
-                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Failed</span>
-                  <% end %>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-<% end %>
-
 <!-- Test Configuration -->
 <div class="card mb-4">
   <div class="card-header">
@@ -321,19 +248,6 @@
       </div>
     </div>
 
-    <% if @test.expected_output.present? %>
-      <h6 class="mt-3">Expected Output</h6>
-      <pre class="bg-light p-3 rounded"><code><%= @test.expected_output %></code></pre>
-    <% end %>
-
-    <% if @test.expected_patterns.present? && @test.expected_patterns.any? %>
-      <h6 class="mt-3">Expected Patterns</h6>
-      <ul>
-        <% @test.expected_patterns.each do |pattern| %>
-          <li><code><%= pattern %></code></li>
-        <% end %>
-      </ul>
-    <% end %>
   </div>
 </div>
 

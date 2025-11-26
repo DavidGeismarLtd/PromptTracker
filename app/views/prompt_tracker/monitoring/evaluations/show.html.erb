@@ -178,38 +178,7 @@
   </div>
 </div>
 
-<!-- Criteria Scores -->
-<% if @evaluation.criteria_scores.present? %>
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="mb-0">Criteria Scores</h5>
-    </div>
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Criterion</th>
-              <th>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @evaluation.criteria_scores.each do |criterion, score| %>
-              <tr>
-                <td><%= criterion.titleize %></td>
-                <td>
-                  <strong style="color: <%= score >= 0.7 ? '#10b981' : '#ef4444' %>;">
-                    <%= number_with_precision(score, precision: 2) %>
-                  </strong>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-<% end %>
+
 
 <!-- Feedback -->
 <% if @evaluation.feedback.present? %>

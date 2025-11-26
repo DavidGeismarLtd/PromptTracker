@@ -266,17 +266,11 @@ module PromptTracker
       end
     end
 
-    # Returns detailed breakdown of all evaluation scores with weights.
+    # Returns detailed breakdown of all evaluation scores.
     #
     # @return [Array<Hash>] array of evaluation details
     def evaluation_breakdown
-      # Calculate total weight for normalization
-      total_weight = evaluations.sum { |e| e.metadata&.dig("weight") || 1.0 }
-
       evaluations.map do |evaluation|
-        # Get weight from metadata (set by AutoEvaluationService/EvaluationJob)
-        weight = evaluation.metadata&.dig("weight") || 1.0
-
         # Try to get evaluator name from registry if evaluator_config_id is in metadata
         evaluator_name = if evaluation.metadata&.dig("evaluator_config_id")
           config_id = evaluation.metadata["evaluator_config_id"]
@@ -297,8 +291,6 @@ module PromptTracker
           evaluator_name: evaluator_name,
           evaluator_type: evaluation.evaluator_type,
           score: evaluation.score,
-          weight: weight,
-          normalized_weight: total_weight > 0 ? (weight / total_weight) : 0,
           feedback: evaluation.feedback,
           criteria_scores: evaluation.criteria_scores,
           created_at: evaluation.created_at
@@ -381,24 +373,10 @@ module PromptTracker
       evaluations.average(:score)&.round(2) || 0
     end
 
-    # Calculates weighted average based on evaluator config weights
-    # @return [Float] weighted average score
+    # Calculates weighted average (now same as simple average since weights are removed)
+    # @return [Float] average score
     def calculate_weighted_average
-      return calculate_simple_average unless prompt
-
-      total_weight = 0
-      weighted_sum = 0
-
-      evaluations.each do |evaluation|
-        # Get weight from evaluation metadata (set by AutoEvaluationService/EvaluationJob)
-        # or default to 1.0 for manual evaluations
-        weight = evaluation.metadata&.dig("weight") || 1.0
-
-        weighted_sum += evaluation.score * weight
-        total_weight += weight
-      end
-
-      total_weight > 0 ? (weighted_sum / total_weight).round(2) : 0
+      calculate_simple_average
     end
 
     # Returns the minimum score from all evaluations

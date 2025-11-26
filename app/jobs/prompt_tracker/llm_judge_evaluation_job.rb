@@ -28,7 +28,7 @@ module PromptTracker
     # @return [void]
     def perform(llm_response_id, config)
       llm_response = LlmResponse.find(llm_response_id)
-      evaluator_key = :gpt4_judge
+      evaluator_key = :llm_judge
 
       # Build the evaluator with the provided config
       evaluator = EvaluatorRegistry.build(evaluator_key, llm_response, config)

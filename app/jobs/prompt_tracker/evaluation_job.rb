@@ -27,20 +27,10 @@ module PromptTracker
     # @param llm_response_id [Integer] ID of the response to evaluate
     # @param evaluator_config_id [Integer] ID of the evaluator config
     # @param evaluation_context [String] evaluation context: 'tracked_call', 'test_run', or 'manual'
-    # @param check_dependency [Boolean] whether to check dependencies
     # @return [void]
-    def perform(llm_response_id, evaluator_config_id, evaluation_context = "tracked_call", check_dependency: false)
+    def perform(llm_response_id, evaluator_config_id, evaluation_context = "tracked_call")
       llm_response = LlmResponse.find(llm_response_id)
       config = EvaluatorConfig.find(evaluator_config_id)
-
-      # Check dependency if required
-      if check_dependency && !config.dependency_met?(llm_response)
-        Rails.logger.info(
-          "Skipping #{config.evaluator_key} - dependency not met " \
-          "(requires #{config.depends_on} >= #{config.min_dependency_score || 80})"
-        )
-        return
-      end
 
       # Build and run the evaluator
       evaluator = config.build_evaluator(llm_response)
@@ -53,9 +43,6 @@ module PromptTracker
         evaluation_context: evaluation_context,
         metadata: (evaluation.metadata || {}).merge(
           job_id: job_id,
-          weight: config.weight,
-          priority: config.priority,
-          dependency: config.depends_on,
           evaluator_config_id: config.id,
           executed_at: Time.current
         )

@@ -13,17 +13,18 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
       evaluators = described_class.all
 
       expect(evaluators).to be_a(Hash)
-      expect(evaluators).to have_key(:length_check)
-      expect(evaluators).to have_key(:keyword_check)
-      expect(evaluators).to have_key(:format_check)
-      expect(evaluators).to have_key(:gpt4_judge)
+      expect(evaluators).to have_key(:human)
+      expect(evaluators).to have_key(:length)
+      expect(evaluators).to have_key(:keyword)
+      expect(evaluators).to have_key(:format)
+      expect(evaluators).to have_key(:llm_judge)
     end
 
     it "includes metadata for each evaluator" do
-      evaluator = described_class.all[:length_check]
+      evaluator = described_class.all[:length]
 
       expect(evaluator).to include(
-        key: :length_check,
+        key: :length,
         name: "Length Validator",
         description: kind_of(String),
         evaluator_class: PromptTracker::Evaluators::LengthEvaluator,
@@ -39,20 +40,20 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
     it "returns evaluators in the specified category" do
       format_evaluators = described_class.by_category(:format)
 
-      expect(format_evaluators.keys).to include(:length_check, :format_check)
-      expect(format_evaluators.keys).not_to include(:keyword_check)
+      expect(format_evaluators.keys).to include(:length, :format)
+      expect(format_evaluators.keys).not_to include(:keyword)
     end
 
     it "returns evaluators in content category" do
       content_evaluators = described_class.by_category(:content)
 
-      expect(content_evaluators.keys).to include(:keyword_check)
+      expect(content_evaluators.keys).to include(:keyword, :pattern_match, :exact_match)
     end
 
     it "returns evaluators in quality category" do
       quality_evaluators = described_class.by_category(:quality)
 
-      expect(quality_evaluators.keys).to include(:gpt4_judge)
+      expect(quality_evaluators.keys).to include(:human, :llm_judge)
     end
 
     it "returns empty hash for non-existent category" do
@@ -64,14 +65,14 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
 
   describe ".get" do
     it "returns metadata for a specific evaluator by symbol" do
-      metadata = described_class.get(:length_check)
+      metadata = described_class.get(:length)
 
       expect(metadata).to be_a(Hash)
       expect(metadata[:name]).to eq("Length Validator")
     end
 
     it "returns metadata for a specific evaluator by string" do
-      metadata = described_class.get("length_check")
+      metadata = described_class.get("length")
 
       expect(metadata).to be_a(Hash)
       expect(metadata[:name]).to eq("Length Validator")
@@ -86,7 +87,7 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
 
   describe ".exists?" do
     it "returns true for registered evaluator" do
-      expect(described_class.exists?(:length_check)).to be true
+      expect(described_class.exists?(:length)).to be true
     end
 
     it "returns false for non-existent evaluator" do
@@ -94,7 +95,7 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
     end
 
     it "works with string keys" do
-      expect(described_class.exists?("length_check")).to be true
+      expect(described_class.exists?("length")).to be true
     end
   end
 
@@ -103,13 +104,13 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
     let(:config) { { min_length: 100, max_length: 1000 } }
 
     it "builds an instance of the evaluator" do
-      evaluator = described_class.build(:length_check, llm_response, config)
+      evaluator = described_class.build(:length, llm_response, config)
 
       expect(evaluator).to be_a(PromptTracker::Evaluators::LengthEvaluator)
     end
 
     it "passes config to the evaluator" do
-      evaluator = described_class.build(:length_check, llm_response, config)
+      evaluator = described_class.build(:length, llm_response, config)
 
       expect(evaluator.instance_variable_get(:@config)).to include(config)
     end
@@ -172,17 +173,17 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
 
   describe ".unregister" do
     it "removes an evaluator from the registry" do
-      expect(described_class.exists?(:length_check)).to be true
+      expect(described_class.exists?(:length)).to be true
 
-      described_class.unregister(:length_check)
+      described_class.unregister(:length)
 
-      expect(described_class.exists?(:length_check)).to be false
+      expect(described_class.exists?(:length)).to be false
     end
 
     it "works with string keys" do
-      described_class.unregister("keyword_check")
+      described_class.unregister("keyword")
 
-      expect(described_class.exists?(:keyword_check)).to be false
+      expect(described_class.exists?(:keyword)).to be false
     end
   end
 
@@ -203,8 +204,7 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
       described_class.reset!
 
       expect(described_class.exists?(:temp_eval)).to be false
-      expect(described_class.exists?(:length_check)).to be true
+      expect(described_class.exists?(:length)).to be true
     end
   end
 end
-

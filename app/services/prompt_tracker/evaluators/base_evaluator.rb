@@ -39,7 +39,6 @@ module PromptTracker
       # @return [Evaluation] the created evaluation
       def evaluate
         score = evaluate_score
-        criteria = evaluate_criteria
         feedback_text = generate_feedback
 
         EvaluationService.create_automated(
@@ -48,7 +47,7 @@ module PromptTracker
           score: score,
           score_min: score_min,
           score_max: score_max,
-          criteria_scores: criteria,
+          criteria_scores: {},
           feedback: feedback_text,
           metadata: metadata
         )
@@ -60,14 +59,6 @@ module PromptTracker
       # @return [Numeric] the calculated score
       def evaluate_score
         raise NotImplementedError, "Subclasses must implement #evaluate_score"
-      end
-
-      # Calculate scores for individual criteria
-      # Subclasses can override this method
-      #
-      # @return [Hash] hash of criterion name to score
-      def evaluate_criteria
-        {}
       end
 
       # Generate feedback text explaining the score
@@ -128,4 +119,3 @@ module PromptTracker
     end
   end
 end
-

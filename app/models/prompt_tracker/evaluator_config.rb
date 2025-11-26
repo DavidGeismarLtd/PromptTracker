@@ -4,50 +4,41 @@
 #
 # Table name: prompt_tracker_evaluator_configs
 #
-#  config               :jsonb            not null
-#  configurable_id      :bigint           not null
-#  configurable_type    :string           not null
-#  created_at           :datetime         not null
-#  depends_on           :string
-#  enabled              :boolean          default(TRUE), not null
-#  evaluator_key        :string           not null
-#  id                   :bigint           not null, primary key
-#  min_dependency_score :integer
-#  priority             :integer          default(0), not null
-#  run_mode             :string           default("async"), not null
-#  threshold            :integer
-#  updated_at           :datetime         not null
-#  weight               :decimal(5, 2)    default(1.0), not null
+#  config            :jsonb            not null
+#  configurable_id   :bigint           not null
+#  configurable_type :string           not null
+#  created_at        :datetime         not null
+#  enabled           :boolean          default(TRUE), not null
+#  evaluation_mode   :string           default("scored"), not null
+#  evaluator_key     :string           not null
+#  id                :bigint           not null, primary key
+#  threshold         :integer
+#  updated_at        :datetime         not null
 #
 module PromptTracker
   # Represents configuration for an evaluator that should run automatically for a prompt.
   #
   # EvaluatorConfigs define which evaluators run when a response is created,
-  # along with their parameters, weights, execution mode, and dependencies.
+  # along with their parameters and evaluation mode.
   #
   # @example Creating a basic evaluator config
   #   prompt.evaluator_configs.create!(
-  #     evaluator_key: :length_check,
+  #     evaluator_key: :length,
   #     enabled: true,
-  #     run_mode: "sync",
-  #     weight: 0.15,
   #     config: { min_length: 50, max_length: 500 }
   #   )
   #
-  # @example Creating a dependent evaluator config
+  # @example Creating a binary evaluator config
   #   prompt.evaluator_configs.create!(
-  #     evaluator_key: :gpt4_judge,
+  #     evaluator_key: :exact_match,
   #     enabled: true,
-  #     run_mode: "async",
-  #     weight: 0.30,
-  #     depends_on: "keyword_check",
-  #     min_dependency_score: 90,
-  #     config: { judge_model: "gpt-4", criteria: ["accuracy", "helpfulness"] }
+  #     evaluation_mode: "binary",
+  #     config: { expected_output: "Hello, world!" }
   #   )
   #
   # @example Finding enabled configs for a prompt
-  #   configs = prompt.evaluator_configs.enabled.by_priority
-  #   configs.each { |config| puts "#{config.evaluator_key}: priority #{config.priority}" }
+  #   configs = prompt.evaluator_configs.enabled
+  #   configs.each { |config| puts "#{config.evaluator_key}: #{config.evaluation_mode}" }
   #
   class EvaluatorConfig < ApplicationRecord
     # Associations
@@ -58,28 +49,14 @@ module PromptTracker
               presence: true,
               uniqueness: { scope: [ :configurable_type, :configurable_id ] }
 
-    validates :run_mode,
+    validates :evaluation_mode,
               presence: true,
-              inclusion: { in: %w[sync async] }
+              inclusion: { in: %w[scored binary] }
 
     validates :threshold,
               numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
-              allow_nil: true
-
-    validates :priority,
-              presence: true,
-              numericality: { only_integer: true }
-
-    validates :weight,
-              presence: true,
-              numericality: { greater_than_or_equal_to: 0 }
-
-    validates :min_dependency_score,
-              numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
-              allow_nil: true
-
-    validate :dependency_exists, if: :depends_on?
-    validate :no_circular_dependencies
+              allow_nil: true,
+              if: :scored?
 
     # Scopes
 
@@ -87,17 +64,13 @@ module PromptTracker
     # @return [ActiveRecord::Relation<EvaluatorConfig>]
     scope :enabled, -> { where(enabled: true) }
 
-    # Returns configs ordered by priority (highest first)
+    # Returns configs using scored evaluation mode
     # @return [ActiveRecord::Relation<EvaluatorConfig>]
-    scope :by_priority, -> { order(priority: :desc) }
+    scope :scored, -> { where(evaluation_mode: "scored") }
 
-    # Returns configs with no dependencies (independent evaluators)
+    # Returns configs using binary evaluation mode
     # @return [ActiveRecord::Relation<EvaluatorConfig>]
-    scope :independent, -> { where(depends_on: nil) }
-
-    # Returns configs with dependencies (dependent evaluators)
-    # @return [ActiveRecord::Relation<EvaluatorConfig>]
-    scope :dependent, -> { where.not(depends_on: nil) }
+    scope :binary, -> { where(evaluation_mode: "binary") }
 
     # Instance Methods
 
@@ -114,58 +87,16 @@ module PromptTracker
       EvaluatorRegistry.build(evaluator_key, llm_response, config)
     end
 
-    # Checks if this config is set to run synchronously
-    # @return [Boolean] true if run_mode is "sync"
-    def sync?
-      run_mode == "sync"
+    # Checks if this config uses scored evaluation mode
+    # @return [Boolean] true if evaluation_mode is "scored"
+    def scored?
+      evaluation_mode == "scored"
     end
 
-    # Checks if this config is set to run asynchronously
-    # @return [Boolean] true if run_mode is "async"
-    def async?
-      run_mode == "async"
-    end
-
-    # Checks if this config has a dependency
-    # @return [Boolean] true if depends_on is present
-    def has_dependency?
-      depends_on.present?
-    end
-
-    # Checks if the dependency requirement is met for a given response
-    # @param llm_response [LlmResponse] the response to check
-    # @return [Boolean] true if dependency is met or no dependency exists
-    def dependency_met?(llm_response)
-      return true unless has_dependency?
-
-      # Get the actual evaluator_id from the registry
-      # The depends_on field stores the registry key (e.g., "length_check")
-      # but evaluations are stored with the evaluator_id (e.g., "length_evaluator_v1")
-      dependency_config = sibling_configs.find_by(evaluator_key: depends_on)
-      return false unless dependency_config
-
-      # Build the evaluator to get its evaluator_id
-      dependency_evaluator = dependency_config.build_evaluator(llm_response)
-      actual_evaluator_id = dependency_evaluator.evaluator_id
-
-      dependency_eval = llm_response.evaluations.find_by(evaluator_id: actual_evaluator_id)
-      return false unless dependency_eval
-
-      min_score = min_dependency_score || 80
-      dependency_eval.score >= min_score
-    end
-
-    # Returns the normalized weight (relative to all enabled configs for this configurable)
-    # @return [Float] normalized weight between 0 and 1
-    def normalized_weight
-      total_weight = sibling_configs.enabled.sum(:weight)
-      total_weight > 0 ? (weight / total_weight) : 0
-    end
-
-    # Returns all evaluator configs for the same configurable
-    # @return [ActiveRecord::Relation<EvaluatorConfig>]
-    def sibling_configs
-      self.class.where(configurable: configurable)
+    # Checks if this config uses binary evaluation mode
+    # @return [Boolean] true if evaluation_mode is "binary"
+    def binary?
+      evaluation_mode == "binary"
     end
 
     # Returns a human-readable name for this evaluator
@@ -178,36 +109,6 @@ module PromptTracker
     # @return [String, nil] evaluator description from metadata
     def description
       evaluator_metadata&.dig(:description)
-    end
-
-    private
-
-    # Validates that the dependency evaluator exists for this configurable
-    def dependency_exists
-      return unless depends_on.present?
-
-      unless sibling_configs.exists?(evaluator_key: depends_on)
-        errors.add(:depends_on, "evaluator '#{depends_on}' must be configured for this #{configurable_type}")
-      end
-    end
-
-    # Validates that there are no circular dependencies
-    def no_circular_dependencies
-      return unless depends_on.present?
-
-      visited = Set.new([ evaluator_key.to_s ])
-      current = depends_on
-
-      while current.present?
-        if visited.include?(current)
-          errors.add(:depends_on, "creates a circular dependency")
-          break
-        end
-
-        visited.add(current)
-        dependency_config = sibling_configs.find_by(evaluator_key: current)
-        current = dependency_config&.depends_on
-      end
     end
   end
 end

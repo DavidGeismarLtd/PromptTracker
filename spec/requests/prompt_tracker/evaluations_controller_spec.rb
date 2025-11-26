@@ -142,7 +142,7 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
     it "returns form template for registry evaluator" do
       get "/prompt_tracker/evaluations/form_template", params: {
         evaluator_type: "registry",
-        evaluator_key: "keyword_check",
+        evaluator_key: "keyword",
         llm_response_id: llm_response.id
       }
       expect(response).to have_http_status(:success)

@@ -53,9 +53,7 @@ module PromptTracker
     def new
       @test = @version.prompt_tests.build(
         template_variables: {},
-        expected_patterns: [],
         model_config: { provider: "openai", model: "gpt-4" },
-        evaluator_configs: [],
         tags: []
       )
     end
@@ -134,24 +132,16 @@ module PromptTracker
       permitted = params.require(:prompt_test).permit(
         :name,
         :description,
-        :expected_output,
         :enabled,
         :template_variables,
-        :expected_patterns,
         :model_config,
-        :evaluator_configs,
         :tags,
-        :metadata
+        :metadata,
+        :evaluator_configs
       )
 
       # Parse JSON strings to hashes/arrays
-      [ :template_variables, :model_config, :metadata ].each do |key|
-        if permitted[key].is_a?(String)
-          permitted[key] = JSON.parse(permitted[key])
-        end
-      end
-
-      [ :expected_patterns, :evaluator_configs, :tags ].each do |key|
+      [ :template_variables, :model_config, :metadata, :tags, :evaluator_configs ].each do |key|
         if permitted[key].is_a?(String)
           permitted[key] = JSON.parse(permitted[key])
         end

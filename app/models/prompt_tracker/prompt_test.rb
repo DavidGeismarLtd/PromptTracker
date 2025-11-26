@@ -4,41 +4,49 @@
 #
 # Table name: prompt_tracker_prompt_tests
 #
-#  created_at           :datetime         not null
-#  description          :text
-#  enabled              :boolean          default(TRUE), not null
-#  expected_output      :text
-#  expected_patterns    :jsonb            not null
-#  id                   :bigint           not null, primary key
-#  metadata             :jsonb            not null
-#  model_config         :jsonb            not null
-#  name                 :string           not null
-#  prompt_test_suite_id :bigint
-#  prompt_version_id    :bigint           not null
-#  tags                 :jsonb            not null
-#  template_variables   :jsonb            not null
-#  updated_at           :datetime         not null
+#  created_at         :datetime         not null
+#  description        :text
+#  enabled            :boolean          default(TRUE), not null
+#  id                 :bigint           not null, primary key
+#  metadata           :jsonb            not null
+#  model_config       :jsonb            not null
+#  name               :string           not null
+#  prompt_version_id  :bigint           not null
+#  tags               :jsonb            not null
+#  template_variables :jsonb            not null
+#  updated_at         :datetime         not null
 #
 module PromptTracker
   # Represents a single test case for a prompt.
   #
   # A PromptTest defines:
   # - Input variables to use
-  # - Expected output patterns or exact matches
-  # - Evaluators to run with their thresholds
+  # - Evaluators to run (both binary and scored modes)
   # - Model configuration for LLM calls
   #
-  # @example Create a test
-  #   PromptTest.create!(
-  #     prompt: greeting_prompt,
+  # @example Create a test with binary and scored evaluators
+  #   test = PromptTest.create!(
+  #     prompt_version: version,
   #     name: "greeting_premium_user",
   #     description: "Test greeting for premium customers",
   #     template_variables: { customer_name: "Alice", account_type: "premium" },
-  #     expected_patterns: [/Hello Alice/, /premium/],
-  #     model_config: { provider: "openai", model: "gpt-4" },
-  #     evaluator_configs: [
-  #       { evaluator_key: :length_check, threshold: 80, config: { min_length: 50 } }
-  #     ]
+  #     model_config: { provider: "openai", model: "gpt-4" }
+  #   )
+  #
+  #   # Add binary evaluator (must pass)
+  #   test.evaluator_configs.create!(
+  #     evaluator_key: :pattern_match,
+  #     evaluation_mode: "binary",
+  #     config: { patterns: ["/Hello/", "/Alice/"], match_all: true }
+  #   )
+  #
+  #   # Add scored evaluator (quality metric)
+  #   test.evaluator_configs.create!(
+  #     evaluator_key: :length_check,
+  #     evaluation_mode: "scored",
+  #     threshold: 80,
+  #     weight: 1.0,
+  #     config: { min_length: 50 }
   #   )
   #
   class PromptTest < ApplicationRecord
@@ -98,12 +106,10 @@ module PromptTracker
         config_hash = config_hash.with_indifferent_access if config_hash.is_a?(Hash)
         association(:evaluator_configs).reader.create!(
           evaluator_key: config_hash[:evaluator_key],
-          weight: config_hash[:weight] || 0.5,
-          threshold: config_hash[:threshold] || 80,
+          evaluation_mode: config_hash[:evaluation_mode] || "scored",
+          threshold: config_hash[:threshold],
           config: config_hash[:config] || {},
-          enabled: true,
-          run_mode: config_hash[:run_mode] || "async",
-          priority: config_hash[:priority] || 0
+          enabled: true
         )
       end
 

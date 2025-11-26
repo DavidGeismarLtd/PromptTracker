@@ -193,5 +193,70 @@ module PromptTracker
 
       time_ago_in_words(time) + " ago"
     end
+
+    # Check if a provider has an API key configured
+    #
+    # @param provider [String] the provider name (openai, anthropic, google, azure)
+    # @return [Boolean] true if API key is present
+    # @example
+    #   provider_api_key_present?("openai") # => true
+    def provider_api_key_present?(provider)
+      case provider.to_s.downcase
+      when "openai"
+        ENV["OPENAI_API_KEY"].present?
+      when "anthropic"
+        ENV["ANTHROPIC_API_KEY"].present?
+      when "google"
+        ENV["GOOGLE_API_KEY"].present?
+      when "azure"
+        ENV["AZURE_OPENAI_API_KEY"].present?
+      else
+        false
+      end
+    end
+
+    # Get list of available providers (those with API keys configured)
+    #
+    # @return [Array<String>] list of provider names
+    # @example
+    #   available_providers # => ["openai", "anthropic"]
+    def available_providers
+      %w[openai anthropic google azure].select { |provider| provider_api_key_present?(provider) }
+    end
+
+    # Get models for a specific provider
+    #
+    # @param provider [String] the provider name
+    # @return [Hash] hash of model_value => model_label
+    # @example
+    #   models_for_provider("openai") # => {"gpt-4" => "GPT-4", ...}
+    def models_for_provider(provider)
+      case provider.to_s.downcase
+      when "openai"
+        {
+          "gpt-4" => "GPT-4",
+          "gpt-4-turbo" => "GPT-4 Turbo",
+          "gpt-3.5-turbo" => "GPT-3.5 Turbo"
+        }
+      when "anthropic"
+        {
+          "claude-3-opus" => "Claude 3 Opus",
+          "claude-3-sonnet" => "Claude 3 Sonnet",
+          "claude-3-haiku" => "Claude 3 Haiku"
+        }
+      when "google"
+        {
+          "gemini-pro" => "Gemini Pro",
+          "gemini-ultra" => "Gemini Ultra"
+        }
+      when "azure"
+        {
+          "gpt-4" => "GPT-4",
+          "gpt-35-turbo" => "GPT-3.5 Turbo"
+        }
+      else
+        {}
+      end
+    end
   end
 end

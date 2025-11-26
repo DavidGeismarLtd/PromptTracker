@@ -62,16 +62,6 @@ module PromptTracker
         end
       end
 
-      def evaluate_criteria
-        length = response_text.length
-
-        {
-          "length" => length,
-          "within_min_max" => length >= config[:min_length] && length <= config[:max_length] ? 100 : 0,
-          "within_ideal" => length >= config[:ideal_min] && length <= config[:ideal_max] ? 100 : 0
-        }
-      end
-
       def generate_feedback
         length = response_text.length
 
@@ -104,4 +94,3 @@ module PromptTracker
     end
   end
 end
-

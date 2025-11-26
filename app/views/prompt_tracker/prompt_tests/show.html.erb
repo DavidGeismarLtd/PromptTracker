@@ -84,20 +84,6 @@
 
         <h6 class="mt-3">Model Configuration</h6>
         <pre class="bg-light p-3 rounded"><code><%= JSON.pretty_generate(@test.model_config) %></code></pre>
-
-        <% if @test.expected_output.present? %>
-          <h6 class="mt-3">Expected Output</h6>
-          <pre class="bg-light p-3 rounded"><code><%= @test.expected_output %></code></pre>
-        <% end %>
-
-        <% if @test.expected_patterns.present? && @test.expected_patterns.any? %>
-          <h6 class="mt-3">Expected Patterns</h6>
-          <ul class="list-group">
-            <% @test.expected_patterns.each do |pattern| %>
-              <li class="list-group-item"><code><%= pattern %></code></li>
-            <% end %>
-          </ul>
-        <% end %>
       </div>
     </div>
   </div>

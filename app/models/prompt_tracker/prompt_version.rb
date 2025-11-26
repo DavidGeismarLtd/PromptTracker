@@ -257,14 +257,10 @@ module PromptTracker
       source_configs.map do |config|
         evaluator_configs.create!(
           evaluator_key: config.evaluator_key,
+          evaluation_mode: config.evaluation_mode,
           threshold: config.threshold,
           config: config.config,
-          enabled: config.enabled,
-          run_mode: config.run_mode,
-          priority: config.priority,
-          weight: config.weight,
-          depends_on: config.depends_on,
-          min_dependency_score: config.min_dependency_score
+          enabled: config.enabled
         )
       end
     end

@@ -6,9 +6,8 @@ module PromptTracker
   # Executes a test by:
   # 1. Rendering the prompt with test variables
   # 2. Calling the LLM API (via provided block)
-  # 3. Running configured evaluators
-  # 4. Checking assertions (expected patterns, expected output)
-  # 5. Recording the result
+  # 3. Running configured evaluators (both binary and scored)
+  # 4. Recording the result
   #
   # @example Run a test with a block
   #   runner = PromptTestRunner.new(test, version)
@@ -60,18 +59,14 @@ module PromptTracker
       # Run evaluators
       evaluator_results = run_evaluators(llm_response)
 
-      # Check assertions
-      assertion_results = check_assertions(llm_response)
-
       # Calculate pass/fail
-      passed = determine_pass_fail(evaluator_results, assertion_results)
+      passed = determine_pass_fail(evaluator_results)
 
       # Update test run
       execution_time = ((Time.current - start_time) * 1000).to_i
       update_test_run_success(
         llm_response: llm_response,
         evaluator_results: evaluator_results,
-        assertion_results: assertion_results,
         passed: passed,
         execution_time_ms: execution_time
       )
@@ -176,14 +171,15 @@ module PromptTracker
     # @param llm_response [LlmResponse] the LLM response to evaluate
     # @return [Array<Hash>] array of evaluator results
     def run_evaluators(llm_response)
-      evaluator_configs = prompt_test.evaluator_configs || []
+      # Get evaluator configs, ordered by priority (binary evaluators first)
+      evaluator_configs = prompt_test.evaluator_configs.enabled.order(priority: :desc, evaluation_mode: :desc)
       results = []
 
       evaluator_configs.each do |config|
-        config = config.with_indifferent_access
-        evaluator_key = config[:evaluator_key].to_sym
-        threshold = config[:threshold] || 0
-        evaluator_config = config[:config] || {}
+        evaluator_key = config.evaluator_key.to_sym
+        evaluation_mode = config.evaluation_mode
+        threshold = config.threshold
+        evaluator_config = config.config || {}
 
         # Build and run evaluator
         evaluator = EvaluatorRegistry.build(evaluator_key, llm_response, evaluator_config)
@@ -205,11 +201,18 @@ module PromptTracker
           evaluator.evaluate
         end
 
-        # Check if score meets threshold
-        passed = evaluation.score >= threshold
+        # Determine if evaluator passed based on mode
+        passed = if evaluation_mode == "binary"
+          # Binary mode: check if evaluator has passed? method, otherwise use score > 0
+          evaluator.respond_to?(:passed?) ? evaluator.passed? : evaluation.score > 0
+        else
+          # Scored mode: check if score meets threshold
+          evaluation.score >= (threshold || 0)
+        end
 
         results << {
           evaluator_key: evaluator_key.to_s,
+          evaluation_mode: evaluation_mode,
           score: evaluation.score,
           threshold: threshold,
           passed: passed,
@@ -220,61 +223,34 @@ module PromptTracker
       results
     end
 
-    # Check assertions (expected patterns and expected output)
-    #
-    # @param llm_response [LlmResponse] the LLM response to check
-    # @return [Hash] hash of assertion name => passed (boolean)
-    def check_assertions(llm_response)
-      results = {}
-      response_text = llm_response.response_text || ''
-
-      # Check expected output (exact match)
-      if prompt_test.expected_output.present?
-        results['expected_output'] = response_text.strip == prompt_test.expected_output.strip
-      end
-
-      # Check expected patterns (regex)
-      expected_patterns = prompt_test.expected_patterns || []
-      expected_patterns.each_with_index do |pattern_str, index|
-        pattern = Regexp.new(pattern_str)
-        results["pattern_#{index + 1}"] = response_text.match?(pattern)
-      end
-
-      results
-    end
-
     # Determine if test passed
     #
+    # All evaluators (both binary and scored) must pass for the test to pass.
+    # Binary evaluators are checked first (higher priority) and always run.
+    # Scored evaluators must meet their threshold.
+    #
     # @param evaluator_results [Array<Hash>] evaluator results
-    # @param assertion_results [Hash] assertion results
     # @return [Boolean] true if test passed
-    def determine_pass_fail(evaluator_results, assertion_results)
-      # All evaluators must pass their thresholds
-      evaluators_passed = evaluator_results.all? { |r| r[:passed] }
-
-      # All assertions must pass
-      assertions_passed = assertion_results.values.all? { |v| v == true }
-
-      evaluators_passed && assertions_passed
+    def determine_pass_fail(evaluator_results)
+      # All evaluators must pass (both binary and scored)
+      evaluator_results.all? { |r| r[:passed] }
     end
 
     # Update test run with success
     #
     # @param llm_response [LlmResponse] the LLM response
     # @param evaluator_results [Array<Hash>] evaluator results
-    # @param assertion_results [Hash] assertion results
     # @param passed [Boolean] whether test passed
     # @param execution_time_ms [Integer] execution time in milliseconds
-    def update_test_run_success(llm_response:, evaluator_results:, assertion_results:, passed:, execution_time_ms:)
+    def update_test_run_success(llm_response:, evaluator_results:, passed:, execution_time_ms:)
       passed_evaluators = evaluator_results.count { |r| r[:passed] }
       failed_evaluators = evaluator_results.count { |r| !r[:passed] }
 
-    @test_run.update!(
+      @test_run.update!(
         llm_response: llm_response,
-        status: passed ? 'passed' : 'failed',
+        status: passed ? "passed" : "failed",
         passed: passed,
         evaluator_results: evaluator_results,
-        assertion_results: assertion_results,
         passed_evaluators: passed_evaluators,
         failed_evaluators: failed_evaluators,
         total_evaluators: evaluator_results.length,

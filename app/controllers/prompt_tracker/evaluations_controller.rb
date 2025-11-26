@@ -70,36 +70,49 @@ module PromptTracker
     # GET /evaluations/form_template
     # Returns the form partial for a specific evaluator type
     def form_template
-      evaluator_type = params[:evaluator_type] || "human"
       evaluator_key = params[:evaluator_key]
-
-      # Determine template path
-      if evaluator_type == "registry" && evaluator_key.present?
-        # For registry evaluators, try to use a specific form template
-        # First check if there's a custom form for this evaluator
-        template_path = "prompt_tracker/evaluators/forms/#{evaluator_key}"
-      elsif evaluator_key.present?
-        # Check if registry has a custom form template
-        metadata = EvaluatorRegistry.get(evaluator_key)
-        template_path = metadata&.dig(:form_template)
-      end
-
-      # Fall back to evaluator_type-based template
-      template_path ||= "prompt_tracker/evaluators/forms/#{evaluator_type}"
 
       # Get the response for form context
       @response = LlmResponse.find(params[:llm_response_id]) if params[:llm_response_id].present?
 
-      render partial: template_path, locals: { f: nil, response: @response }
-    rescue ActionView::MissingTemplate
-      # If specific template not found, fall back to generic registry template
-      if evaluator_type == "registry"
-        render partial: "prompt_tracker/evaluators/forms/registry", locals: { f: nil, response: @response }
-      else
-        render plain: "Form template not found for #{evaluator_type}", status: :not_found
-      end
+      # Get evaluator metadata from registry
+      metadata = EvaluatorRegistry.get(evaluator_key&.to_sym)
+
+      # Determine template path
+      # 1. Try custom form template from registry metadata
+      # 2. Fall back to evaluator_key-based template (e.g., _length.html.erb)
+      # 3. Fall back to evaluator_type-based template (e.g., _human.html.erb)
+      template_path = metadata&.dig(:form_template) ||
+                      "prompt_tracker/evaluators/forms/#{evaluator_key}" ||
+                      "prompt_tracker/evaluators/forms/#{params[:evaluator_type]}"
+
+      # Render the partial wrapped in a turbo-frame tag
+      partial_content = render_to_string(partial: template_path, locals: { f: nil, response: @response })
+
+      render html: <<~HTML.html_safe, layout: false
+        <turbo-frame id="evaluator_form_container">
+          #{partial_content}
+        </turbo-frame>
+      HTML
+    rescue ActionView::MissingTemplate => e
+      render html: <<~HTML.html_safe, layout: false
+        <turbo-frame id="evaluator_form_container">
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Form template not found</strong>
+            <p class="mb-0">Could not find form template for evaluator: #{evaluator_key}</p>
+          </div>
+        </turbo-frame>
+      HTML
     rescue ActiveRecord::RecordNotFound
-      render plain: "Response not found", status: :not_found
+      render html: <<~HTML.html_safe, layout: false
+        <turbo-frame id="evaluator_form_container">
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Response not found</strong>
+          </div>
+        </turbo-frame>
+      HTML
     end
 
     # POST /evaluations

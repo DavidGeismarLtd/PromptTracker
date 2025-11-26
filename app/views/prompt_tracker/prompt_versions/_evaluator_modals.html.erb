@@ -10,7 +10,8 @@
       </div>
       <%= form_with model: [@prompt, @version, PromptTracker::EvaluatorConfig.new],
                     url: prompt_evaluator_configs_path(@prompt),
-                    local: true do |f| %>
+                    local: true,
+                    data: { controller: "evaluator-config-form", evaluator_config_form_prompt_id_value: @prompt.id, evaluator_config_form_version_id_value: @version.id } do |f| %>
         <%= f.hidden_field :configurable_type, value: "PromptTracker::PromptVersion" %>
         <%= f.hidden_field :configurable_id, value: @version.id %>
 
@@ -21,8 +22,16 @@
             <%= f.select :evaluator_key,
                          options_for_select(PromptTracker::EvaluatorRegistry.all.map { |k, v| [v[:name], k] }),
                          { include_blank: "Select an evaluator..." },
-                         { class: "form-select", required: true, id: "evaluator_key_select" } %>
-            <div id="evaluator_description" class="form-text mt-2"></div>
+                         {
+                           class: "form-select",
+                           required: true,
+                           data: {
+                             evaluator_config_form_target: "select",
+                             action: "change->evaluator-config-form#loadForm",
+                             evaluators: PromptTracker::EvaluatorRegistry.all.to_json
+                           }
+                         } %>
+            <div data-evaluator-config-form-target="description" class="form-text mt-2"></div>
           </div>
 
           <!-- Enabled -->
@@ -31,55 +40,13 @@
             <%= f.label :enabled, "Enabled (run this evaluator automatically on tracked calls)", class: "form-check-label" %>
           </div>
 
-          <!-- Run Mode -->
-          <div class="mb-3">
-            <%= f.label :run_mode, "Execution Mode", class: "form-label" %>
-            <%= f.select :run_mode,
-                         options_for_select([["Synchronous (fast, runs immediately)", "sync"], ["Asynchronous (slow, runs in background)", "async"]], "sync"),
-                         {},
-                         { class: "form-select" } %>
-            <div class="form-text">Sync for fast evaluators, async for LLM judges or expensive operations.</div>
-          </div>
-
-          <!-- Priority -->
-          <div class="mb-3">
-            <%= f.label :priority, "Priority", class: "form-label" %>
-            <%= f.number_field :priority, value: 0, class: "form-control" %>
-            <div class="form-text">Higher priority evaluators run first. Use for dependencies.</div>
-          </div>
-
-          <!-- Weight -->
-          <div class="mb-3">
-            <%= f.label :weight, "Weight", class: "form-label" %>
-            <%= f.number_field :weight, value: 1.0, step: 0.01, min: 0, class: "form-control" %>
-            <div class="form-text">Relative importance (e.g., 0.15 = 15%). Weights are normalized automatically.</div>
-          </div>
-
-          <!-- Dependency -->
-          <div class="mb-3">
-            <%= f.label :depends_on, "Depends On (optional)", class: "form-label" %>
-            <%= f.select :depends_on,
-                         options_for_select([["None", ""]] + @version.evaluator_configs.pluck(:evaluator_key, :evaluator_key)),
-                         {},
-                         { class: "form-select" } %>
-            <div class="form-text">Only run this evaluator if the dependency passes.</div>
-          </div>
-
-          <!-- Min Dependency Score -->
-          <div class="mb-3">
-            <%= f.label :min_dependency_score, "Minimum Dependency Score", class: "form-label" %>
-            <%= f.number_field :min_dependency_score, value: 80, min: 0, max: 100, class: "form-control" %>
-            <div class="form-text">Minimum score required from dependency (default: 80).</div>
-          </div>
-
-          <!-- Dynamic Configuration Form -->
-          <div id="evaluator_config_container">
-            <!-- Configuration form will be loaded here based on evaluator selection -->
+          <!-- Dynamic Configuration Form (Turbo Frame) -->
+          <turbo-frame id="evaluator_config_container">
             <div class="text-center py-4 text-muted">
               <i class="bi bi-arrow-up"></i>
               <p>Select an evaluator above to configure it</p>
             </div>
-          </div>
+          </turbo-frame>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -113,53 +80,10 @@
             <label for="edit_enabled" class="form-check-label">Enabled (run this evaluator automatically on tracked calls)</label>
           </div>
 
-          <!-- Run Mode -->
-          <div class="mb-3">
-            <label for="edit_run_mode" class="form-label">Execution Mode</label>
-            <select id="edit_run_mode" class="form-select">
-              <option value="sync">Synchronous (fast, runs immediately)</option>
-              <option value="async">Asynchronous (slow, runs in background)</option>
-            </select>
-            <div class="form-text">Sync for fast evaluators, async for LLM judges or expensive operations.</div>
-          </div>
-
-          <!-- Priority -->
-          <div class="mb-3">
-            <label for="edit_priority" class="form-label">Priority</label>
-            <input type="number" id="edit_priority" class="form-control">
-            <div class="form-text">Higher priority evaluators run first. Use for dependencies.</div>
-          </div>
-
-          <!-- Weight -->
-          <div class="mb-3">
-            <label for="edit_weight" class="form-label">Weight</label>
-            <input type="number" id="edit_weight" step="0.01" min="0" class="form-control">
-            <div class="form-text">Relative importance (e.g., 0.15 = 15%). Weights are normalized automatically.</div>
-          </div>
-
-          <!-- Dependency -->
-          <div class="mb-3">
-            <label for="edit_depends_on" class="form-label">Depends On (optional)</label>
-            <select id="edit_depends_on" class="form-select">
-              <option value="">None</option>
-              <% @version.evaluator_configs.each do |config| %>
-                <option value="<%= config.evaluator_key %>"><%= config.evaluator_key %></option>
-              <% end %>
-            </select>
-            <div class="form-text">Only run this evaluator if the dependency passes.</div>
-          </div>
-
-          <!-- Min Dependency Score -->
-          <div class="mb-3">
-            <label for="edit_min_dependency_score" class="form-label">Minimum Dependency Score</label>
-            <input type="number" id="edit_min_dependency_score" min="0" max="100" class="form-control">
-            <div class="form-text">Minimum score required from dependency (default: 80).</div>
-          </div>
-
           <!-- Config (JSON) -->
           <div class="mb-3">
             <label for="edit_config" class="form-label">Configuration (JSON)</label>
-            <textarea id="edit_config" rows="4" class="form-control font-monospace"></textarea>
+            <textarea id="edit_config" rows="8" class="form-control font-monospace"></textarea>
             <div class="form-text">Evaluator-specific configuration as JSON.</div>
           </div>
         </div>
@@ -174,82 +98,8 @@
 </div>
 
 <script>
-// Dynamic configuration form loading for Add Evaluator modal
+// Edit evaluator form submission
 document.addEventListener('DOMContentLoaded', function() {
-  const select = document.getElementById('evaluator_key_select');
-  const descDiv = document.getElementById('evaluator_description');
-  const configContainer = document.getElementById('evaluator_config_container');
-
-  if (select && descDiv && configContainer) {
-    const evaluators = <%= raw PromptTracker::EvaluatorRegistry.all.to_json %>;
-
-    select.addEventListener('change', function() {
-      const key = this.value;
-      if (key && evaluators[key]) {
-        const evaluator = evaluators[key];
-
-        // Show description
-        descDiv.innerHTML = `
-          <div class="alert alert-info">
-            <strong>${evaluator.name}</strong><br>
-            ${evaluator.description}<br>
-            <small class="text-muted">Category: ${evaluator.category}</small>
-          </div>
-        `;
-
-        // Load configuration form
-        loadConfigurationForm(key);
-      } else {
-        descDiv.innerHTML = '';
-        configContainer.innerHTML = `
-          <div class="text-center py-4 text-muted">
-            <i class="bi bi-arrow-up"></i>
-            <p>Select an evaluator above to configure it</p>
-          </div>
-        `;
-      }
-    });
-  }
-
-  // Function to load configuration form via AJAX
-  function loadConfigurationForm(evaluatorKey) {
-    if (!configContainer) return;
-
-    // Show loading spinner
-    configContainer.innerHTML = `
-      <div class="text-center py-4">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading configuration...</span>
-        </div>
-      </div>
-    `;
-
-    // Fetch the configuration form template
-    const url = `/prompt_tracker/evaluator_configs/config_form?evaluator_key=${evaluatorKey}`;
-
-    fetch(url)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Configuration form not found');
-        }
-        return response.text();
-      })
-      .then(html => {
-        configContainer.innerHTML = html;
-      })
-      .catch(error => {
-        console.error('Error loading configuration form:', error);
-        configContainer.innerHTML = `
-          <div class="alert alert-warning">
-            <i class="bi bi-info-circle"></i>
-            <strong>No custom configuration form available</strong>
-            <p class="mb-0 mt-2">This evaluator will use default configuration values.</p>
-          </div>
-        `;
-      });
-  }
-
-  // Edit evaluator form submission
   const editForm = document.getElementById('editEvaluatorForm');
   if (editForm) {
     editForm.addEventListener('submit', function(e) {
@@ -259,11 +109,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const formData = {
         evaluator_config: {
           enabled: document.getElementById('edit_enabled').checked,
-          run_mode: document.getElementById('edit_run_mode').value,
-          priority: parseInt(document.getElementById('edit_priority').value),
-          weight: parseFloat(document.getElementById('edit_weight').value),
-          depends_on: document.getElementById('edit_depends_on').value || null,
-          min_dependency_score: parseInt(document.getElementById('edit_min_dependency_score').value),
           config: JSON.parse(document.getElementById('edit_config').value)
         }
       };
@@ -299,11 +144,6 @@ function editEvaluatorConfig(configId) {
       document.getElementById('edit_evaluator_id').value = configId;
       document.getElementById('edit_evaluator_key').value = config.evaluator_key;
       document.getElementById('edit_enabled').checked = config.enabled;
-      document.getElementById('edit_run_mode').value = config.run_mode;
-      document.getElementById('edit_priority').value = config.priority;
-      document.getElementById('edit_weight').value = config.weight;
-      document.getElementById('edit_depends_on').value = config.depends_on || '';
-      document.getElementById('edit_min_dependency_score').value = config.min_dependency_score || 80;
       document.getElementById('edit_config').value = JSON.stringify(config.config, null, 2);
 
       const modal = new bootstrap.Modal(document.getElementById('editEvaluatorModal'));

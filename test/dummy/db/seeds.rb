@@ -188,15 +188,23 @@ test_greeting_premium = support_greeting_v3.prompt_tests.create!(
   name: "Premium Customer Greeting",
   description: "Test greeting for premium customers with billing issues",
   template_variables: { "customer_name" => "John Smith", "issue_category" => "billing" },
-  expected_patterns: ["John Smith", "billing"],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
-  tags: ["premium", "billing"],
+  tags: [ "premium", "billing" ],
   enabled: true
+)
+
+# Add pattern match evaluator (binary mode)
+test_greeting_premium.evaluator_configs.create!(
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: { patterns: [ "John Smith", "billing" ], match_all: true }
 )
 
 # Create evaluator config for this test
 test_greeting_premium.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 0,
   config: { "min_length" => 10, "max_length" => 500 },
   enabled: true
@@ -206,14 +214,21 @@ test_greeting_technical = support_greeting_v3.prompt_tests.create!(
   name: "Technical Support Greeting",
   description: "Test greeting for technical support inquiries",
   template_variables: { "customer_name" => "Sarah Johnson", "issue_category" => "technical" },
-  expected_patterns: ["Sarah Johnson", "technical"],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
-  tags: ["technical"],
+  tags: [ "technical" ],
   enabled: true
 )
 
 test_greeting_technical.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: { patterns: [ "Sarah Johnson", "technical" ], match_all: true }
+)
+
+test_greeting_technical.evaluator_configs.create!(
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 0,
   config: { "min_length" => 10, "max_length" => 500 },
   enabled: true
@@ -223,14 +238,21 @@ test_greeting_account = support_greeting_v3.prompt_tests.create!(
   name: "Account Issue Greeting",
   description: "Test greeting for account-related questions",
   template_variables: { "customer_name" => "Mike Davis", "issue_category" => "account" },
-  expected_patterns: ["Mike Davis", "account"],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
-  tags: ["account"],
+  tags: [ "account" ],
   enabled: true
 )
 
 test_greeting_account.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: { patterns: [ "Mike Davis", "account" ], match_all: true }
+)
+
+test_greeting_account.evaluator_configs.create!(
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 0,
   config: { "min_length" => 10, "max_length" => 500 },
   enabled: true
@@ -240,14 +262,21 @@ test_greeting_general = support_greeting_v3.prompt_tests.create!(
   name: "General Inquiry Greeting",
   description: "Test greeting for general customer inquiries",
   template_variables: { "customer_name" => "Emily Chen", "issue_category" => "general" },
-  expected_patterns: ["Emily Chen", "general"],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
-  tags: ["general"],
+  tags: [ "general" ],
   enabled: true
 )
 
 test_greeting_general.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: { patterns: [ "Emily Chen", "general" ], match_all: true }
+)
+
+test_greeting_general.evaluator_configs.create!(
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 0,
   config: { "min_length" => 10, "max_length" => 500 },
   enabled: true
@@ -258,12 +287,17 @@ test_greeting_edge = support_greeting_v3.prompt_tests.create!(
   name: "Edge Case - Very Long Name",
   description: "Test greeting with unusually long customer name",
   template_variables: { "customer_name" => "Alexander Maximilian Christopher Wellington III", "issue_category" => "billing" },
-  expected_patterns: ["Alexander", "billing"],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
-  tags: ["edge-case"],
+  tags: [ "edge-case" ],
   enabled: false
 )
-# No evaluator configs for this edge case test
+
+test_greeting_edge.evaluator_configs.create!(
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: { patterns: [ "Alexander", "billing" ], match_all: true }
+)
 
 # ============================================================================
 # Advanced Tests with Multiple Evaluators
@@ -276,22 +310,31 @@ test_comprehensive_quality = support_greeting_v3.prompt_tests.create!(
   name: "Comprehensive Quality Check",
   description: "Tests greeting quality with multiple evaluators including LLM judge, length, and keyword checks",
   template_variables: { "customer_name" => "Jennifer Martinez", "issue_category" => "refund request" },
-  expected_patterns: [
-    "Jennifer",
-    "refund",
-    "\\b(help|assist|support)\\b",  # Must contain help/assist/support
-    "^Hi\\s+\\w+"  # Must start with "Hi" followed by a name
-  ],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
-  tags: ["comprehensive", "quality", "critical"],
+  tags: [ "comprehensive", "quality", "critical" ],
   enabled: true
 )
 
+# Add pattern match evaluator (binary mode)
 test_comprehensive_quality.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: {
+    patterns: [
+      "Jennifer",
+      "refund",
+      "\\b(help|assist|support)\\b",  # Must contain help/assist/support
+      "^Hi\\s+\\w+"  # Must start with "Hi" followed by a name
+    ],
+    match_all: true
+  }
+)
+
+test_comprehensive_quality.evaluator_configs.create!(
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 80,
-  weight: 0.2,
-  priority: 1,
   config: {
     "min_length" => 50,
     "max_length" => 200,
@@ -302,10 +345,8 @@ test_comprehensive_quality.evaluator_configs.create!(
 )
 
 test_comprehensive_quality.evaluator_configs.create!(
-  evaluator_key: "keyword_check",
+  evaluator_key: "keyword",
   threshold: 90,
-  weight: 0.3,
-  priority: 2,
   config: {
     "required_keywords" => ["help", "refund"],
     "forbidden_keywords" => ["unfortunately", "cannot", "unable"],
@@ -315,10 +356,8 @@ test_comprehensive_quality.evaluator_configs.create!(
 )
 
 test_comprehensive_quality.evaluator_configs.create!(
-  evaluator_key: "gpt4_judge",
+  evaluator_key: "llm_judge",
   threshold: 85,
-  weight: 0.5,
-  priority: 3,
   config: {
     "judge_model" => "gpt-4o",
     "criteria" => ["helpfulness", "professionalism", "clarity", "tone"],
@@ -336,24 +375,32 @@ test_email_format = email_summary_v1.prompt_tests.create!(
   template_variables: {
     "email_thread" => "From: john@example.com\nSubject: Q4 Planning\n\nHi team, let's discuss Q4 goals..."
   },
-  expected_patterns: [
-    "\\b(discuss|planning|goals?)\\b",  # Must mention discussion/planning/goals
-    "\\b(Q4|quarter|fourth quarter)\\b",  # Must reference Q4
-    "^[A-Z]",  # Must start with capital letter
-    "\\.$",  # Must end with period
-    "\\b\\d{1,2}\\s+(sentences?|points?)\\b"  # Should mention number of sentences/points
-  ],
-  expected_output: nil,
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.3 },
-  tags: ["format", "validation", "email"],
+  tags: [ "format", "validation", "email" ],
   enabled: true
 )
 
+# Add pattern match evaluator (binary mode)
 test_email_format.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: {
+    patterns: [
+      "\\b(discuss|planning|goals?)\\b",  # Must mention discussion/planning/goals
+      "\\b(Q4|quarter|fourth quarter)\\b",  # Must reference Q4
+      "^[A-Z]",  # Must start with capital letter
+      "\\.$",  # Must end with period
+      "\\b\\d{1,2}\\s+(sentences?|points?)\\b"  # Should mention number of sentences/points
+    ],
+    match_all: true
+  }
+)
+
+test_email_format.evaluator_configs.create!(
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 75,
-  weight: 0.25,
-  priority: 1,
   config: {
     "min_length" => 100,
     "max_length" => 400,
@@ -364,10 +411,8 @@ test_email_format.evaluator_configs.create!(
 )
 
 test_email_format.evaluator_configs.create!(
-  evaluator_key: "format_check",
+  evaluator_key: "format",
   threshold: 80,
-  weight: 0.25,
-  priority: 2,
   config: {
     "expected_format" => "plain",
     "strict" => false
@@ -376,10 +421,8 @@ test_email_format.evaluator_configs.create!(
 )
 
 test_email_format.evaluator_configs.create!(
-  evaluator_key: "gpt4_judge",
+  evaluator_key: "llm_judge",
   threshold: 80,
-  weight: 0.5,
-  priority: 3,
   config: {
     "judge_model" => "gpt-4o",
     "criteria" => ["accuracy", "conciseness", "completeness"],
@@ -398,23 +441,32 @@ test_code_review_quality = code_review_v1.prompt_tests.create!(
     "language" => "ruby",
     "code" => "def calculate_total(items)\n  items.map { |i| i[:price] }.sum\nend"
   },
-  expected_patterns: [
-    "\\b(quality|readability|performance|best practice)\\b",  # Must mention quality aspects
-    "\\b(bug|edge case|error|exception)\\b",  # Must mention potential issues
-    "\\b(consider|suggest|recommend|improve)\\b",  # Must provide suggestions
-    "```ruby",  # Must include code block
-    "\\bsum\\b"  # Must reference the sum method
-  ],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.4 },
-  tags: ["code-review", "quality", "technical"],
+  tags: [ "code-review", "quality", "technical" ],
   enabled: true
 )
 
+# Add pattern match evaluator (binary mode)
 test_code_review_quality.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: {
+    patterns: [
+      "\\b(quality|readability|performance|best practice)\\b",  # Must mention quality aspects
+      "\\b(bug|edge case|error|exception)\\b",  # Must mention potential issues
+      "\\b(consider|suggest|recommend|improve)\\b",  # Must provide suggestions
+      "```ruby",  # Must include code block
+      "\\bsum\\b"  # Must reference the sum method
+    ],
+    match_all: true
+  }
+)
+
+test_code_review_quality.evaluator_configs.create!(
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 70,
-  weight: 0.15,
-  priority: 1,
   config: {
     "min_length" => 200,
     "max_length" => 1000,
@@ -425,10 +477,8 @@ test_code_review_quality.evaluator_configs.create!(
 )
 
 test_code_review_quality.evaluator_configs.create!(
-  evaluator_key: "keyword_check",
+  evaluator_key: "keyword",
   threshold: 85,
-  weight: 0.25,
-  priority: 2,
   config: {
     "required_keywords" => ["code", "quality", "readability"],
     "forbidden_keywords" => ["terrible", "awful", "stupid"],
@@ -438,10 +488,8 @@ test_code_review_quality.evaluator_configs.create!(
 )
 
 test_code_review_quality.evaluator_configs.create!(
-  evaluator_key: "gpt4_judge",
+  evaluator_key: "llm_judge",
   threshold: 90,
-  weight: 0.6,
-  priority: 3,
   config: {
     "judge_model" => "gpt-4o",
     "criteria" => ["helpfulness", "technical_accuracy", "professionalism", "completeness"],
@@ -457,22 +505,42 @@ test_exact_match = support_greeting_v3.prompt_tests.create!(
   name: "Exact Output Validation",
   description: "Tests for exact expected output with additional quality checks",
   template_variables: { "customer_name" => "Alice", "issue_category" => "password reset" },
-  expected_output: "Hi Alice! Thanks for contacting us. I'm here to help with your password reset question. What's going on?",
-  expected_patterns: [
-    "^Hi Alice!",
-    "password reset",
-    "What's going on\\?$"
-  ],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
-  tags: ["exact-match", "critical", "smoke"],
+  tags: [ "exact-match", "critical", "smoke" ],
   enabled: true
 )
 
+# Add exact match evaluator (binary mode)
 test_exact_match.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "exact_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: {
+    expected_text: "Hi Alice! Thanks for contacting us. I'm here to help with your password reset question. What's going on?",
+    case_sensitive: false,
+    trim_whitespace: true
+  }
+)
+
+# Add pattern match evaluator (binary mode)
+test_exact_match.evaluator_configs.create!(
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: {
+    patterns: [
+      "^Hi Alice!",
+      "password reset",
+      "What's going on\\?$"
+    ],
+    match_all: true
+  }
+)
+
+test_exact_match.evaluator_configs.create!(
+  evaluator_key: "length",
+  evaluation_mode: "scored",
   threshold: 90,
-  weight: 0.3,
-  priority: 1,
   config: {
     "min_length" => 50,
     "max_length" => 150,
@@ -483,10 +551,8 @@ test_exact_match.evaluator_configs.create!(
 )
 
 test_exact_match.evaluator_configs.create!(
-  evaluator_key: "gpt4_judge",
+  evaluator_key: "llm_judge",
   threshold: 95,
-  weight: 0.7,
-  priority: 2,
   config: {
     "judge_model" => "gpt-4o",
     "criteria" => ["accuracy", "tone", "clarity"],
@@ -505,28 +571,36 @@ test_technical_patterns = code_review_v1.prompt_tests.create!(
     "language" => "python",
     "code" => "def process_data(data):\n    return [x * 2 for x in data if x > 0]"
   },
-  expected_patterns: [
-    "```python[\\s\\S]*```",  # Must contain Python code block
-    "\\b(list comprehension|comprehension)\\b",  # Must mention list comprehension
-    "\\b(filter|filtering|condition)\\b",  # Must mention filtering
-    "\\b(performance|efficiency|optimization)\\b",  # Must discuss performance
-    "\\b(edge case|edge-case|boundary)\\b",  # Must mention edge cases
-    "\\b(empty|None|null|zero)\\b",  # Must consider empty/null cases
-    "(?i)\\b(test|testing|unit test)\\b",  # Must mention testing (case insensitive)
-    "\\b[A-Z][a-z]+\\s+[a-z]+\\s+[a-z]+",  # Must have proper sentences
-    "\\d+",  # Must contain at least one number
-    "\\b(could|should|might|consider|recommend)\\b"  # Must use suggestive language
-  ],
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.4 },
-  tags: ["technical", "complex-patterns", "code-review"],
+  tags: [ "technical", "complex-patterns", "code-review" ],
   enabled: true
 )
 
+# Add pattern match evaluator (binary mode)
 test_technical_patterns.evaluator_configs.create!(
-  evaluator_key: "length_check",
+  evaluator_key: "pattern_match",
+  evaluation_mode: "binary",
+  enabled: true,
+  config: {
+    patterns: [
+      "```python[\\s\\S]*```",  # Must contain Python code block
+      "\\b(list comprehension|comprehension)\\b",  # Must mention list comprehension
+      "\\b(filter|filtering|condition)\\b",  # Must mention filtering
+      "\\b(performance|efficiency|optimization)\\b",  # Must discuss performance
+      "\\b(edge case|edge-case|boundary)\\b",  # Must mention edge cases
+      "\\b(empty|None|null|zero)\\b",  # Must consider empty/null cases
+      "(?i)\\b(test|testing|unit test)\\b",  # Must mention testing (case insensitive)
+      "\\b[A-Z][a-z]+\\s+[a-z]+\\s+[a-z]+",  # Must have proper sentences
+      "\\d+",  # Must contain at least one number
+      "\\b(could|should|might|consider|recommend)\\b"  # Must use suggestive language
+    ],
+    match_all: true
+  }
+)
+
+test_technical_patterns.evaluator_configs.create!(
+  evaluator_key: "length",
   threshold: 75,
-  weight: 0.2,
-  priority: 1,
   config: {
     "min_length" => 250,
     "max_length" => 1200,
@@ -537,10 +611,8 @@ test_technical_patterns.evaluator_configs.create!(
 )
 
 test_technical_patterns.evaluator_configs.create!(
-  evaluator_key: "keyword_check",
+  evaluator_key: "keyword",
   threshold: 80,
-  weight: 0.2,
-  priority: 2,
   config: {
     "required_keywords" => ["comprehension", "performance", "edge case"],
     "forbidden_keywords" => [],
@@ -550,10 +622,8 @@ test_technical_patterns.evaluator_configs.create!(
 )
 
 test_technical_patterns.evaluator_configs.create!(
-  evaluator_key: "format_check",
+  evaluator_key: "format",
   threshold: 85,
-  weight: 0.1,
-  priority: 3,
   config: {
     "expected_format" => "markdown",
     "strict" => false
@@ -562,10 +632,8 @@ test_technical_patterns.evaluator_configs.create!(
 )
 
 test_technical_patterns.evaluator_configs.create!(
-  evaluator_key: "gpt4_judge",
+  evaluator_key: "llm_judge",
   threshold: 88,
-  weight: 0.5,
-  priority: 4,
   config: {
     "judge_model" => "gpt-4o",
     "criteria" => ["technical_accuracy", "completeness", "helpfulness", "professionalism"],

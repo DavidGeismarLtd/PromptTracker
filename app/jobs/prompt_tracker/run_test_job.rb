@@ -7,7 +7,7 @@ module PromptTracker
   # 1. Loads an existing PromptTestRun (created by controller with "running" status)
   # 2. Executes the LLM call (real or mock)
   # 3. Creates the LlmResponse
-  # 4. Runs evaluators and assertions
+  # 4. Runs evaluators
   # 5. Updates the test run with results
   # 6. Broadcasts completion via Turbo Streams
   #
@@ -36,11 +36,8 @@ module PromptTracker
       # Run evaluators
       evaluator_results = run_evaluators(test, llm_response, use_real_llm)
 
-      # Check assertions
-      assertion_results = check_assertions(test, llm_response)
-
-      # Determine if test passed
-      passed = determine_pass_fail(evaluator_results, assertion_results)
+      # Determine if test passed (all evaluators must pass)
+      passed = evaluator_results.all? { |r| r[:passed] }
 
       # Calculate execution time
       execution_time = ((Time.current - start_time) * 1000).to_i
@@ -50,7 +47,6 @@ module PromptTracker
         test_run: test_run,
         llm_response: llm_response,
         evaluator_results: evaluator_results,
-        assertion_results: assertion_results,
         passed: passed,
         execution_time_ms: execution_time
       )
@@ -169,7 +165,7 @@ module PromptTracker
     # @param use_real_llm [Boolean] whether to use real LLM for judge evaluators
     # @return [Array<Hash>] array of evaluator results
     def run_evaluators(test, llm_response, use_real_llm)
-      evaluator_configs = test.evaluator_configs.enabled.by_priority
+      evaluator_configs = test.evaluator_configs.enabled.order(:created_at)
       results = []
 
       evaluator_configs.each do |config|
@@ -215,54 +211,14 @@ module PromptTracker
       results
     end
 
-    # Check assertions (expected patterns and expected output)
-    #
-    # @param test [PromptTest] the test
-    # @param llm_response [LlmResponse] the LLM response to check
-    # @return [Hash] hash of assertion name => passed (boolean)
-    def check_assertions(test, llm_response)
-      results = {}
-      response_text = llm_response.response_text || ""
-
-      # Check expected output (exact match)
-      if test.expected_output.present?
-        results["expected_output"] = response_text.strip == test.expected_output.strip
-      end
-
-      # Check expected patterns (regex)
-      expected_patterns = test.expected_patterns || []
-      expected_patterns.each_with_index do |pattern_str, index|
-        pattern = Regexp.new(pattern_str)
-        results["pattern_#{index + 1}"] = response_text.match?(pattern)
-      end
-
-      results
-    end
-
-    # Determine if test passed
-    #
-    # @param evaluator_results [Array<Hash>] evaluator results
-    # @param assertion_results [Hash] assertion results
-    # @return [Boolean] true if test passed
-    def determine_pass_fail(evaluator_results, assertion_results)
-      # All evaluators must pass their thresholds
-      evaluators_passed = evaluator_results.all? { |r| r[:passed] }
-
-      # All assertions must pass
-      assertions_passed = assertion_results.values.all? { |v| v == true }
-
-      evaluators_passed && assertions_passed
-    end
-
     # Update test run with success
     #
     # @param test_run [PromptTestRun] the test run to update
     # @param llm_response [LlmResponse] the LLM response
     # @param evaluator_results [Array<Hash>] evaluator results
-    # @param assertion_results [Hash] assertion results
     # @param passed [Boolean] whether test passed
     # @param execution_time_ms [Integer] execution time in milliseconds
-    def update_test_run_success(test_run:, llm_response:, evaluator_results:, assertion_results:, passed:, execution_time_ms:)
+    def update_test_run_success(test_run:, llm_response:, evaluator_results:, passed:, execution_time_ms:)
       passed_evaluators = evaluator_results.count { |r| r[:passed] }
       failed_evaluators = evaluator_results.count { |r| !r[:passed] }
 
@@ -271,7 +227,6 @@ module PromptTracker
         status: passed ? "passed" : "failed",
         passed: passed,
         evaluator_results: evaluator_results,
-        assertion_results: assertion_results,
         passed_evaluators: passed_evaluators,
         failed_evaluators: failed_evaluators,
         total_evaluators: evaluator_results.length,

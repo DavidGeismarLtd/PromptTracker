@@ -42,7 +42,7 @@ prompt.evaluator_configs.destroy_all
 
 # Tier 1: Basic validation (sync, fast, no dependencies)
 length_config = prompt.evaluator_configs.create!(
-  evaluator_key: :length_check,
+  evaluator_key: :length,
   enabled: true,
   run_mode: "sync",
   priority: 1,
@@ -57,7 +57,7 @@ length_config = prompt.evaluator_configs.create!(
 puts "  ✅ Length Check configured (weight: 15%, sync, priority: 1)"
 
 keyword_config = prompt.evaluator_configs.create!(
-  evaluator_key: :keyword_check,
+  evaluator_key: :keyword,
   enabled: true,
   run_mode: "sync",
   priority: 2,
@@ -72,29 +72,29 @@ puts "  ✅ Keyword Check configured (weight: 30%, sync, priority: 2)"
 
 # Tier 2: Format validation (depends on length check)
 format_config = prompt.evaluator_configs.create!(
-  evaluator_key: :format_check,
+  evaluator_key: :format,
   enabled: true,
   run_mode: "sync",
   priority: 3,
   weight: 0.25,
-  depends_on: "length_check",
+  depends_on: "length",
   min_dependency_score: 50,
   config: {
     expected_format: "plain",
     strict: false
   }
 )
-puts "  ✅ Format Check configured (weight: 25%, sync, priority: 3, depends on: length_check >= 50)"
+puts "  ✅ Format Check configured (weight: 25%, sync, priority: 3, depends on: length >= 50)"
 
 # Tier 3: LLM Judge (depends on keyword check)
 # Note: This will be scheduled as async job
 judge_config = prompt.evaluator_configs.create!(
-  evaluator_key: :gpt4_judge,
+  evaluator_key: :llm_judge,
   enabled: false, # Disabled for now since we don't have LLM API configured
   run_mode: "async",
   priority: 4,
   weight: 0.30,
-  depends_on: "keyword_check",
+  depends_on: "keyword",
   min_dependency_score: 80,
   config: {
     judge_model: "gpt-4",
@@ -102,7 +102,7 @@ judge_config = prompt.evaluator_configs.create!(
     custom_instructions: "Evaluate as a customer support manager"
   }
 )
-puts "  ⚠️  GPT-4 Judge configured but DISABLED (weight: 30%, async, priority: 4, depends on: keyword_check >= 80)"
+puts "  ⚠️  GPT-4 Judge configured but DISABLED (weight: 30%, async, priority: 4, depends on: keyword >= 80)"
 
 puts "\n📊 Total weight: #{prompt.evaluator_configs.enabled.sum(:weight)} (should be close to 1.0 for weighted average)"
 

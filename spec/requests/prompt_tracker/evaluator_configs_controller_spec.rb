@@ -4,16 +4,17 @@ require "rails_helper"
 
 RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
   let(:prompt) { create(:prompt) }
+  let(:version) { create(:prompt_version, prompt: prompt, status: "active") }
   let(:evaluator_config) do
     create(:evaluator_config,
-           prompt: prompt,
-           evaluator_key: "length_check",
+           configurable: version,
+           evaluator_key: "length",
            config: { min_length: 10, max_length: 100 })
   end
 
   describe "GET /evaluator_configs/config_form" do
     it "returns config form for evaluator" do
-      get "/prompt_tracker/evaluator_configs/config_form", params: { evaluator_key: "length_check" }
+      get "/prompt_tracker/evaluator_configs/config_form", params: { evaluator_key: "length" }
       expect(response).to have_http_status(:success)
     end
 
@@ -35,9 +36,9 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "orders configs by priority" do
-      config1 = create(:evaluator_config, prompt: prompt, evaluator_key: "keyword_check", priority: 50)
-      config2 = create(:evaluator_config, prompt: prompt, evaluator_key: "format_check", priority: 150)
-      config3 = create(:evaluator_config, prompt: prompt, evaluator_key: "length_check", priority: 100)
+      config1 = create(:evaluator_config, configurable: version, evaluator_key: "keyword", priority: 50)
+      config2 = create(:evaluator_config, configurable: version, evaluator_key: "format", priority: 150)
+      config3 = create(:evaluator_config, configurable: version, evaluator_key: "length", priority: 100)
 
       get "/prompt_tracker/prompts/#{prompt.id}/evaluators", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:success)
@@ -55,10 +56,11 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
       json = JSON.parse(response.body)
       expect(json["id"]).to eq(evaluator_config.id)
-      expect(json["evaluator_key"]).to eq("length_check")
+      expect(json["evaluator_key"]).to eq("length")
     end
 
     it "returns 404 for non-existent config" do
+      version # ensure version exists
       get "/prompt_tracker/prompts/#{prompt.id}/evaluators/999999", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:not_found)
     end
@@ -66,10 +68,11 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
   describe "POST /prompts/:prompt_id/evaluators" do
     it "creates evaluator config" do
+      version # ensure version exists
       expect {
         post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
           evaluator_config: {
-            evaluator_key: "keyword_check",
+            evaluator_key: "keyword",
             enabled: true,
             run_mode: "sync",
             priority: 100,
@@ -85,11 +88,12 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "creates evaluator config as JSON" do
+      version # ensure version exists
       expect {
         post "/prompt_tracker/prompts/#{prompt.id}/evaluators",
              params: {
                evaluator_config: {
-                 evaluator_key: "keyword_check",
+                 evaluator_key: "keyword",
                  enabled: true,
                  run_mode: "sync",
                  priority: 100,
@@ -101,13 +105,14 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
       expect(response).to have_http_status(:created)
       json = JSON.parse(response.body)
-      expect(json["evaluator_key"]).to eq("keyword_check")
+      expect(json["evaluator_key"]).to eq("keyword")
     end
 
     it "processes config params correctly" do
+      version # ensure version exists
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "keyword_check",
+          evaluator_key: "keyword",
           enabled: true,
           run_mode: "sync",
           priority: 100,
@@ -125,6 +130,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "handles invalid evaluator config" do
+      version # ensure version exists
       expect {
         post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
           evaluator_config: {
@@ -143,6 +149,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "handles invalid evaluator config as JSON" do
+      version # ensure version exists
       expect {
         post "/prompt_tracker/prompts/#{prompt.id}/evaluators",
              params: {
@@ -239,9 +246,10 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
   describe "config processing" do
     it "processes required_keywords from textarea" do
+      version # ensure version exists
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "keyword_check",
+          evaluator_key: "keyword",
           enabled: true,
           run_mode: "sync",
           priority: 100,
@@ -257,9 +265,10 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "processes forbidden_keywords from textarea" do
+      version # ensure version exists
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "keyword_check",
+          evaluator_key: "keyword",
           enabled: true,
           run_mode: "sync",
           priority: 100,
@@ -275,9 +284,10 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "processes boolean values" do
+      version # ensure version exists
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "keyword_check",
+          evaluator_key: "keyword",
           enabled: true,
           run_mode: "sync",
           priority: 100,
@@ -295,9 +305,10 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "processes integer values" do
+      version # ensure version exists
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "length_check",
+          evaluator_key: "length",
           enabled: true,
           run_mode: "sync",
           priority: 100,
@@ -315,11 +326,12 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "processes JSON schema" do
+      version # ensure version exists
       schema = { type: "object", properties: { name: { type: "string" } } }
 
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "format_check",
+          evaluator_key: "format",
           enabled: true,
           run_mode: "sync",
           priority: 100,
@@ -335,9 +347,10 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
 
     it "handles invalid JSON schema gracefully" do
+      version # ensure version exists
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "format_check",
+          evaluator_key: "format",
           enabled: true,
           run_mode: "sync",
           priority: 100,

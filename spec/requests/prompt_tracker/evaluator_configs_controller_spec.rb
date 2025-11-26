@@ -35,17 +35,17 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       expect(json).to have_key("available")
     end
 
-    it "orders configs by priority" do
-      config1 = create(:evaluator_config, configurable: version, evaluator_key: "keyword", priority: 50)
-      config2 = create(:evaluator_config, configurable: version, evaluator_key: "format", priority: 150)
-      config3 = create(:evaluator_config, configurable: version, evaluator_key: "length", priority: 100)
+    it "orders configs by creation time" do
+      config1 = create(:evaluator_config, configurable: version, evaluator_key: "keyword")
+      config2 = create(:evaluator_config, configurable: version, evaluator_key: "format")
+      config3 = create(:evaluator_config, configurable: version, evaluator_key: "length")
 
       get "/prompt_tracker/prompts/#{prompt.id}/evaluators", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:success)
 
       json = JSON.parse(response.body)
       config_ids = json["configs"].map { |c| c["id"] }
-      expect(config_ids).to eq([config2.id, config3.id, config1.id])
+      expect(config_ids).to eq([config1.id, config2.id, config3.id])
     end
   end
 
@@ -174,7 +174,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     it "updates evaluator config" do
       patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}", params: {
         evaluator_config: {
-          priority: 200,
+          threshold: 85,
           config: { min_length: 20, max_length: 200 }
         }
       }
@@ -184,18 +184,18 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       expect(response.body).to include("Evaluator updated successfully")
 
       evaluator_config.reload
-      expect(evaluator_config.priority).to eq(200)
+      expect(evaluator_config.threshold).to eq(85)
       expect(evaluator_config.config["min_length"]).to eq(20)
     end
 
     it "updates evaluator config as JSON" do
       patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}",
-            params: { evaluator_config: { priority: 200 } },
+            params: { evaluator_config: { threshold: 85 } },
             headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
-      expect(json["priority"]).to eq(200)
+      expect(json["threshold"]).to eq(85)
     end
 
     it "handles invalid update" do

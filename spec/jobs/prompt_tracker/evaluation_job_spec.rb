@@ -37,8 +37,6 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
 
       evaluation = PromptTracker::Evaluation.last
       expect(evaluation.metadata["evaluator_config_id"]).to eq(evaluator_config.id)
-      expect(evaluation.metadata["weight"]).to eq(evaluator_config.weight.to_s)
-      expect(evaluation.metadata["priority"]).to eq(evaluator_config.priority)
       expect(evaluation.metadata["executed_at"]).to be_present
     end
 
@@ -52,86 +50,7 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
       )
     end
 
-    context "with dependency checking" do
-      it "skips evaluation when dependency is not met" do
-        # Create configs with dependency (disabled to prevent auto-evaluation)
-        length_config = create(:evaluator_config,
-                               :disabled,
-                               configurable: version,
-                               evaluator_key: "length",
-                               config: { min_length: 10, max_length: 1000 })
 
-        dependency_config = create(:evaluator_config,
-                                   :disabled,
-                                   configurable: version,
-                                   evaluator_key: "keyword",
-                                   depends_on: "length",
-                                   min_dependency_score: 80,
-                                   config: { required_keywords: [ "test" ] })
-
-        # Don't create any dependency evaluation - dependency_met? will return false
-        allow(Rails.logger).to receive(:info)
-
-        expect {
-          described_class.new.perform(llm_response.id, dependency_config.id, check_dependency: true)
-        }.not_to change(PromptTracker::Evaluation, :count)
-
-        expect(Rails.logger).to have_received(:info).with(
-          a_string_matching(/Skipping.*dependency not met/)
-        )
-      end
-
-      it "runs evaluation when dependency is met" do
-        # Create configs with dependency (disabled to prevent auto-evaluation)
-        length_config = create(:evaluator_config,
-                               :disabled,
-                               configurable: version,
-                               evaluator_key: "length",
-                               config: { min_length: 10, max_length: 1000 })
-
-        dependency_config = create(:evaluator_config,
-                                   :disabled,
-                                   configurable: version,
-                                   evaluator_key: "keyword",
-                                   depends_on: "length",
-                                   min_dependency_score: 80,
-                                   config: { required_keywords: [ "test" ] })
-
-        # Create a high-scoring dependency evaluation
-        create(:evaluation,
-               llm_response: llm_response,
-               evaluator_id: "length_evaluator_v1",
-               score: 90,
-               score_min: 0,
-               score_max: 100)
-
-        expect {
-          described_class.new.perform(llm_response.id, dependency_config.id, check_dependency: true)
-        }.to change(PromptTracker::Evaluation, :count).by(1)
-      end
-
-      it "runs evaluation when check_dependency is false" do
-        # Create configs with dependency (disabled to prevent auto-evaluation)
-        length_config = create(:evaluator_config,
-                               :disabled,
-                               configurable: version,
-                               evaluator_key: "length",
-                               config: { min_length: 10, max_length: 1000 })
-
-        dependency_config = create(:evaluator_config,
-                                   :disabled,
-                                   configurable: version,
-                                   evaluator_key: "keyword",
-                                   depends_on: "length",
-                                   min_dependency_score: 80,
-                                   config: { required_keywords: [ "test" ] })
-
-        # Even with no dependency evaluation, should run if check_dependency is false
-        expect {
-          described_class.new.perform(llm_response.id, dependency_config.id, check_dependency: false)
-        }.to change(PromptTracker::Evaluation, :count).by(1)
-      end
-    end
 
     context "error handling" do
       it "handles missing response gracefully" do
@@ -175,8 +94,8 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
   describe "job queuing" do
     it "enqueues the job" do
       expect {
-        described_class.perform_later(llm_response.id, evaluator_config.id)
-      }.to have_enqueued_job(described_class).with(llm_response.id, evaluator_config.id)
+        described_class.perform_later(llm_response.id, evaluator_config.id, "tracked_call")
+      }.to have_enqueued_job(described_class).with(llm_response.id, evaluator_config.id, "tracked_call")
     end
 
     it "uses the default queue" do

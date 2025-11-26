@@ -23,24 +23,24 @@ RSpec.describe PromptTracker::Evaluation, type: :model do
   end
 
   describe "scopes" do
-    let!(:prompt) { create(:prompt_tracker_prompt) }
-    let!(:version) { create(:prompt_tracker_prompt_version, prompt: prompt) }
-    let!(:response) { create(:prompt_tracker_llm_response, prompt_version: version) }
-    
+    let!(:prompt) { create(:prompt) }
+    let!(:version) { create(:prompt_version, prompt: prompt) }
+    let!(:response) { create(:llm_response, prompt_version: version) }
+
     let!(:tracked_eval) do
-      create(:prompt_tracker_evaluation,
+      create(:evaluation,
              llm_response: response,
              evaluation_context: "tracked_call")
     end
-    
+
     let!(:test_eval) do
-      create(:prompt_tracker_evaluation,
+      create(:evaluation,
              llm_response: response,
              evaluation_context: "test_run")
     end
-    
+
     let!(:manual_eval) do
-      create(:prompt_tracker_evaluation,
+      create(:evaluation,
              llm_response: response,
              evaluation_context: "manual")
     end
@@ -65,9 +65,9 @@ RSpec.describe PromptTracker::Evaluation, type: :model do
   end
 
   describe "evaluation_context default" do
-    let(:prompt) { create(:prompt_tracker_prompt) }
-    let(:version) { create(:prompt_tracker_prompt_version, prompt: prompt) }
-    let(:response) { create(:prompt_tracker_llm_response, prompt_version: version) }
+    let(:prompt) { create(:prompt) }
+    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:response) { create(:llm_response, prompt_version: version) }
 
     it "defaults to tracked_call when not specified" do
       evaluation = described_class.create!(
@@ -112,11 +112,11 @@ RSpec.describe PromptTracker::Evaluation, type: :model do
   end
 
   describe "enum methods" do
-    let(:prompt) { create(:prompt_tracker_prompt) }
-    let(:version) { create(:prompt_tracker_prompt_version, prompt: prompt) }
-    let(:response) { create(:prompt_tracker_llm_response, prompt_version: version) }
+    let(:prompt) { create(:prompt) }
+    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:response) { create(:llm_response, prompt_version: version) }
     let(:evaluation) do
-      create(:prompt_tracker_evaluation,
+      create(:evaluation,
              llm_response: response,
              evaluation_context: "tracked_call")
     end
@@ -134,4 +134,3 @@ RSpec.describe PromptTracker::Evaluation, type: :model do
     end
   end
 end
-

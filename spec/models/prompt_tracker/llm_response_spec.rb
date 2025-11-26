@@ -9,8 +9,8 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
   end
 
   describe "is_test_run field" do
-    let(:prompt) { create(:prompt_tracker_prompt) }
-    let(:version) { create(:prompt_tracker_prompt_version, prompt: prompt) }
+    let(:prompt) { create(:prompt) }
+    let(:version) { create(:prompt_version, prompt: prompt) }
 
     it "defaults to false" do
       response = described_class.create!(
@@ -41,17 +41,17 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
   end
 
   describe "scopes" do
-    let!(:prompt) { create(:prompt_tracker_prompt) }
-    let!(:version) { create(:prompt_tracker_prompt_version, prompt: prompt) }
-    
+    let!(:prompt) { create(:prompt) }
+    let!(:version) { create(:prompt_version, prompt: prompt) }
+
     let!(:production_response) do
-      create(:prompt_tracker_llm_response,
+      create(:llm_response,
              prompt_version: version,
              is_test_run: false)
     end
-    
+
     let!(:test_response) do
-      create(:prompt_tracker_llm_response,
+      create(:llm_response,
              prompt_version: version,
              is_test_run: true)
     end
@@ -70,8 +70,8 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
   end
 
   describe "callbacks" do
-    let(:prompt) { create(:prompt_tracker_prompt) }
-    let(:version) { create(:prompt_tracker_prompt_version, prompt: prompt) }
+    let(:prompt) { create(:prompt) }
+    let(:version) { create(:prompt_version, prompt: prompt) }
 
     context "when is_test_run is false" do
       it "triggers auto-evaluation after create" do
@@ -108,8 +108,8 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
   end
 
   describe "#trigger_auto_evaluation" do
-    let(:prompt) { create(:prompt_tracker_prompt) }
-    let(:version) { create(:prompt_tracker_prompt_version, prompt: prompt) }
+    let(:prompt) { create(:prompt) }
+    let(:version) { create(:prompt_version, prompt: prompt) }
     let(:response) do
       described_class.new(
         prompt_version: version,
@@ -130,4 +130,3 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     end
   end
 end
-

@@ -64,6 +64,17 @@ module PromptTracker
       # Broadcast update via ActionCable
       broadcast_test_run_update(test_run)
       Rails.logger.info "📡 Broadcast sent for test run #{test_run_id}"
+    rescue StandardError => e
+      Rails.logger.error "❌ RunEvaluatorsJob failed for test_run #{test_run_id}: #{e.class}: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+
+      test_run.update!(
+        status: "error",
+        passed: false,
+        error_message: "#{e.class}: #{e.message}"
+      )
+
+      raise
     end
 
     private
@@ -75,8 +86,8 @@ module PromptTracker
     # @return [Array<Hash>] array of evaluator results
     def run_evaluators(prompt_test, llm_response)
       results = []
-      # Get evaluator configs, ordered by priority (binary evaluators first)
-      evaluator_configs = prompt_test.evaluator_configs.enabled.order(priority: :desc, evaluation_mode: :desc)
+      # Get evaluator configs, ordered by creation time
+      evaluator_configs = prompt_test.evaluator_configs.enabled.order(:created_at)
 
       evaluator_configs.each do |config|
         evaluator_key = config.evaluator_key.to_sym

@@ -94,23 +94,6 @@ module PromptTracker
 
     # Scopes
 
-    # Returns only human evaluations
-    # @return [ActiveRecord::Relation<Evaluation>]
-    scope :by_humans, -> { where(evaluator_type: "PromptTracker::Evaluators::HumanEvaluator") }
-
-    # Returns only automated evaluations (all non-human, non-llm-judge evaluators)
-    # @return [ActiveRecord::Relation<Evaluation>]
-    scope :automated, -> {
-      where.not(evaluator_type: [
-        "PromptTracker::Evaluators::HumanEvaluator",
-        "PromptTracker::Evaluators::LlmJudgeEvaluator"
-      ])
-    }
-
-    # Returns only LLM judge evaluations
-    # @return [ActiveRecord::Relation<Evaluation>]
-    scope :by_llm_judge, -> { where(evaluator_type: "PromptTracker::Evaluators::LlmJudgeEvaluator") }
-
     # Returns evaluations by a specific evaluator class
     # @param evaluator_type [String] the evaluator class name
     # @return [ActiveRecord::Relation<Evaluation>]
@@ -144,27 +127,6 @@ module PromptTracker
     scope :recent, ->(hours = 24) { where("created_at > ?", hours.hours.ago) }
 
     # Instance Methods
-
-    # Checks if this is a human evaluation.
-    #
-    # @return [Boolean] true if evaluator is HumanEvaluator
-    def human?
-      evaluator_type == "PromptTracker::Evaluators::HumanEvaluator"
-    end
-
-    # Checks if this is an automated evaluation.
-    #
-    # @return [Boolean] true if evaluator is not human or llm_judge
-    def automated?
-      !human? && !llm_judge?
-    end
-
-    # Checks if this is an LLM judge evaluation.
-    #
-    # @return [Boolean] true if evaluator is LlmJudgeEvaluator
-    def llm_judge?
-      evaluator_type == "PromptTracker::Evaluators::LlmJudgeEvaluator"
-    end
 
     # Normalizes the score to a 0-1 scale.
     #

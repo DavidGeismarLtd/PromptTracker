@@ -70,11 +70,19 @@
     <% if @response_time_by_day.any? %>
       <canvas id="responseTrendChart" height="80"></canvas>
       <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          const ctx = document.getElementById('responseTrendChart').getContext('2d');
+        document.addEventListener('turbo:load', function() {
+          const canvas = document.getElementById('responseTrendChart');
+          if (!canvas) return;
+
+          const ctx = canvas.getContext('2d');
           const data = <%= raw @response_time_by_day.sort.to_h.to_json %>;
 
-          new Chart(ctx, {
+          // Destroy existing chart if it exists
+          if (window.chartInstances['responseTrendChart']) {
+            window.chartInstances['responseTrendChart'].destroy();
+          }
+
+          window.chartInstances['responseTrendChart'] = new Chart(ctx, {
             type: 'line',
             data: {
               labels: Object.keys(data),
@@ -137,7 +145,7 @@
                 </tr>
               </thead>
               <tbody>
-                <% @response_time_by_provider.sort_by { |_, time| time }.each do |provider, avg_time| %>
+                <% @response_time_by_provider.reject { |_, time| time.nil? }.sort_by { |_, time| time }.each do |provider, avg_time| %>
                   <% calls = @responses_by_provider[provider] || 0 %>
                   <% success_rate = @success_rate_by_provider[provider] || 0 %>
                   <tr>
@@ -158,11 +166,19 @@
             <canvas id="providerPerformanceChart"></canvas>
           </div>
           <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const ctx = document.getElementById('providerPerformanceChart').getContext('2d');
+            document.addEventListener('turbo:load', function() {
+              const canvas = document.getElementById('providerPerformanceChart');
+              if (!canvas) return;
+
+              const ctx = canvas.getContext('2d');
               const data = <%= raw @response_time_by_provider.to_json %>;
 
-              new Chart(ctx, {
+              // Destroy existing chart if it exists
+              if (window.chartInstances['providerPerformanceChart']) {
+                window.chartInstances['providerPerformanceChart'].destroy();
+              }
+
+              window.chartInstances['providerPerformanceChart'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
                   labels: Object.keys(data),
@@ -221,7 +237,7 @@
                 </tr>
               </thead>
               <tbody>
-                <% @response_time_by_model.sort_by { |_, time| time }.first(10).each do |model, avg_time| %>
+                <% @response_time_by_model.reject { |_, time| time.nil? }.sort_by { |_, time| time }.first(10).each do |model, avg_time| %>
                   <% calls = @responses_by_model[model] || 0 %>
                   <tr>
                     <td><code><%= truncate(model, length: 30) %></code></td>

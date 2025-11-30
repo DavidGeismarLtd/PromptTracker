@@ -36,6 +36,19 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
     })();
 
+    // Chart.js instance registry for cleanup on Turbo navigation
+    window.chartInstances = window.chartInstances || {};
+
+    // Destroy all charts before Turbo cache
+    document.addEventListener('turbo:before-cache', function() {
+      Object.values(window.chartInstances).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      window.chartInstances = {};
+    });
+
     // Set Chart.js defaults to match PromptTracker design system
     document.addEventListener('DOMContentLoaded', function() {
       // Theme Toggle

@@ -101,12 +101,6 @@
           <%= link_to analytics_quality_path, class: "btn btn-outline-warning" do %>
             <i class="bi bi-star"></i> Quality Analysis
           <% end %>
-          <%= link_to llm_responses_path, class: "btn btn-outline-info" do %>
-            <i class="bi bi-chat-left-text"></i> All Responses
-          <% end %>
-          <%= link_to evaluations_path, class: "btn btn-outline-secondary" do %>
-            <i class="bi bi-clipboard-check"></i> All Evaluations
-          <% end %>
         </div>
       </div>
     </div>
@@ -124,11 +118,19 @@
         <% if @activity_by_day.any? %>
           <canvas id="activityChart" height="200"></canvas>
           <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const ctx = document.getElementById('activityChart').getContext('2d');
+            document.addEventListener('turbo:load', function() {
+              const canvas = document.getElementById('activityChart');
+              if (!canvas) return;
+
+              const ctx = canvas.getContext('2d');
               const data = <%= raw @activity_by_day.sort.to_h.to_json %>;
-              
-              new Chart(ctx, {
+
+              // Destroy existing chart if it exists
+              if (window.chartInstances['activityChart']) {
+                window.chartInstances['activityChart'].destroy();
+              }
+
+              window.chartInstances['activityChart'] = new Chart(ctx, {
                 type: 'line',
                 data: {
                   labels: Object.keys(data),
@@ -173,11 +175,19 @@
         <% if @responses_by_provider.any? %>
           <canvas id="providerChart" height="200"></canvas>
           <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const ctx = document.getElementById('providerChart').getContext('2d');
+            document.addEventListener('turbo:load', function() {
+              const canvas = document.getElementById('providerChart');
+              if (!canvas) return;
+
+              const ctx = canvas.getContext('2d');
               const data = <%= raw @responses_by_provider.to_json %>;
-              
-              new Chart(ctx, {
+
+              // Destroy existing chart if it exists
+              if (window.chartInstances['providerChart']) {
+                window.chartInstances['providerChart'].destroy();
+              }
+
+              window.chartInstances['providerChart'] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                   labels: Object.keys(data),
@@ -334,4 +344,3 @@
     <% end %>
   </div>
 </div>
-

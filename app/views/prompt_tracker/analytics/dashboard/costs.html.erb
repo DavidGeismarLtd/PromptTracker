@@ -83,11 +83,19 @@
     <% if @cost_by_day.any? %>
       <canvas id="costTrendChart" height="80"></canvas>
       <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          const ctx = document.getElementById('costTrendChart').getContext('2d');
+        document.addEventListener('turbo:load', function() {
+          const canvas = document.getElementById('costTrendChart');
+          if (!canvas) return;
+
+          const ctx = canvas.getContext('2d');
           const data = <%= raw @cost_by_day.sort.to_h.to_json %>;
 
-          new Chart(ctx, {
+          // Destroy existing chart if it exists
+          if (window.chartInstances['costTrendChart']) {
+            window.chartInstances['costTrendChart'].destroy();
+          }
+
+          window.chartInstances['costTrendChart'] = new Chart(ctx, {
             type: 'bar',
             data: {
               labels: Object.keys(data),
@@ -168,11 +176,19 @@
             <canvas id="providerCostChart"></canvas>
           </div>
           <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const ctx = document.getElementById('providerCostChart').getContext('2d');
+            document.addEventListener('turbo:load', function() {
+              const canvas = document.getElementById('providerCostChart');
+              if (!canvas) return;
+
+              const ctx = canvas.getContext('2d');
               const data = <%= raw @cost_by_provider.to_json %>;
 
-              new Chart(ctx, {
+              // Destroy existing chart if it exists
+              if (window.chartInstances['providerCostChart']) {
+                window.chartInstances['providerCostChart'].destroy();
+              }
+
+              window.chartInstances['providerCostChart'] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                   labels: Object.keys(data),

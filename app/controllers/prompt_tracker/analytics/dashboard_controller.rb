@@ -103,7 +103,7 @@ module PromptTracker
                                            .average(:response_time_ms)
 
         # Response time by provider
-        @response_time_by_provider = LlmResponse.group(:provider).average(:response_time_ms)
+        @response_time_by_provider = LlmResponse.group(:provider).average(:response_time_ms).reject { |_, time| time.nil? }
         @responses_by_provider = LlmResponse.group(:provider).count
 
         # Success rate by provider
@@ -114,13 +114,14 @@ module PromptTracker
         end
 
         # Response time by model
-        @response_time_by_model = LlmResponse.group(:model).average(:response_time_ms)
+        @response_time_by_model = LlmResponse.group(:model).average(:response_time_ms).reject { |_, time| time.nil? }
         @responses_by_model = LlmResponse.group(:model).count
 
         # Fastest and slowest prompts
         prompt_times = LlmResponse.joins(prompt_version: :prompt)
                                   .group("prompt_tracker_prompts.id")
                                   .average(:response_time_ms)
+                                  .reject { |_, time| time.nil? }  # Filter out nil values
 
         @fastest_prompts = prompt_times.sort_by { |_, time| time }
                                        .first(5)
@@ -169,16 +170,25 @@ module PromptTracker
         end
 
         # Evaluation type breakdown
-        @evaluations_by_type = Evaluation.group(:evaluator_type).count
+        evaluations_by_class = Evaluation.group(:evaluator_type).count
 
-        # Average score by type
+        # Convert class names to registry keys for display
+        @evaluations_by_type = {}
+        evaluations_by_class.each do |class_name, count|
+          # Convert "PromptTracker::Evaluators::LlmJudgeEvaluator" -> "llm_judge"
+          key = class_name.demodulize.underscore.gsub('_evaluator', '')
+          @evaluations_by_type[key] = count
+        end
+
+        # Average score by type (using keys)
         @avg_score_by_type = {}
-        @evaluations_by_type.keys.each do |type|
-          evals = Evaluation.where(evaluator_type: type)
+        evaluations_by_class.each do |class_name, _count|
+          key = class_name.demodulize.underscore.gsub('_evaluator', '')
+          evals = Evaluation.where(evaluator_type: class_name)
           normalized_scores = evals.map do |eval|
             PromptTracker::EvaluationHelpers.normalize_score(eval.score, min: eval.score_min, max: eval.score_max)
           end
-          @avg_score_by_type[type] = (normalized_scores.sum / normalized_scores.length.to_f * 100).round(1) if normalized_scores.any?
+          @avg_score_by_type[key] = (normalized_scores.sum / normalized_scores.length.to_f * 100).round(1) if normalized_scores.any?
         end
 
         # Score distribution (buckets: 0-20, 20-40, 40-60, 60-80, 80-100)

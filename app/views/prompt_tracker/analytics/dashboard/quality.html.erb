@@ -76,11 +76,19 @@
     <% if @quality_by_day.any? %>
       <canvas id="qualityTrendChart" height="80"></canvas>
       <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          const ctx = document.getElementById('qualityTrendChart').getContext('2d');
+        document.addEventListener('turbo:load', function() {
+          const canvas = document.getElementById('qualityTrendChart');
+          if (!canvas) return;
+
+          const ctx = canvas.getContext('2d');
           const data = <%= raw @quality_by_day.sort.to_h.to_json %>;
 
-          new Chart(ctx, {
+          // Destroy existing chart if it exists
+          if (window.chartInstances['qualityTrendChart']) {
+            window.chartInstances['qualityTrendChart'].destroy();
+          }
+
+          window.chartInstances['qualityTrendChart'] = new Chart(ctx, {
             type: 'line',
             data: {
               labels: Object.keys(data),
@@ -161,11 +169,19 @@
             <canvas id="evaluationTypeChart"></canvas>
           </div>
           <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const ctx = document.getElementById('evaluationTypeChart').getContext('2d');
+            document.addEventListener('turbo:load', function() {
+              const canvas = document.getElementById('evaluationTypeChart');
+              if (!canvas) return;
+
+              const ctx = canvas.getContext('2d');
               const data = <%= raw @evaluations_by_type.to_json %>;
 
-              new Chart(ctx, {
+              // Destroy existing chart if it exists
+              if (window.chartInstances['evaluationTypeChart']) {
+                window.chartInstances['evaluationTypeChart'].destroy();
+              }
+
+              window.chartInstances['evaluationTypeChart'] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                   labels: Object.keys(data),
@@ -211,11 +227,19 @@
             <canvas id="scoreDistributionChart"></canvas>
           </div>
           <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+            document.addEventListener('turbo:load', function() {
+              const canvas = document.getElementById('scoreDistributionChart');
+              if (!canvas) return;
+
+              const ctx = canvas.getContext('2d');
               const data = <%= raw @score_distribution.to_json %>;
 
-              new Chart(ctx, {
+              // Destroy existing chart if it exists
+              if (window.chartInstances['scoreDistributionChart']) {
+                window.chartInstances['scoreDistributionChart'].destroy();
+              }
+
+              window.chartInstances['scoreDistributionChart'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
                   labels: Object.keys(data),

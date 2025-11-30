@@ -135,8 +135,7 @@ module PromptTracker
           evaluation = evaluator.evaluate
 
           expect(evaluation).to be_persisted
-          expect(evaluation.evaluator_type).to eq("automated")
-          expect(evaluation.evaluator_id).to eq("length_evaluator_v1")
+          expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LengthEvaluator")
           expect(evaluation.score).to eq(100)
           expect(evaluation.score_min).to eq(0)
           expect(evaluation.score_max).to eq(100)

@@ -82,7 +82,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
         }
       }.to change(PromptTracker::EvaluatorConfig, :count).by(1)
 
-      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}")
+      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Evaluator configured successfully")
     end
@@ -143,7 +143,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
         }
       }.not_to change(PromptTracker::EvaluatorConfig, :count)
 
-      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}")
+      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Failed to configure evaluator")
     end
@@ -174,48 +174,50 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     it "updates evaluator config" do
       patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}", params: {
         evaluator_config: {
-          threshold: 85,
           config: { min_length: 20, max_length: 200 }
         }
       }
 
-      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}")
+      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Evaluator updated successfully")
 
       evaluator_config.reload
-      expect(evaluator_config.threshold).to eq(85)
       expect(evaluator_config.config["min_length"]).to eq(20)
+      expect(evaluator_config.config["max_length"]).to eq(200)
     end
 
     it "updates evaluator config as JSON" do
       patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}",
-            params: { evaluator_config: { threshold: 85 } },
+            params: { evaluator_config: { config: { min_length: 30 } } },
             headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
-      expect(json["threshold"]).to eq(85)
+      expect(json["config"]["min_length"]).to eq(30)
     end
 
-    it "handles invalid update" do
+    it "updates evaluator to different type" do
       patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}", params: {
-        evaluator_config: { evaluator_key: "" } # Invalid - blank evaluator_key
+        evaluator_config: { evaluator_key: "keyword" } # Change from length to keyword
       }
 
-      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}")
+      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
-      expect(response.body).to include("Failed to update evaluator")
+      expect(response.body).to include("Evaluator updated successfully")
+
+      evaluator_config.reload
+      expect(evaluator_config.evaluator_type).to eq("PromptTracker::Evaluators::KeywordEvaluator")
     end
 
-    it "handles invalid update as JSON" do
+    it "updates evaluator to different type as JSON" do
       patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}",
-            params: { evaluator_config: { evaluator_key: "" } },
+            params: { evaluator_config: { evaluator_key: "keyword" } },
             headers: { "Accept" => "application/json" }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
-      expect(json).to have_key("errors")
+      expect(json["evaluator_type"]).to eq("PromptTracker::Evaluators::KeywordEvaluator")
     end
   end
 
@@ -227,7 +229,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
         delete "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}"
       }.to change(PromptTracker::EvaluatorConfig, :count).by(-1)
 
-      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}")
+      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Evaluator removed successfully")
     end

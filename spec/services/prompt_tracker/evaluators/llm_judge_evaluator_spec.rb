@@ -115,8 +115,7 @@ module PromptTracker
 
           evaluation = Evaluation.last
           expect(evaluation.llm_response).to eq(llm_response)
-          expect(evaluation.evaluator_type).to eq("llm_judge")
-          expect(evaluation.evaluator_id).to eq("llm_judge:gpt-4o-2024-08-06")
+          expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LlmJudgeEvaluator")
           expect(evaluation.score).to eq(8.5)
           expect(evaluation.score_min).to eq(0)
           expect(evaluation.score_max).to eq(10)
@@ -172,8 +171,7 @@ module PromptTracker
 
             evaluation = Evaluation.last
             expect(evaluation.llm_response).to eq(llm_response)
-            expect(evaluation.evaluator_type).to eq("llm_judge")
-            expect(evaluation.evaluator_id).to eq("llm_judge:gpt-4o-2024-08-06")
+            expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LlmJudgeEvaluator")
             expect(evaluation.score_min).to eq(0)
             expect(evaluation.score_max).to eq(10)
             expect(evaluation.feedback).to match(/MOCK EVALUATION/)

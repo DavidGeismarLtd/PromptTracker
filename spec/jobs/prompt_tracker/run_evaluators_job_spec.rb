@@ -18,7 +18,6 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
     create(:evaluator_config,
            configurable: test,
            evaluator_key: "keyword",
-           threshold: 1,
            config: {
              required_keywords: [ "Hello", "help" ]
            })
@@ -59,7 +58,7 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
 
       test_run.reload
       evaluation = test_run.evaluations.first
-      expect(evaluation.evaluator_id).to eq("keyword_evaluator_v1")
+      expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::KeywordEvaluator")
       expect(evaluation.evaluation_context).to eq("test_run")
       expect(evaluation.passed).to be true
     end
@@ -72,7 +71,6 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
         create(:evaluator_config,
                configurable: test,
                evaluator_key: "keyword",
-               threshold: 100,
                config: {
                  required_keywords: [ "goodbye", "farewell" ]
                })
@@ -98,7 +96,6 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
         create(:evaluator_config,
                configurable: test,
                evaluator_key: "exact_match",
-               threshold: 100,
                config: {
                  expected_text: "Goodbye!"
                })
@@ -159,7 +156,6 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
                evaluator_configs: [
                  {
                    evaluator_key: "llm_judge",
-                   threshold: 7,
                    config: {
                      judge_model: "gpt-4",
                      criteria: [ "helpfulness", "clarity" ],
@@ -195,7 +191,7 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
 
         test_run.reload
         evaluation = test_run.evaluations.first
-        expect(evaluation.evaluator_id).to eq("llm_judge:gpt-4")
+        expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LlmJudgeEvaluator")
         expect(evaluation.score).to be_present
         expect(evaluation.feedback).to be_present
       end

@@ -26,20 +26,21 @@ FactoryBot.define do
     score_min { 0 }
     score_max { 5 }
     passed { true }
-    evaluator_type { "automated" }
+    evaluator_type { "PromptTracker::Evaluators::LengthEvaluator" }
     evaluator_id { "length_evaluator" }
     feedback { nil }
-    metadata { {} }
-
-    trait :human do
-      evaluator_type { "human" }
-      evaluator_id { "reviewer@example.com" }
-      feedback { "Good response, clear and helpful" }
-      passed { true }
+    metadata do
+      {
+        "min_length" => 10,
+        "max_length" => 100,
+        "ideal_min" => 20,
+        "ideal_max" => 80,
+        "response_length" => 45
+      }
     end
 
-    trait :automated do
-      evaluator_type { "automated" }
+    trait :keyword do
+      evaluator_type { "PromptTracker::Evaluators::KeywordEvaluator" }
       evaluator_id { "keyword_evaluator" }
       score { 85 }
       score_min { 0 }
@@ -48,7 +49,7 @@ FactoryBot.define do
     end
 
     trait :llm_judge do
-      evaluator_type { "llm_judge" }
+      evaluator_type { "PromptTracker::Evaluators::LlmJudgeEvaluator" }
       evaluator_id { "gpt-4" }
       feedback { "The response is accurate and well-structured." }
       passed { true }

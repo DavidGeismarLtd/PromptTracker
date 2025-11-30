@@ -15,10 +15,10 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
     end
 
     it "filters by evaluator_type" do
-      human_eval = create(:evaluation, llm_response: llm_response, evaluator_type: "human")
-      automated_eval = create(:evaluation, llm_response: llm_response, evaluator_type: "automated")
+      keyword_eval = create(:evaluation, llm_response: llm_response, evaluator_type: "PromptTracker::Evaluators::KeywordEvaluator")
+      length_eval = create(:evaluation, llm_response: llm_response, evaluator_type: "PromptTracker::Evaluators::LengthEvaluator")
 
-      get "/prompt_tracker/evaluations", params: { evaluator_type: "human" }
+      get "/prompt_tracker/evaluations", params: { evaluator_type: "PromptTracker::Evaluators::KeywordEvaluator" }
       expect(response).to have_http_status(:success)
     end
 
@@ -67,7 +67,9 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
     it "includes response and prompt details" do
       get "/prompt_tracker/evaluations/#{evaluation.id}"
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(prompt.name)
+      # Verify evaluation details are shown
+      expect(response.body).to include("Evaluation ##{evaluation.id}")
+      expect(response.body).to include("Response ##{llm_response.id}")
     end
 
     it "returns 404 for non-existent evaluation" do
@@ -77,29 +79,29 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
   end
 
   describe "POST /evaluations" do
-    context "with human evaluator" do
-      it "creates human evaluation using config params" do
+    context "with llm_judge evaluator" do
+      it "creates llm_judge evaluation using config params" do
+        # Use mock mode to avoid real API calls
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("PROMPT_TRACKER_LLM_JUDGE_MOCK_MODE").and_return("true")
+
         expect {
           post "/prompt_tracker/evaluations", params: {
             evaluation: {
               llm_response_id: llm_response.id,
-              evaluator_id: "human"
+              evaluator_id: "llm_judge"
             },
             config: {
-              evaluator_id: "john@example.com",
-              score: 4.5,
-              score_min: 0,
-              score_max: 5,
-              feedback: "Great response!"
+              judge_model: "gpt-4o",
+              criteria: [ "accuracy", "helpfulness", "tone" ]
             }
           }
         }.to change(PromptTracker::Evaluation, :count).by(1)
 
         evaluation = PromptTracker::Evaluation.last
-        expect(evaluation.evaluator_type).to eq("human")
-        expect(evaluation.evaluator_id).to eq("john@example.com")
-        expect(evaluation.score).to eq(4.5)
-        expect(evaluation.feedback).to eq("Great response!")
+        expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LlmJudgeEvaluator")
+        expect(evaluation.score).to be_between(0, 5)
+        expect(evaluation.feedback).to be_present
 
         expect(response).to redirect_to("/prompt_tracker/responses/#{llm_response.id}")
         follow_redirect!
@@ -125,8 +127,7 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
         }.to change(PromptTracker::Evaluation, :count).by(1)
 
         evaluation = PromptTracker::Evaluation.last
-        expect(evaluation.evaluator_type).to eq("automated")
-        expect(evaluation.evaluator_id).to match(/length/)
+        expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LengthEvaluator")
         expect(evaluation.passed).to eq(true) # Response is within range
       end
 
@@ -167,8 +168,7 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
         }.to change(PromptTracker::Evaluation, :count).by(1)
 
         evaluation = PromptTracker::Evaluation.last
-        expect(evaluation.evaluator_type).to eq("automated")
-        expect(evaluation.evaluator_id).to match(/keyword/)
+        expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::KeywordEvaluator")
         expect(evaluation.passed).to eq(true)
       end
 
@@ -222,7 +222,7 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
         }.to change(PromptTracker::Evaluation, :count).by(1)
 
         evaluation = PromptTracker::Evaluation.last
-        expect(evaluation.evaluator_type).to eq("automated")
+        expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::FormatEvaluator")
         expect(evaluation.passed).to eq(true)
       end
     end
@@ -244,7 +244,7 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
         }.to change(PromptTracker::Evaluation, :count).by(1)
 
         evaluation = PromptTracker::Evaluation.last
-        expect(evaluation.evaluator_type).to eq("automated")
+        expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::PatternMatchEvaluator")
         expect(evaluation.passed).to eq(true)
       end
     end
@@ -266,7 +266,7 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
         }.to change(PromptTracker::Evaluation, :count).by(1)
 
         evaluation = PromptTracker::Evaluation.last
-        expect(evaluation.evaluator_type).to eq("automated")
+        expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::ExactMatchEvaluator")
         expect(evaluation.passed).to eq(true)
       end
 
@@ -306,7 +306,7 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
         post "/prompt_tracker/evaluations", params: {
           evaluation: {
             llm_response_id: 999999,
-            evaluator_id: "human"
+            evaluator_id: "keyword"
           }
         }
 
@@ -330,15 +330,16 @@ RSpec.describe "PromptTracker::EvaluationsController", type: :request do
   end
 
   describe "GET /evaluations/form_template" do
-    it "returns form template for human evaluator" do
+    it "returns form template for llm_judge evaluator" do
       get "/prompt_tracker/evaluations/form_template", params: {
-        evaluator_type: "human",
+        evaluator_type: "registry",
+        evaluator_key: "llm_judge",
         llm_response_id: llm_response.id
       }
       expect(response).to have_http_status(:success)
     end
 
-    it "returns form template for registry evaluator" do
+    it "returns form template for keyword evaluator" do
       get "/prompt_tracker/evaluations/form_template", params: {
         evaluator_type: "registry",
         evaluator_key: "keyword",

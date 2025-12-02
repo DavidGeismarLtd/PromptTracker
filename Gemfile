@@ -16,7 +16,7 @@ gem "ostruct" # Required for Ruby 3.5+ compatibility
 gem "ruby_llm"
 
 # Background job processing
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.0"
 gem "redis", "~> 5.0"
 
 # Hotwire's SPA-like page accelerator and real-time updates

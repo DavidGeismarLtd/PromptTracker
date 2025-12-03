@@ -40,6 +40,7 @@ module PromptTracker
       end
 
       # Evaluate the response and create an Evaluation record
+      # All scores are 0-100
       #
       # @return [Evaluation] the created evaluation
       def evaluate
@@ -51,8 +52,6 @@ module PromptTracker
           evaluator_type: self.class.name,
           evaluator_config_id: config[:evaluator_config_id],
           score: score,
-          score_min: score_min,
-          score_max: score_max,
           passed: passed?,
           feedback: feedback_text,
           metadata: metadata,
@@ -61,10 +60,10 @@ module PromptTracker
         )
       end
 
-      # Calculate the overall score
+      # Calculate the overall score (0-100)
       # Subclasses should override this method
       #
-      # @return [Numeric] the calculated score
+      # @return [Numeric] the calculated score (0-100)
       def evaluate_score
         raise NotImplementedError, "Subclasses must implement #evaluate_score"
       end
@@ -75,22 +74,6 @@ module PromptTracker
       # @return [String, nil] feedback text
       def generate_feedback
         nil
-      end
-
-      # Get the minimum possible score
-      # Subclasses can override this method
-      #
-      # @return [Numeric] minimum score (default: 0)
-      def score_min
-        0
-      end
-
-      # Get the maximum possible score
-      # Subclasses can override this method
-      #
-      # @return [Numeric] maximum score (default: 100)
-      def score_max
-        100
       end
 
       # Get additional metadata for the evaluation

@@ -25,7 +25,6 @@ FactoryBot.define do
     template_variables { { name: "John", role: "customer" } }
     model_config { { provider: "openai", model: "gpt-4", temperature: 0.7 } }
     enabled { true }
-    tags { [ "smoke" ] }
     metadata { {} }
   end
 end

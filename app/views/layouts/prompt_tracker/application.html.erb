@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PromptTracker - LLM Prompt Management & Analytics</title>
+  <title>PromptTracker - LLM Prompt Management & Testing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
@@ -119,7 +119,7 @@
   <!-- Navigation -->
   <nav class="navbar navbar-expand-lg navbar-dark pt-navbar">
     <div class="container-fluid">
-      <%= link_to main_app.prompt_tracker_path, class: "navbar-brand pt-brand" do %>
+      <%= link_to root_path, class: "navbar-brand pt-brand" do %>
         <span class="pt-logo-cursor">&gt;</span>
         <span class="pt-logo-prompt">Prompt</span><span class="pt-logo-tracker">Tracker</span>
       <% end %>
@@ -130,8 +130,11 @@
 
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
+          <!-- Testing Section (Blue) -->
           <li class="nav-item">
-            <%= link_to "Prompts", prompts_path, class: "nav-link #{'active' if controller_name == 'prompts'}" %>
+            <%= link_to testing_root_path, class: "nav-link #{'active' if controller_path.start_with?('prompt_tracker/testing')}" do %>
+              <i class="bi bi-check2-square"></i> Testing
+            <% end %>
           </li>
 
           <!-- Monitoring Section (Green) -->
@@ -141,16 +144,11 @@
             <% end %>
           </li>
 
-          <li class="nav-item">
-            <%= link_to "A/B Tests", ab_tests_path, class: "nav-link #{'active' if controller_name == 'ab_tests'}" %>
-          </li>
-          <li class="nav-item">
-            <%= link_to "Analytics", analytics_root_path, class: "nav-link #{'active' if controller_path.start_with?('prompt_tracker/analytics')}" %>
-          </li>
+
         </ul>
 
         <!-- Search form -->
-        <form class="d-flex" role="search" action="<%= prompts_path %>" method="get">
+        <form class="d-flex" role="search" action="<%= testing_prompts_path %>" method="get">
           <input class="form-control me-2" type="search" name="q" placeholder="Search prompts..." value="<%= params[:q] %>">
           <button class="btn btn-outline-primary" type="submit">
             <i class="bi bi-search"></i>
@@ -171,7 +169,13 @@
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
-            <%= link_to "Home", main_app.prompt_tracker_path %>
+            <% if request.path.start_with?("/prompt_tracker/testing") %>
+              <%= link_to "Testing", testing_root_path %>
+            <% elsif request.path.start_with?("/prompt_tracker/monitoring") %>
+              <%= link_to "Monitoring", monitoring_root_path %>
+            <% else %>
+              <%= link_to "Home", root_path %>
+            <% end %>
           </li>
           <%= yield :breadcrumbs %>
         </ol>
@@ -203,7 +207,7 @@
             <span class="pt-footer-brand">
               <span class="pt-logo-prompt">Prompt</span><span class="pt-logo-tracker">Tracker</span>
             </span>
-            <span class="pt-footer-tagline">Developer tool meets analytics lab</span>
+            <span class="pt-footer-tagline">LLM Prompt Testing & Monitoring</span>
           </p>
         </div>
         <div class="col-md-6 text-end">

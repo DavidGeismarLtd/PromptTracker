@@ -18,7 +18,6 @@ module PromptTracker
         template: "Hello {{name}}, how can I help with {{issue}}?",
         version_number: 1,
         status: "active",
-        source: "file",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true },
           { "name" => "issue", "type" => "string", "required" => false }
@@ -82,16 +81,7 @@ module PromptTracker
         expect(version.errors[:status]).to include("is not included in the list")
       end
 
-      it "requires valid source" do
-        PromptVersion::SOURCES.each do |source|
-          version = PromptVersion.new(valid_attributes.merge(source: source))
-          expect(version).to be_valid, "Source '#{source}' should be valid"
-        end
 
-        version = PromptVersion.new(valid_attributes.merge(source: "invalid"))
-        expect(version).not_to be_valid
-        expect(version.errors[:source]).to include("is not included in the list")
-      end
 
       it "validates variables_schema is an array" do
         version = PromptVersion.new(valid_attributes.merge(variables_schema: []))
@@ -333,16 +323,7 @@ module PromptTracker
         end
       end
 
-      describe ".from_files" do
-        it "returns only file-sourced versions" do
-          file_version = PromptVersion.create!(valid_attributes.merge(source: "file"))
-          web_version = PromptVersion.create!(valid_attributes.merge(version_number: 2, source: "web_ui"))
 
-          file_versions = PromptVersion.from_files
-          expect(file_versions).to include(file_version)
-          expect(file_versions).not_to include(web_version)
-        end
-      end
 
       describe ".by_version" do
         it "orders by version_number descending" do
@@ -445,10 +426,7 @@ module PromptTracker
         expect(version.draft?).to be true
       end
 
-      it "#from_file? returns true for file-sourced versions" do
-        version = PromptVersion.create!(valid_attributes.merge(source: "file"))
-        expect(version.from_file?).to be true
-      end
+
     end
 
     # Display & Utility Methods

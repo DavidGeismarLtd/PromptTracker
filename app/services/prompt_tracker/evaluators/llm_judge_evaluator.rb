@@ -31,8 +31,6 @@ module PromptTracker
       DEFAULT_CONFIG = {
         judge_model: "gpt-4o",
         criteria: %w[accuracy helpfulness tone],
-        score_min: 0,
-        score_max: 5,
         custom_instructions: nil
       }.freeze
 
@@ -94,10 +92,10 @@ module PromptTracker
           parsed = response.content.with_indifferent_access
         end
 
-        # Calculate if passed (normalized score >= 0.8)
+        # Calculate if passed (score >= threshold, default 70)
         score = parsed[:overall_score]
-        normalized_score = (score - config[:score_min]) / (config[:score_max] - config[:score_min]).to_f
-        passed = normalized_score >= 0.8
+        threshold = config[:threshold_score] || 70
+        passed = score >= threshold
 
         # Create the evaluation
         Evaluation.create!(
@@ -105,8 +103,6 @@ module PromptTracker
           evaluator_type: self.class.name,
           evaluator_config_id: config[:evaluator_config_id],
           score: score,
-          score_min: config[:score_min],
-          score_max: config[:score_max],
           passed: passed,
           feedback: parsed[:feedback],
           evaluation_context: config[:evaluation_context] || "tracked_call",
@@ -118,7 +114,8 @@ module PromptTracker
             judge_prompt: judge_prompt,
             raw_judge_response: use_mock_mode? ? "MOCK_RESPONSE" : response.raw.to_s,
             used_structured_output: true,
-            mock_mode: use_mock_mode?
+            mock_mode: use_mock_mode?,
+            threshold_score: threshold
           }
         )
       end
@@ -130,9 +127,7 @@ module PromptTracker
       # @return [Class] a RubyLLM::Schema subclass
       def build_schema
         LlmJudgeSchema.for_criteria(
-          criteria: config[:criteria],
-          score_min: config[:score_min],
-          score_max: config[:score_max]
+          criteria: config[:criteria]
         )
       end
 
@@ -165,8 +160,8 @@ module PromptTracker
           #{custom_section}
 
           Please provide your evaluation with:
-          - overall_score: A number from #{config[:score_min]} to #{config[:score_max]}
-          - criteria_scores: A score for each criterion (#{config[:criteria].join(', ')})
+          - overall_score: A number from 0 to 100
+          - criteria_scores: A score for each criterion (#{config[:criteria].join(', ')}), each from 0 to 100
           - feedback: Detailed explanation of your scores
 
           Your response will be automatically structured as JSON.
@@ -184,13 +179,13 @@ module PromptTracker
       #
       # @return [Hash] mock evaluation data
       def generate_mock_evaluation
-        # Generate realistic mock scores
-        overall_score = rand(config[:score_min]..config[:score_max])
+        # Generate realistic mock scores (0-100)
+        overall_score = rand(0..100)
 
         # Generate criteria scores
         criteria_scores = {}
         config[:criteria].each do |criterion|
-          criteria_scores[criterion.to_sym] = rand(config[:score_min]..config[:score_max])
+          criteria_scores[criterion.to_sym] = rand(0..100)
         end
 
         {

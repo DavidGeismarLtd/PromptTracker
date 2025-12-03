@@ -128,7 +128,6 @@ module PromptTracker
     # Scopes
     scope :enabled, -> { where(enabled: true) }
     scope :disabled, -> { where(enabled: false) }
-    scope :with_tag, ->(tag) { where("tags @> ?", [tag].to_json) }
     scope :recent, -> { order(created_at: :desc) }
 
     # Get recent test runs
@@ -176,29 +175,13 @@ module PromptTracker
       runs.average(:execution_time_ms).to_i
     end
 
-    # Get tags as array
+    # Get average score from the last test run
     #
-    # @return [Array<String>]
-    def tag_list
-      tags || []
-    end
+    # @return [Float, nil] average score (0.0-1.0) or nil if no last run or no evaluations
+    def last_run_avg_score
+      return nil unless last_run
 
-    # Add a tag
-    #
-    # @param tag [String] tag to add
-    # @return [void]
-    def add_tag(tag)
-      self.tags = (tag_list + [tag]).uniq
-      save
-    end
-
-    # Remove a tag
-    #
-    # @param tag [String] tag to remove
-    # @return [void]
-    def remove_tag(tag)
-      self.tags = tag_list - [tag]
-      save
+      last_run.avg_score
     end
   end
 end

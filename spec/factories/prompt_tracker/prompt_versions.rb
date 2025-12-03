@@ -10,7 +10,6 @@
 #  model_config     :jsonb
 #  notes            :text
 #  prompt_id        :bigint           not null
-#  source           :string           default("file"), not null
 #  status           :string           default("draft"), not null
 #  template         :text             not null
 #  updated_at       :datetime         not null
@@ -23,7 +22,6 @@ FactoryBot.define do
     template { "Hello {{name}}, how can I help you today?" }
     sequence(:version_number) { |n| n }
     status { "draft" }
-    source { "web_ui" }
     variables_schema do
       [
         { "name" => "name", "type" => "string", "required" => true }
@@ -38,14 +36,6 @@ FactoryBot.define do
 
     trait :deprecated do
       status { "deprecated" }
-    end
-
-    trait :from_file do
-      source { "file" }
-    end
-
-    trait :from_api do
-      source { "api" }
     end
 
     trait :with_model_config do
@@ -65,4 +55,3 @@ FactoryBot.define do
     end
   end
 end
-

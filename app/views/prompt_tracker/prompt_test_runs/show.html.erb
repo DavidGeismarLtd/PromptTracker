@@ -32,13 +32,13 @@
       <% end %>
     </h1>
     <p class="text-muted">
-      Test: <%= link_to @test.name, prompt_prompt_version_prompt_test_path(@test.prompt, @version, @test) %>
-      | Version: <%= link_to "v#{@version.version_number}", prompt_prompt_version_path(@test.prompt, @version) %>
+      Test: <%= link_to @test.name, testing_prompt_prompt_version_prompt_test_path(@test.prompt, @version, @test) %>
+      | Version: <%= link_to "v#{@version.version_number}", testing_prompt_prompt_version_path(@test.prompt, @version) %>
       | Run at: <%= @test_run.created_at.strftime("%B %d, %Y at %I:%M %p") %>
     </p>
   </div>
   <div class="col-auto">
-    <%= link_to prompt_prompt_version_prompt_test_path(@test.prompt, @version, @test), class: "btn btn-outline-secondary" do %>
+    <%= link_to testing_prompt_prompt_version_prompt_test_path(@test.prompt, @version, @test), class: "btn btn-outline-secondary" do %>
       <i class="bi bi-arrow-left"></i> Back to Test
     <% end %>
   </div>
@@ -69,6 +69,25 @@
     <div class="card metric-card">
       <div class="metric-value"><%= @test_run.execution_time_ms %>ms</div>
       <div class="metric-label">Execution Time</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card metric-card">
+      <div class="metric-value">
+        <% if @test_run.avg_score.present? %>
+          <%= @test_run.avg_score.round(0) %>
+        <% else %>
+          <span class="text-muted">N/A</span>
+        <% end %>
+      </div>
+      <div class="metric-label">
+        Avg Score
+        <i class="bi bi-info-circle text-muted"
+           data-bs-toggle="tooltip"
+           data-bs-placement="top"
+           title="Average score (0-100) from all evaluators in this test run"
+           style="cursor: help;"></i>
+      </div>
     </div>
   </div>
   <div class="col-md-3">

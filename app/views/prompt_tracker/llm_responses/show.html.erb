@@ -1,9 +1,9 @@
 <% content_for :breadcrumbs do %>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><%= link_to "Prompts", prompts_path %></li>
-      <li class="breadcrumb-item"><%= link_to @prompt.name, prompt_path(@prompt) %></li>
-      <li class="breadcrumb-item"><%= link_to "v#{@version.version_number}", prompt_prompt_version_path(@prompt, @version) %></li>
+      <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
+      <li class="breadcrumb-item"><%= link_to @prompt.name, testing_prompt_path(@prompt) %></li>
+      <li class="breadcrumb-item"><%= link_to "v#{@version.version_number}", testing_prompt_prompt_version_path(@prompt, @version) %></li>
       <li class="breadcrumb-item active" aria-current="page">Response #<%= @response.id %></li>
     </ol>
   </nav>
@@ -14,7 +14,7 @@
     <i class="bi bi-chat-left-text"></i>
     LLM Response #<%= @response.id %>
   </h1>
-  <%= link_to prompt_prompt_version_path(@prompt, @version), class: "btn btn-outline-secondary" do %>
+  <%= link_to testing_prompt_prompt_version_path(@prompt, @version), class: "btn btn-outline-secondary" do %>
     <i class="bi bi-arrow-left"></i> Back to Version
   <% end %>
 </div>
@@ -35,11 +35,11 @@
             </tr>
             <tr>
               <th>Prompt</th>
-              <td><%= link_to @prompt.name, prompt_path(@prompt) %></td>
+              <td><%= link_to @prompt.name, testing_prompt_path(@prompt) %></td>
             </tr>
             <tr>
               <th>Version</th>
-              <td><%= link_to "v#{@version.version_number}", prompt_prompt_version_path(@prompt, @version) %></td>
+              <td><%= link_to "v#{@version.version_number}", testing_prompt_prompt_version_path(@prompt, @version) %></td>
             </tr>
             <tr>
               <th>Provider</th>

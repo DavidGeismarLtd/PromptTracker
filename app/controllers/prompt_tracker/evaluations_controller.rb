@@ -11,17 +11,12 @@ module PromptTracker
       # Filter by evaluator_type
       @evaluations = @evaluations.where(evaluator_type: params[:evaluator_type]) if params[:evaluator_type].present?
 
-      # Filter by normalized score range (need to calculate normalized scores)
-      # For simplicity, we'll filter on raw scores for now
-      # TODO: Implement proper normalized score filtering
+      # Filter by score range (0-100)
       if params[:min_score].present?
-        min_normalized = params[:min_score].to_f / 100.0
-        # This is a simplified filter - ideally we'd calculate normalized scores
-        @evaluations = @evaluations.where("(score - score_min) / NULLIF((score_max - score_min), 0) >= ?", min_normalized)
+        @evaluations = @evaluations.where("score >= ?", params[:min_score].to_f)
       end
       if params[:max_score].present?
-        max_normalized = params[:max_score].to_f / 100.0
-        @evaluations = @evaluations.where("(score - score_min) / NULLIF((score_max - score_min), 0) <= ?", max_normalized)
+        @evaluations = @evaluations.where("score <= ?", params[:max_score].to_f)
       end
 
       # Sorting
@@ -61,7 +56,7 @@ module PromptTracker
     # GET /evaluations/:id
     # Show evaluation details
     def show
-      @evaluation = Evaluation.includes(llm_response: { prompt_version: :prompt }).find(params[:id])
+      @evaluation = Evaluation.includes(:human_evaluations, llm_response: { prompt_version: :prompt }).find(params[:id])
       @response = @evaluation.llm_response
       @version = @response.prompt_version
       @prompt = @version.prompt

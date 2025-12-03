@@ -2,9 +2,11 @@
   Expects:
   - evaluations: collection of Evaluation records
   - Optional: title (default: "Evaluations")
+  - Optional: monitoring_context (default: false) - if true, uses monitoring namespace paths
 %>
 <% evaluations ||= [] %>
 <% title ||= "Evaluations" %>
+<% monitoring_context ||= false %>
 
 <% if evaluations.any? %>
   <div class="card mb-4">
@@ -32,7 +34,7 @@
               %>
               <tr>
                 <td>
-                  <%= link_to evaluation_path(evaluation), class: "text-decoration-none" do %>
+                  <%= link_to (monitoring_context ? monitoring_evaluation_path(evaluation) : evaluation_path(evaluation)), class: "text-decoration-none" do %>
                     <strong>
                       <i class="bi bi-<%= evaluator_icon %>"></i>
                       <%= evaluator_name %>

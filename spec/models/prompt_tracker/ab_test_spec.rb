@@ -19,7 +19,6 @@ module PromptTracker
         template: "Hello {{name}}, how can I help you today?",
         version_number: 1,
         status: "active",
-        source: "file",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true }
         ],
@@ -33,7 +32,6 @@ module PromptTracker
         template: "Hi {{name}}! Need help?",
         version_number: 2,
         status: "draft",
-        source: "web_ui",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true }
         ],
@@ -273,7 +271,6 @@ module PromptTracker
             template: "Other template",
             version_number: 1,
             status: "active",
-            source: "file"
           )
 
           test1 = AbTest.create!(valid_attributes)
@@ -529,7 +526,6 @@ module PromptTracker
           template: "Version 3",
           version_number: 3,
           status: "draft",
-          source: "web_ui"
         )
 
         ab_test = AbTest.new(valid_attributes.merge(

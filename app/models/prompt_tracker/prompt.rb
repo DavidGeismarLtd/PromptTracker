@@ -124,11 +124,5 @@ module PromptTracker
     def average_response_time_ms
       llm_responses.average(:response_time_ms)&.to_f
     end
-
-    # Returns evaluator configs for the active version
-    # @return [ActiveRecord::Relation<EvaluatorConfig>] evaluator configs or empty relation
-    def active_evaluator_configs
-      active_version&.evaluator_configs || EvaluatorConfig.none
-    end
   end
 end

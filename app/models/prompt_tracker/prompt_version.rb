@@ -10,7 +10,6 @@
 #  model_config     :jsonb
 #  notes            :text
 #  prompt_id        :bigint           not null
-#  source           :string           default("file"), not null
 #  status           :string           default("draft"), not null
 #  template         :text             not null
 #  updated_at       :datetime         not null
@@ -28,7 +27,6 @@ module PromptTracker
   #     template: "Hello {{name}}, how can I help?",
   #     version_number: 1,
   #     status: "active",
-  #     source: "file",
   #     variables_schema: [
   #       { "name" => "name", "type" => "string", "required" => true }
   #     ]
@@ -45,7 +43,6 @@ module PromptTracker
   class PromptVersion < ApplicationRecord
     # Constants
     STATUSES = %w[active deprecated draft].freeze
-    SOURCES = %w[file web_ui api].freeze
 
     # Associations
     belongs_to :prompt,
@@ -75,7 +72,6 @@ module PromptTracker
     validates :template, presence: true
     validates :version_number, presence: true, numericality: { only_integer: true, greater_than: 0 }
     validates :status, presence: true, inclusion: { in: STATUSES }
-    validates :source, presence: true, inclusion: { in: SOURCES }
 
     validates :version_number,
               uniqueness: { scope: :prompt_id, message: "already exists for this prompt" }
@@ -101,14 +97,6 @@ module PromptTracker
     # Returns only draft versions
     # @return [ActiveRecord::Relation<PromptVersion>]
     scope :draft, -> { where(status: "draft") }
-
-    # Returns only file-sourced versions
-    # @return [ActiveRecord::Relation<PromptVersion>]
-    scope :from_files, -> { where(source: "file") }
-
-    # Returns only web UI-sourced versions
-    # @return [ActiveRecord::Relation<PromptVersion>]
-    scope :from_web_ui, -> { where(source: "web_ui") }
 
     # Returns versions ordered by version number (newest first)
     # @return [ActiveRecord::Relation<PromptVersion>]
@@ -191,13 +179,6 @@ module PromptTracker
       name = "v#{version_number}"
       name += " (#{status})" if status != "active"
       name
-    end
-
-    # Checks if this version came from a file.
-    #
-    # @return [Boolean] true if source is "file"
-    def from_file?
-      source == "file"
     end
 
     # Checks if this version has any LLM responses.

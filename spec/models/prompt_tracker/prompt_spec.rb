@@ -65,7 +65,6 @@ module PromptTracker
           template: "Hello {{name}}",
           version_number: 1,
           status: "active",
-          source: "file"
         )
 
         expect { prompt.destroy }.to change { PromptVersion.count }.by(-1)
@@ -118,13 +117,11 @@ module PromptTracker
             template: "Active version",
             version_number: 2,
             status: "active",
-            source: "file"
           )
           deprecated_version = prompt.prompt_versions.create!(
             template: "Old version",
             version_number: 1,
             status: "deprecated",
-            source: "file"
           )
 
           expect(prompt.active_version).to eq(active_version)
@@ -141,14 +138,12 @@ module PromptTracker
             template: "First",
             version_number: 1,
             status: "deprecated",
-            source: "file"
           )
           sleep 0.01 # Ensure different timestamps
           latest_version = prompt.prompt_versions.create!(
             template: "Latest",
             version_number: 2,
             status: "active",
-            source: "file"
           )
 
           expect(prompt.latest_version).to eq(latest_version)
@@ -168,7 +163,6 @@ module PromptTracker
             template: "Test",
             version_number: 1,
             status: "active",
-            source: "file"
           )
 
           prompt.archive!
@@ -206,7 +200,6 @@ module PromptTracker
             template: "Test",
             version_number: 1,
             status: "active",
-            source: "file"
           )
 
           version.llm_responses.create!(
@@ -231,7 +224,6 @@ module PromptTracker
             template: "Test",
             version_number: 1,
             status: "active",
-            source: "file"
           )
 
           version.llm_responses.create!(
@@ -266,7 +258,6 @@ module PromptTracker
             template: "Test",
             version_number: 1,
             status: "active",
-            source: "file"
           )
 
           version.llm_responses.create!(
@@ -297,7 +288,6 @@ module PromptTracker
             template: "Test",
             version_number: 1,
             status: "active",
-            source: "file"
           )
 
           config = version.evaluator_configs.create!(

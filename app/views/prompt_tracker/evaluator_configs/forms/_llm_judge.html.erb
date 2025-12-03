@@ -66,32 +66,8 @@
          max="100"
          required>
   <small class="form-text text-muted">
-    Minimum score required to pass (0-100). The LLM judge will return a score, and if it's >= this threshold, the evaluation passes.
+    Minimum score required to pass (0-100). The LLM judge will return a score from 0-100, and if it's >= this threshold, the evaluation passes.
   </small>
-</div>
-
-<!-- Score Range (for reference) -->
-<div class="row">
-  <div class="col-md-6 mb-3">
-    <label class="form-label">Minimum Score</label>
-    <input type="number"
-           name="<%= namespace %>[score_min]"
-           class="form-control"
-           value="<%= config['score_min'] || config[:score_min] || 0 %>"
-           min="0"
-           readonly>
-    <small class="form-text text-muted">Always 0 for LLM Judge</small>
-  </div>
-  <div class="col-md-6 mb-3">
-    <label class="form-label">Maximum Score</label>
-    <input type="number"
-           name="<%= namespace %>[score_max]"
-           class="form-control"
-           value="<%= config['score_max'] || config[:score_max] || 100 %>"
-           min="0"
-           readonly>
-    <small class="form-text text-muted">Always 100 for LLM Judge</small>
-  </div>
 </div>
 
 <div class="alert alert-warning">

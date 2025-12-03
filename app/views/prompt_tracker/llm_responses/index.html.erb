@@ -70,9 +70,9 @@
             <% @responses.each do |response| %>
               <tr>
                 <td><code>#<%= response.id %></code></td>
-                <td><%= link_to response.prompt_version.prompt.name, prompt_path(response.prompt_version.prompt) %></td>
+                <td><%= link_to response.prompt_version.prompt.name, testing_prompt_path(response.prompt_version.prompt) %></td>
                 <td>
-                  <%= link_to "v#{response.prompt_version.version_number}", prompt_prompt_version_path(response.prompt_version.prompt, response.prompt_version) %>
+                  <%= link_to "v#{response.prompt_version.version_number}", testing_prompt_prompt_version_path(response.prompt_version.prompt, response.prompt_version) %>
                 </td>
                 <td><%= provider_icon(response.provider) %> <%= response.provider %></td>
                 <td><code><%= response.model %></code></td>

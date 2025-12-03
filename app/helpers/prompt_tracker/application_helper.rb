@@ -109,29 +109,7 @@ module PromptTracker
       end
     end
 
-    # Get badge for source
-    #
-    # @param source [String] the source value (file/web_ui/api)
-    # @return [String] HTML badge
-    # @example
-    #   source_badge("file") # => "<span class='badge badge-primary'>📄 file</span>"
-    def source_badge(source)
-      icon = case source.to_s
-             when "file" then "📄"
-             when "web_ui" then "🌐"
-             when "api" then "🔌"
-             else "❓"
-             end
 
-      color = case source.to_s
-              when "file" then "primary"
-              when "web_ui" then "info"
-              when "api" then "secondary"
-              else "secondary"
-              end
-
-      content_tag(:span, "#{icon} #{source}", class: "badge badge-#{color}")
-    end
 
     # Format percentage
     #

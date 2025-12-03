@@ -75,14 +75,15 @@ module PromptTracker
             through: :prompt_version,
             class_name: "PromptTracker::Prompt"
 
+    has_many :human_evaluations,
+             class_name: "PromptTracker::HumanEvaluation",
+             dependent: :destroy
+
     # Validations
-    validates :score, presence: true, numericality: true
-    validates :score_min, numericality: true
-    validates :score_max, numericality: true
+    validates :score, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
     validates :evaluator_type, presence: true
     validates :evaluation_context, presence: true, inclusion: { in: %w[tracked_call test_run manual] }
 
-    validate :score_within_range
     validate :metadata_must_be_hash
 
     # Enums
@@ -128,28 +129,13 @@ module PromptTracker
 
     # Instance Methods
 
-    # Normalizes the score to a 0-1 scale.
+    # Checks if the score is passing (above 70 by default).
+    # All scores are 0-100, so no normalization needed.
     #
-    # @return [Float] normalized score between 0 and 1
-    def normalized_score
-      return 0.0 if score_max == score_min
-
-      (score - score_min) / (score_max - score_min).to_f
-    end
-
-    # Converts the score to a percentage (0-100).
-    #
-    # @return [Float] score as percentage
-    def score_percentage
-      normalized_score * 100
-    end
-
-    # Checks if the score is passing (above 70% by default).
-    #
-    # @param threshold [Float] passing threshold as percentage (default: 70)
+    # @param threshold [Float] passing threshold (default: 70)
     # @return [Boolean] true if score is passing
     def passing?(threshold = 70)
-      score_percentage >= threshold
+      score >= threshold
     end
 
     # Returns the evaluator key derived from the class name
@@ -189,21 +175,6 @@ module PromptTracker
     end
 
     private
-
-    # Validates that score is within the min/max range
-    def score_within_range
-      return if score.nil? || score_min.nil? || score_max.nil?
-
-      # Format numbers without unnecessary decimals for error messages
-      min_formatted = score_min % 1 == 0 ? score_min.to_i : score_min
-      max_formatted = score_max % 1 == 0 ? score_max.to_i : score_max
-
-      if score < score_min
-        errors.add(:score, "must be greater than or equal to #{min_formatted}")
-      elsif score > score_max
-        errors.add(:score, "must be less than or equal to #{max_formatted}")
-      end
-    end
 
     # Validates that metadata is a hash
     def metadata_must_be_hash

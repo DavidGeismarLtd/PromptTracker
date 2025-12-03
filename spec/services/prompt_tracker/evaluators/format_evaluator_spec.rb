@@ -17,7 +17,6 @@ module PromptTracker
         prompt.prompt_versions.create!(
           template: "Test",
           status: "active",
-          source: "api"
         )
       end
 

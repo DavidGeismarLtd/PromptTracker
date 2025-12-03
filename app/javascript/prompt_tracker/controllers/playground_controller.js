@@ -21,6 +21,14 @@ export default class extends Controller {
     "promptNameInput",
     "charCount",
     "previewStatus"
+    "modelProvider",
+    "modelName",
+    "modelTemperature",
+    "modelMaxTokens",
+    "modelTopP",
+    "modelFrequencyPenalty",
+    "modelPresencePenalty",
+    "temperatureBadge"
   ]
 
   static values = {
@@ -93,6 +101,14 @@ export default class extends Controller {
   onVariableInput(event) {
     if (event.target.classList.contains('variable-input')) {
       this.debouncedUpdatePreview()
+    }
+  }
+
+  // Action: Model config change
+  onModelConfigChange() {
+    // Update temperature badge
+    if (this.hasTemperatureBadgeTarget && this.hasModelTemperatureTarget) {
+      this.temperatureBadgeTarget.textContent = this.modelTemperatureTarget.value
     }
   }
 
@@ -297,7 +313,7 @@ export default class extends Controller {
       promptName = this.promptNameInputTarget.value.trim()
     }
 
-    const notes = prompt('Add notes for this version (optional):')
+      model_config: this.getModelConfig(),    const notes = prompt('Add notes for this version (optional):')
     if (notes === null) return // User cancelled
 
     // Disable all save buttons and show loading state
@@ -312,7 +328,8 @@ export default class extends Controller {
     const requestBody = {
       template: template,
       notes: notes,
-      save_action: saveAction
+      save_action: saveAction,
+      model_config: this.getModelConfig()
     }
 
     if (this.isStandaloneValue) {
@@ -439,3 +456,38 @@ export default class extends Controller {
     }
   }
 }
+
+  // Get model configuration from form
+  getModelConfig() {
+    const config = {}
+    
+    if (this.hasModelProviderTarget) {
+      config.provider = this.modelProviderTarget.value
+    }
+    
+    if (this.hasModelNameTarget && this.modelNameTarget.value) {
+      config.model = this.modelNameTarget.value
+    }
+    
+    if (this.hasModelTemperatureTarget) {
+      config.temperature = parseFloat(this.modelTemperatureTarget.value)
+    }
+    
+    if (this.hasModelMaxTokensTarget && this.modelMaxTokensTarget.value) {
+      config.max_tokens = parseInt(this.modelMaxTokensTarget.value)
+    }
+    
+    if (this.hasModelTopPTarget && this.modelTopPTarget.value) {
+      config.top_p = parseFloat(this.modelTopPTarget.value)
+    }
+    
+    if (this.hasModelFrequencyPenaltyTarget && this.modelFrequencyPenaltyTarget.value) {
+      config.frequency_penalty = parseFloat(this.modelFrequencyPenaltyTarget.value)
+    }
+    
+    if (this.hasModelPresencePenaltyTarget && this.modelPresencePenaltyTarget.value) {
+      config.presence_penalty = parseFloat(this.modelPresencePenaltyTarget.value)
+    }
+    
+    return config
+  }

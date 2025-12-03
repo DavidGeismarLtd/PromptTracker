@@ -1,7 +1,7 @@
 <% content_for :breadcrumbs do %>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><%= link_to "Prompts", prompts_path %></li>
+      <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
       <li class="breadcrumb-item active" aria-current="page">Evaluations</li>
     </ol>
   </nav>
@@ -150,7 +150,7 @@
                   <% end %>
                 </td>
                 <td>
-                  <%= link_to prompt.name, prompt_path(prompt) %>
+                  <%= link_to prompt.name, testing_prompt_path(prompt) %>
                   <br>
                   <small class="text-muted">v<%= response.prompt_version.version_number %></small>
                 </td>

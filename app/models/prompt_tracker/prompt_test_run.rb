@@ -112,6 +112,16 @@ module PromptTracker
       failed_evaluators.zero? && total_evaluators.positive?
     end
 
+    # Calculate average score from all evaluations
+    # All scores are 0-100, so just average them
+    #
+    # @return [Float, nil] average score (0-100) or nil if no evaluations
+    def avg_score
+      return nil if evaluations.empty?
+
+      evaluations.average(:score)&.round(2)
+    end
+
     private
 
   def broadcast_creation
@@ -132,7 +142,7 @@ module PromptTracker
     broadcast_prepend(
       stream: "prompt_test_#{prompt_test_id}",
       target: "recent_runs_tbody",
-      partial: "prompt_tracker/prompt_tests/test_run_row",
+      partial: "prompt_tracker/testing/prompt_tests/test_run_row",
       locals: { run: self }
     )
 
@@ -140,7 +150,7 @@ module PromptTracker
     broadcast_replace(
       stream: "prompt_test_#{prompt_test_id}",
       target: "test_status_card",
-      partial: "prompt_tracker/prompt_tests/test_status_card",
+      partial: "prompt_tracker/testing/prompt_tests/test_status_card",
       locals: { test: test }
     )
 
@@ -148,7 +158,7 @@ module PromptTracker
     broadcast_replace(
       stream: "prompt_version_#{version.id}",
       target: "test_row_#{test.id}",
-      partial: "prompt_tracker/prompt_tests/test_row",
+      partial: "prompt_tracker/testing/prompt_tests/test_row",
       locals: { test: test, prompt: prompt, version: version }
     )
 
@@ -157,7 +167,7 @@ module PromptTracker
     broadcast_replace(
       stream: "prompt_version_#{version.id}",
       target: "overall_status_card",
-      partial: "prompt_tracker/prompt_tests/overall_status_card",
+      partial: "prompt_tracker/testing/prompt_tests/overall_status_card",
       locals: { tests: all_tests }
     )
   end
@@ -172,7 +182,7 @@ module PromptTracker
     broadcast_replace(
       stream: "prompt_test_#{prompt_test_id}",
       target: "test_run_row_#{id}",
-      partial: "prompt_tracker/prompt_tests/test_run_row",
+      partial: "prompt_tracker/testing/prompt_tests/test_run_row",
       locals: { run: self }
     )
 
@@ -180,7 +190,7 @@ module PromptTracker
     broadcast_replace(
       stream: "prompt_test_#{prompt_test_id}",
       target: "test_status_card",
-      partial: "prompt_tracker/prompt_tests/test_status_card",
+      partial: "prompt_tracker/testing/prompt_tests/test_status_card",
       locals: { test: test }
     )
 
@@ -188,7 +198,7 @@ module PromptTracker
     broadcast_replace(
       stream: "prompt_version_#{version.id}",
       target: "test_row_#{test.id}",
-      partial: "prompt_tracker/prompt_tests/test_row",
+      partial: "prompt_tracker/testing/prompt_tests/test_row",
       locals: { test: test, prompt: prompt, version: version }
     )
 
@@ -197,7 +207,7 @@ module PromptTracker
     broadcast_replace(
       stream: "prompt_version_#{version.id}",
       target: "overall_status_card",
-      partial: "prompt_tracker/prompt_tests/overall_status_card",
+      partial: "prompt_tracker/testing/prompt_tests/overall_status_card",
       locals: { tests: all_tests }
     )
   end

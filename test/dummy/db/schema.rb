@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_11_30_101219) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_03_091402) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -79,6 +79,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_30_101219) do
     t.index ["configurable_type", "configurable_id", "evaluator_type"], name: "index_evaluator_configs_unique_per_configurable", unique: true
     t.index ["configurable_type", "configurable_id"], name: "index_evaluator_configs_on_configurable"
     t.index ["enabled"], name: "index_evaluator_configs_on_enabled"
+  end
+
+  create_table "prompt_tracker_human_evaluations", force: :cascade do |t|
+    t.bigint "evaluation_id", null: false
+    t.decimal "score", precision: 10, scale: 2, null: false
+    t.text "feedback"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["evaluation_id"], name: "index_prompt_tracker_human_evaluations_on_evaluation_id"
   end
 
   create_table "prompt_tracker_llm_responses", force: :cascade do |t|
@@ -169,7 +178,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_30_101219) do
     t.text "template", null: false
     t.integer "version_number", null: false
     t.string "status", default: "draft", null: false
-    t.string "source", default: "file", null: false
     t.jsonb "variables_schema", default: []
     t.jsonb "model_config", default: {}
     t.text "notes"
@@ -179,7 +187,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_30_101219) do
     t.index ["prompt_id", "status"], name: "index_prompt_versions_on_prompt_and_status"
     t.index ["prompt_id", "version_number"], name: "index_prompt_versions_on_prompt_and_version_number", unique: true
     t.index ["prompt_id"], name: "index_prompt_tracker_prompt_versions_on_prompt_id"
-    t.index ["source"], name: "index_prompt_tracker_prompt_versions_on_source"
     t.index ["status"], name: "index_prompt_tracker_prompt_versions_on_status"
   end
 
@@ -200,6 +207,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_30_101219) do
   add_foreign_key "prompt_tracker_ab_tests", "prompt_tracker_prompts", column: "prompt_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_llm_responses", column: "llm_response_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_prompt_test_runs", column: "prompt_test_run_id"
+  add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_evaluations", column: "evaluation_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_ab_tests", column: "ab_test_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_prompt_versions", column: "prompt_version_id"
   add_foreign_key "prompt_tracker_prompt_test_runs", "prompt_tracker_llm_responses", column: "llm_response_id"

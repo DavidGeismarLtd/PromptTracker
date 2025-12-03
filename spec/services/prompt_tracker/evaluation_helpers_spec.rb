@@ -16,7 +16,6 @@ module PromptTracker
       prompt.prompt_versions.create!(
         template: "Test",
         status: "active",
-        source: "api"
       )
     end
 
@@ -140,7 +139,6 @@ module PromptTracker
         empty_version = prompt.prompt_versions.create!(
           template: "Empty",
           status: "draft",
-          source: "api"
         )
 
         avg = EvaluationHelpers.average_score_for_version(empty_version)
@@ -240,7 +238,6 @@ module PromptTracker
         version2 = prompt.prompt_versions.create!(
           template: "Test 2",
           status: "draft",
-          source: "api"
         )
 
         response1 = version.llm_responses.create!(
@@ -284,7 +281,6 @@ module PromptTracker
         version2 = prompt.prompt_versions.create!(
           template: "Test 2",
           status: "draft",
-          source: "api"
         )
 
         response1 = version.llm_responses.create!(
@@ -325,7 +321,6 @@ module PromptTracker
         version2 = prompt.prompt_versions.create!(
           template: "Test 2",
           status: "draft",
-          source: "api"
         )
 
         best = EvaluationHelpers.best_version([version, version2])

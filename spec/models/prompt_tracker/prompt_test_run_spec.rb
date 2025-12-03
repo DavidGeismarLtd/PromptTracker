@@ -18,7 +18,6 @@ module PromptTracker
         template: "Hello {{name}}",
         version_number: 1,
         status: "active",
-        source: "web_ui",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true }
         ]

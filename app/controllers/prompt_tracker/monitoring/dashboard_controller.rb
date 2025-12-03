@@ -2,10 +2,10 @@
 
 module PromptTracker
   module Monitoring
-    # Dashboard for the Monitoring section - production tracking
+    # Dashboard for the Monitoring section - runtime tracking
     #
     # Shows overview of:
-    # - Recent production LLM calls
+    # - Recent runtime LLM calls (across all environments)
     # - Auto-evaluation results
     # - Quality metrics
     # - Alerts for failing evaluations

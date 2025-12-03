@@ -34,7 +34,6 @@ support_greeting = PromptTracker::Prompt.create!(
 support_greeting_v1 = support_greeting.prompt_versions.create!(
   template: "Hello {{customer_name}}! Thank you for contacting support. How can I help you with {{issue_category}} today?",
   status: "deprecated",
-  source: "file",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
     { "name" => "issue_category", "type" => "string", "required" => false }
@@ -48,7 +47,6 @@ support_greeting_v1 = support_greeting.prompt_versions.create!(
 support_greeting_v2 = support_greeting.prompt_versions.create!(
   template: "Hi {{customer_name}}! 👋 Thanks for reaching out. What can I help you with today?",
   status: "deprecated",
-  source: "web_ui",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true }
   ],
@@ -61,7 +59,6 @@ support_greeting_v2 = support_greeting.prompt_versions.create!(
 support_greeting_v3 = support_greeting.prompt_versions.create!(
   template: "Hi {{customer_name}}! Thanks for contacting us. I'm here to help with your {{issue_category}} question. What's going on?",
   status: "active",
-  source: "file",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
     { "name" => "issue_category", "type" => "string", "required" => true }
@@ -75,7 +72,6 @@ support_greeting_v3 = support_greeting.prompt_versions.create!(
 support_greeting_v4 = support_greeting.prompt_versions.create!(
   template: "Hey {{customer_name}}! What's up with {{issue_category}}?",
   status: "draft",
-  source: "web_ui",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
     { "name" => "issue_category", "type" => "string", "required" => true }
@@ -89,7 +85,6 @@ support_greeting_v4 = support_greeting.prompt_versions.create!(
 support_greeting_v5 = support_greeting.prompt_versions.create!(
   template: "Hi {{customer_name}}, I understand you're having an issue with {{issue_category}}. I'm here to help you resolve this. Can you tell me more about what's happening?",
   status: "draft",
-  source: "web_ui",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
     { "name" => "issue_category", "type" => "string", "required" => true }
@@ -116,7 +111,6 @@ email_summary = PromptTracker::Prompt.create!(
 email_summary_v1 = email_summary.prompt_versions.create!(
   template: "Summarize the following email thread in 2-3 sentences:\n\n{{email_thread}}",
   status: "active",
-  source: "file",
   variables_schema: [
     { "name" => "email_thread", "type" => "string", "required" => true }
   ],
@@ -128,7 +122,6 @@ email_summary_v1 = email_summary.prompt_versions.create!(
 email_summary_v2 = email_summary.prompt_versions.create!(
   template: "Summarize the following email thread as bullet points (3-5 key points):\n\n{{email_thread}}",
   status: "draft",
-  source: "web_ui",
   variables_schema: [
     { "name" => "email_thread", "type" => "string", "required" => true }
   ],
@@ -168,7 +161,6 @@ code_review_v1 = code_review.prompt_versions.create!(
     Be constructive and specific.
   TEMPLATE
   status: "active",
-  source: "file",
   variables_schema: [
     { "name" => "language", "type" => "string", "required" => true },
     { "name" => "code", "type" => "string", "required" => true }

@@ -6,33 +6,29 @@
     <i class="bi bi-robot"></i>
     LLM Judge
   </h6>
-  
-  <% criteria = config['criteria'] || config[:criteria] %>
-  <% model = config['model'] || config[:model] %>
-  <% provider = config['provider'] || config[:provider] %>
-  
-  <% if criteria.present? %>
-    <div class="mb-2">
-      <strong>Evaluation Criteria:</strong>
-      <div class="mt-1 p-2 bg-light rounded">
-        <%= criteria %>
-      </div>
-    </div>
-  <% end %>
-  
-  <% if model.present? || provider.present? %>
+
+  <% judge_model = config['judge_model'] || config[:judge_model] %>
+  <% custom_instructions = config['custom_instructions'] || config[:custom_instructions] %>
+
+  <% if judge_model.present? %>
     <div class="mb-2">
       <strong>Judge Model:</strong>
       <div class="mt-1">
         <span class="badge bg-info-subtle text-info">
-          <%= provider || 'openai' %> / <%= model || 'gpt-4' %>
+          <%= judge_model %>
         </span>
       </div>
     </div>
   <% end %>
-  
-  <% if criteria.blank? %>
-    <p class="text-muted mb-0">No evaluation criteria configured</p>
+
+  <% if custom_instructions.present? %>
+    <div class="mb-2">
+      <strong>Evaluation Instructions:</strong>
+      <div class="mt-1 p-2 bg-light rounded">
+        <%= simple_format(custom_instructions) %>
+      </div>
+    </div>
+  <% else %>
+    <p class="text-muted mb-0">No custom instructions configured</p>
   <% end %>
 </div>
-

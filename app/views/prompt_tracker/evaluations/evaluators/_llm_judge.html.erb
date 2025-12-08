@@ -6,8 +6,6 @@
   </div>
   <div class="card-body">
     <% metadata = evaluation.metadata || {} %>
-    <% criteria_scores = metadata['criteria_scores'] || {} %>
-    <% criteria = metadata['criteria'] || [] %>
 
     <!-- Judge Model Info -->
     <div class="mb-3">
@@ -18,43 +16,15 @@
       <% end %>
     </div>
 
-    <!-- Criteria Breakdown -->
-    <% if criteria_scores.any? %>
-      <h6 style="color: #374151; margin-bottom: 1rem;">
-        <i class="bi bi-list-check"></i> Criteria Assessment
-      </h6>
+    <!-- Custom Instructions -->
+    <% if metadata['custom_instructions'].present? %>
       <div class="mb-3">
-        <% criteria_scores.each do |criterion, score| %>
-          <%
-            score_min = evaluation.score_min || 0
-            score_max = evaluation.score_max || 5
-            score_percentage = ((score - score_min) / (score_max - score_min) * 100).round
-            # Determine status based on score
-            is_good = score_percentage >= 70
-            is_medium = score_percentage >= 40 && score_percentage < 70
-            is_poor = score_percentage < 40
-          %>
-          <div style="background-color: #F9FAFB; border-left: 4px solid <%= is_good ? '#10B981' : (is_medium ? '#F59E0B' : '#EF4444') %>; padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 4px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <strong style="color: #374151; font-size: 0.9rem;"><%= criterion.to_s.humanize %></strong>
-              </div>
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <% if is_good %>
-                  <i class="bi bi-check-circle-fill" style="color: #10B981;"></i>
-                <% elsif is_medium %>
-                  <i class="bi bi-exclamation-circle-fill" style="color: #F59E0B;"></i>
-                <% else %>
-                  <i class="bi bi-x-circle-fill" style="color: #EF4444;"></i>
-                <% end %>
-              </div>
-            </div>
+        <p class="mb-1" style="color: #6B7280; font-size: 0.875rem;"><strong>Evaluation Instructions:</strong></p>
+        <div style="background-color: #F9FAFB; border-left: 4px solid #3B82F6; padding: 0.75rem 1rem; border-radius: 4px;">
+          <div style="color: #374151; font-size: 0.9rem;">
+            <%= simple_format(metadata['custom_instructions']) %>
           </div>
-        <% end %>
-      </div>
-    <% elsif criteria.any? %>
-      <div class="alert alert-info mb-3">
-        <strong>Evaluation Criteria:</strong> <%= criteria.join(', ') %>
+        </div>
       </div>
     <% end %>
 

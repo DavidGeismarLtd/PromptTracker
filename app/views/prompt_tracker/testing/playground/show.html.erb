@@ -26,10 +26,7 @@
     <div class="col">
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
-          <% if @prompt %>
-            <li class="breadcrumb-item"><%= link_to @prompt.name, testing_prompt_path(@prompt) %></li>
-          <% end %>
+          <li class="breadcrumb-item"><%= link_to "Testing", testing_root_path %></li>
           <li class="breadcrumb-item active" aria-current="page">Playground</li>
         </ol>
       </nav>
@@ -280,10 +277,6 @@
             <i class="bi bi-save"></i> Save as Draft Version
           </button>
         <% end %>
-        <a href="<%= testing_prompt_path(@prompt) %>" class="btn btn-outline-secondary">
-          <i class="bi bi-x-circle"></i>
-          Cancel
-        </a>
       <% else %>
         <!-- Standalone mode -->
         <button id="save-draft-btn"
@@ -293,7 +286,7 @@
                 data-playground-action-param="new_version">
           <i class="bi bi-save"></i> Create Prompt
         </button>
-        <a href="<%= testing_prompts_path %>" class="btn btn-outline-secondary">
+        <a href="<%= testing_root_path %>" class="btn btn-outline-secondary">
           <i class="bi bi-x-circle"></i>
           Cancel
         </a>

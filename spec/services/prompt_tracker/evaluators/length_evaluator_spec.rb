@@ -31,71 +31,56 @@ module PromptTracker
       end
 
       describe "#evaluate_score" do
-        it "scores perfect for ideal length" do
-          response = create_response("a" * 100) # Within ideal range (50-500)
+        it "scores 100 for acceptable length" do
+          response = create_response("a" * 100) # Within range (10-2000)
           evaluator = LengthEvaluator.new(response)
 
           expect(evaluator.evaluate_score).to eq(100)
         end
 
-        it "scores low for too short response" do
+        it "scores 0 for too short response" do
           response = create_response("hi") # 2 chars, below min (10)
           evaluator = LengthEvaluator.new(response)
 
-          expect(evaluator.evaluate_score).to eq(20)
+          expect(evaluator.evaluate_score).to eq(0)
         end
 
-        it "scores low for too long response" do
+        it "scores 0 for too long response" do
           response = create_response("a" * 3000) # Above max (2000)
           evaluator = LengthEvaluator.new(response)
 
-          expect(evaluator.evaluate_score).to eq(30)
+          expect(evaluator.evaluate_score).to eq(0)
         end
 
-        it "scores medium for acceptable but not ideal length" do
-          response = create_response("a" * 30) # Between min (10) and ideal_min (50)
+        it "scores 100 for length at minimum boundary" do
+          response = create_response("a" * 10) # Exactly at min
           evaluator = LengthEvaluator.new(response)
 
-          score = evaluator.evaluate_score
-          expect(score).to be > 50
-          expect(score).to be < 100
+          expect(evaluator.evaluate_score).to eq(100)
+        end
+
+        it "scores 100 for length at maximum boundary" do
+          response = create_response("a" * 2000) # Exactly at max
+          evaluator = LengthEvaluator.new(response)
+
+          expect(evaluator.evaluate_score).to eq(100)
         end
 
         it "uses custom config" do
           response = create_response("a" * 20)
           evaluator = LengthEvaluator.new(response, {
             min_length: 10,
-            max_length: 100,
-            ideal_min: 15,
-            ideal_max: 25
+            max_length: 100
           })
 
-          expect(evaluator.evaluate_score).to eq(100) # Within custom ideal range
+          expect(evaluator.evaluate_score).to eq(100) # Within custom range
         end
 
         it "handles empty response" do
           response = create_response("")
           evaluator = LengthEvaluator.new(response)
 
-          expect(evaluator.evaluate_score).to eq(20) # Too short
-        end
-
-        it "scales score correctly between min and ideal_min" do
-          response1 = create_response("a" * 10) # At min_length
-          response2 = create_response("a" * 30) # Between min and ideal_min
-          response3 = create_response("a" * 50) # At ideal_min
-
-          evaluator1 = LengthEvaluator.new(response1)
-          evaluator2 = LengthEvaluator.new(response2)
-          evaluator3 = LengthEvaluator.new(response3)
-
-          score1 = evaluator1.evaluate_score
-          score2 = evaluator2.evaluate_score
-          score3 = evaluator3.evaluate_score
-
-          expect(score1).to be < score2
-          expect(score2).to be < score3
-          expect(score3).to eq(100)
+          expect(evaluator.evaluate_score).to eq(0) # Too short
         end
       end
 
@@ -117,12 +102,13 @@ module PromptTracker
           expect(feedback).to match(/too long/i)
         end
 
-        it "generates appropriate feedback for ideal length" do
+        it "generates appropriate feedback for acceptable length" do
           response = create_response("a" * 100)
           evaluator = LengthEvaluator.new(response)
 
           feedback = evaluator.generate_feedback
-          expect(feedback).to match(/ideal/i)
+          expect(feedback).to match(/acceptable/i)
+          expect(feedback).to match(/100 chars/)
         end
       end
 
@@ -162,8 +148,6 @@ module PromptTracker
           expect(metadata[:response_length]).to eq(100)
           expect(metadata[:min_length]).to eq(10)
           expect(metadata[:max_length]).to eq(2000)
-          expect(metadata[:ideal_min]).to eq(50)
-          expect(metadata[:ideal_max]).to eq(500)
         end
       end
     end

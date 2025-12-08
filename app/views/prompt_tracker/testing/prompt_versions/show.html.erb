@@ -1,80 +1,70 @@
 <%= turbo_stream_from "prompt_version_#{@version.id}" %>
 
 <% content_for :breadcrumbs do %>
-  <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
-  <li class="breadcrumb-item"><%= link_to @prompt.name, testing_prompt_path(@prompt) %></li>
-  <li class="breadcrumb-item active">v<%= @version.version_number %></li>
+  <li class="breadcrumb-item active"><%= @prompt.name %>-v<%= @version.version_number %></li>
 <% end %>
 
-<div class="row mb-4">
-  <div class="col">
-    <h1>
-      <i class="bi bi-file-code"></i> <%= @prompt.name %>
-      <span class="badge bg-primary">v<%= @version.version_number %></span>
-      <%= status_badge(@version.status) %>
-    </h1>
-    <p class="text-muted">
-      <%= @prompt.description %>
-      <span class="ms-3"><i class="bi bi-calendar"></i> Created <%= format_timestamp(@version.created_at) %></span>
-    </p>
-  </div>
-  <div class="col-auto d-flex gap-2 align-items-start">
-    <% unless @version.active? %>
-      <%= button_to activate_testing_prompt_prompt_version_path(@prompt, @version), method: :post, class: "btn btn-success", data: { confirm: "Activate this version? This will deprecate all other versions." } do %>
-        <i class="bi bi-check-circle"></i> Activate Version
-      <% end %>
-    <% end %>
-    <%= link_to testing_prompt_prompt_version_playground_path(@prompt, @version), class: "btn btn-primary" do %>
-      <i class="bi bi-pencil-square"></i> Edit in Playground
-    <% end %>
-    <%= link_to compare_testing_prompt_prompt_version_path(@prompt, @version), class: "btn btn-outline-info" do %>
-      <i class="bi bi-arrow-left-right"></i> Compare Versions
-    <% end %>
-  </div>
-</div>
-
-<!-- Test Metrics -->
-<div class="alert alert-info mb-4">
-  <i class="bi bi-info-circle"></i>
-  <strong>Test Environment Metrics:</strong> The metrics below reflect only test runs from this version, not production usage.
-  For production monitoring, see the <a href="<%= monitoring_root_path %>" class="alert-link">Monitoring</a> section.
-</div>
-
-<div class="row mb-4">
-  <div class="col-md-3">
-    <%= render "prompt_tracker/testing/prompt_tests/overall_status_card", tests: @tests %>
-  </div>
-  <div class="col-md-3">
-    <div class="card metric-card">
-      <div class="metric-value"><%= format_cost(@total_cost) %></div>
-      <div class="metric-label">Test Cost</div>
-      <small class="text-muted d-block mt-1">From test runs</small>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card metric-card">
-      <div class="metric-value"><%= format_duration(@avg_response_time) %></div>
-      <div class="metric-label">Avg Response Time</div>
-      <small class="text-muted d-block mt-1">Test runs average</small>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card metric-card">
-      <div class="metric-value">
-        <% if @total_tests > 0 %>
-          <span class="text-success"><%= @tests_passing %></span> / <span class="text-danger"><%= @tests_failing %></span>
-        <% else %>
-          <span class="text-muted">No tests</span>
+<div class="testing-prompt-version-show">
+  <!-- Header -->
+  <div class="page-header" style="background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 1.5rem; margin-bottom: 2rem;">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h1 style="color: #1E40AF; margin: 0;">
+          <i class="bi bi-flask"></i> <%= @prompt.name %>
+          <span class="badge bg-primary">v<%= @version.version_number %></span>
+          <%= status_badge(@version.status) %>
+        </h1>
+        <p style="color: #1E40AF; margin: 0.5rem 0 0 0;">
+          Testing and validating prompt behavior before production
+        </p>
+      </div>
+      <div class="d-flex gap-2 align-items-start">
+        <%= link_to monitoring_prompt_prompt_version_path(@prompt, @version), class: "btn btn-outline-success" do %>
+          <i class="bi bi-activity"></i> View in Monitoring
+        <% end %>
+        <% unless @version.active? %>
+          <%= button_to activate_testing_prompt_prompt_version_path(@prompt, @version), method: :post, class: "btn btn-success", data: { confirm: "Activate this version? This will deprecate all other versions." } do %>
+            <i class="bi bi-check-circle"></i> Activate Version
+          <% end %>
+        <% end %>
+        <%= link_to testing_prompt_prompt_version_playground_path(@prompt, @version), class: "btn btn-primary" do %>
+          <i class="bi bi-pencil-square"></i> Edit in Playground
+        <% end %>
+        <%= link_to compare_testing_prompt_prompt_version_path(@prompt, @version), class: "btn btn-outline-info" do %>
+          <i class="bi bi-arrow-left-right"></i> Compare Versions
         <% end %>
       </div>
-      <div class="metric-label">Tests Passing / Failing</div>
-      <small class="text-muted d-block mt-1">
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="stat-card" style="background: white; border: 2px solid #DBEAFE; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Total Tests</div>
+      <div style="color: #3B82F6; font-size: 1.5rem; font-weight: bold;"><%= @total_tests %></div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #D1FAE5; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Passing</div>
+      <div style="color: #10B981; font-size: 1.5rem; font-weight: bold;"><%= @tests_passing %></div>
+      <div style="color: #64748B; font-size: 0.75rem; margin-top: 0.25rem;">
         <% if @total_tests > 0 %>
           <%= ((@tests_passing.to_f / @total_tests) * 100).round(1) %>% pass rate
-        <% else %>
-          Create tests to track quality
         <% end %>
-      </small>
+      </div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #FEE2E2; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Failing</div>
+      <div style="color: #EF4444; font-size: 1.5rem; font-weight: bold;"><%= @tests_failing %></div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #DBEAFE; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Test Cost</div>
+      <div style="color: #3B82F6; font-size: 1.5rem; font-weight: bold;"><%= format_cost(@total_cost) %></div>
+      <div style="color: #64748B; font-size: 0.75rem; margin-top: 0.25rem;">From test runs</div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #DBEAFE; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Avg Response Time</div>
+      <div style="color: #3B82F6; font-size: 1.5rem; font-weight: bold;"><%= format_duration(@avg_response_time) %></div>
+      <div style="color: #64748B; font-size: 0.75rem; margin-top: 0.25rem;">Test runs average</div>
     </div>
   </div>
 </div>
@@ -112,11 +102,17 @@
 </div>
 
 <!-- Tests -->
-<div class="card mb-4" data-controller="column-visibility">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Tests</h5>
+<div class="card mb-4" id="tests" style="border: 2px solid #DBEAFE;" data-controller="column-visibility">
+  <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #EFF6FF; border-bottom: 2px solid #DBEAFE;">
+    <div>
+      <h5 class="mb-0" style="color: #1E40AF;">
+        <i class="bi bi-flask"></i> Tests
+      </h5>
+      <small class="text-muted">
+        Validate prompt behavior with test cases before deploying to production
+      </small>
+    </div>
     <div class="d-flex gap-2">
-      <span class="badge bg-secondary align-self-center"><%= @tests.count %> tests</span>
       <% if @tests.any? %>
         <%= render "prompt_tracker/testing/prompt_versions/column_visibility_dropdown" %>
         <%= button_to run_all_testing_prompt_prompt_version_prompt_tests_path(@prompt, @version), method: :post, class: "btn btn-sm btn-success", data: { turbo_stream: true } do %>
@@ -129,30 +125,32 @@
     </div>
   </div>
   <div class="card-body">
+    <!-- Info Alert -->
+    <div class="alert alert-info mb-3">
+      <h6 class="alert-heading"><i class="bi bi-info-circle"></i> How Tests Work</h6>
+      <ul class="mb-0">
+        <li><strong>Manual execution:</strong> Tests run on-demand when you click "Run" or "Run All" to validate prompt behavior</li>
+        <li><strong>Test environment only:</strong> Tests use the <code>is_test_run: true</code> flag and don't affect production metrics</li>
+        <li><strong>Quality assurance:</strong> Validate prompts with specific inputs and expected outputs before deploying to production</li>
+      </ul>
+    </div>
+
     <% if @tests.any? %>
       <%= render "prompt_tracker/testing/prompt_versions/tests_table", tests: @tests, prompt: @prompt, version: @version %>
     <% else %>
       <div class="text-center py-5">
-        <i class="bi bi-clipboard-check" style="font-size: 3rem; color: #ccc;"></i>
+        <i class="bi bi-flask text-muted" style="font-size: 3rem;"></i>
         <p class="text-muted mt-3">No tests yet for this version</p>
         <p class="text-muted">Tests help you validate prompt behavior before deploying to production.</p>
-        <%= link_to "Create Your First Test", new_testing_prompt_prompt_version_prompt_test_path(@prompt, @version), class: "btn btn-primary mt-2" %>
+        <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#new-test-modal">
+          <i class="bi bi-plus-circle"></i> Create Your First Test
+        </button>
       </div>
     <% end %>
   </div>
 </div>
 
 <%= render "test_modals", tests: @tests, prompt: @prompt, version: @version %>
-
-<!-- Auto-Evaluators Configuration -->
-<div class="row mb-4">
-  <div class="col-12">
-    <%= render "evaluator_configs" %>
-  </div>
-</div>
-
-<!-- Evaluator Modals (outside card to avoid z-index issues) -->
-<%= render "evaluator_modals" %>
 
 <!-- New Test Modal -->
 <div class="modal fade" id="new-test-modal" tabindex="-1" aria-labelledby="new-test-modal-label" aria-hidden="true" data-controller="modal-fix" data-modal-fix-target="modal">

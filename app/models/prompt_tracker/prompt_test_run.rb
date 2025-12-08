@@ -45,6 +45,9 @@ module PromptTracker
     belongs_to :prompt_version
     belongs_to :llm_response, optional: true
     has_many :evaluations, class_name: "PromptTracker::Evaluation", foreign_key: :prompt_test_run_id, dependent: :destroy
+    has_many :human_evaluations,
+             class_name: "PromptTracker::HumanEvaluation",
+             dependent: :destroy
 
     # Validations
     validates :status, presence: true

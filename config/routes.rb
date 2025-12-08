@@ -13,7 +13,8 @@ PromptTracker::Engine.routes.draw do
       post :save, on: :member
     end
 
-    resources :prompts, only: [:index, :show] do
+    # Prompt versions (for testing)
+    resources :prompts, only: [] do
       # Playground for editing existing prompts
       resource :playground, only: [:show], controller: 'playground' do
         post :preview, on: :member
@@ -42,11 +43,13 @@ PromptTracker::Engine.routes.draw do
           end
         end
       end
-
     end
 
     # Test runs (for viewing results)
-    resources :runs, controller: "prompt_test_runs", only: [:index, :show]
+    resources :runs, controller: "prompt_test_runs", only: [:index, :show] do
+      # Human evaluations nested under test runs
+      resources :human_evaluations, only: [:create]
+    end
   end
 
   # ========================================
@@ -55,6 +58,11 @@ PromptTracker::Engine.routes.draw do
   namespace :monitoring do
     get "/", to: "dashboard#index", as: :root
 
+    # Prompts and versions (for monitoring tracked calls)
+    resources :prompts, only: [] do
+      resources :prompt_versions, only: [:show], path: "versions"
+    end
+
     # Evaluations (tracked/runtime calls from all environments)
     resources :evaluations, only: [:index, :show] do
       # Human evaluations nested under evaluations
@@ -62,7 +70,10 @@ PromptTracker::Engine.routes.draw do
     end
 
     # LLM Responses (tracked calls from all environments)
-    resources :llm_responses, only: [:index], path: "responses"
+    resources :llm_responses, only: [:index], path: "responses" do
+      # Human evaluations nested under llm_responses
+      resources :human_evaluations, only: [:create]
+    end
   end
 
   # Prompts (for monitoring - evaluator configs)

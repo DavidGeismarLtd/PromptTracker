@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_12_03_143500) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_08_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -82,12 +82,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_143500) do
   end
 
   create_table "prompt_tracker_human_evaluations", force: :cascade do |t|
-    t.bigint "evaluation_id", null: false
+    t.bigint "evaluation_id"
     t.decimal "score", precision: 10, scale: 2, null: false
     t.text "feedback"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "llm_response_id"
+    t.bigint "prompt_test_run_id"
     t.index ["evaluation_id"], name: "index_prompt_tracker_human_evaluations_on_evaluation_id"
+    t.index ["llm_response_id"], name: "index_prompt_tracker_human_evaluations_on_llm_response_id"
+    t.index ["prompt_test_run_id"], name: "index_prompt_tracker_human_evaluations_on_prompt_test_run_id"
+    t.check_constraint "evaluation_id IS NOT NULL AND llm_response_id IS NULL AND prompt_test_run_id IS NULL OR evaluation_id IS NULL AND llm_response_id IS NOT NULL AND prompt_test_run_id IS NULL OR evaluation_id IS NULL AND llm_response_id IS NULL AND prompt_test_run_id IS NOT NULL", name: "human_evaluation_belongs_to_one"
   end
 
   create_table "prompt_tracker_llm_responses", force: :cascade do |t|
@@ -208,6 +213,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_03_143500) do
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_llm_responses", column: "llm_response_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_prompt_test_runs", column: "prompt_test_run_id"
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_evaluations", column: "evaluation_id"
+  add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_llm_responses", column: "llm_response_id"
+  add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_prompt_test_runs", column: "prompt_test_run_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_ab_tests", column: "ab_test_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_prompt_versions", column: "prompt_version_id"
   add_foreign_key "prompt_tracker_prompt_test_runs", "prompt_tracker_llm_responses", column: "llm_response_id"

@@ -1,8 +1,5 @@
 <% content_for :breadcrumbs do %>
-  <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
-  <li class="breadcrumb-item"><%= link_to @prompt.name, testing_prompt_path(@prompt) %></li>
-  <li class="breadcrumb-item"><%= link_to "v#{@version.version_number}", testing_prompt_prompt_version_path(@prompt, @version) %></li>
-  <li class="breadcrumb-item"><%= link_to "Tests", testing_prompt_prompt_version_prompt_tests_path(@prompt, @version) %></li>
+  <li class="breadcrumb-item"><%= link_to "#{@prompt.name}-v#{@version.version_number}", testing_prompt_prompt_version_path(@prompt, @version) %></li>
   <li class="breadcrumb-item active"><%= @test.name %></li>
 <% end %>
 
@@ -145,9 +142,11 @@
             <th style="width: 12%;">Run Time</th>
             <th style="width: 10%;">Response Time</th>
             <th style="width: 8%;">Cost</th>
-            <th style="width: 25%;">Rendered Prompt</th>
-            <th style="width: 25%;">Response</th>
+            <th style="width: 20%;">Rendered Prompt</th>
+            <th style="width: 20%;">Response</th>
             <th style="width: 10%;">Evaluations</th>
+            <th style="width: 10%;">Human Evaluations</th>
+            <th style="width: 5%;">Actions</th>
           </tr>
         </thead>
         <tbody id="recent_runs_tbody">
@@ -157,7 +156,7 @@
             <% end %>
           <% else %>
             <tr id="no_runs_placeholder">
-              <td colspan="7" class="text-center text-muted py-4">No test runs yet. Click "Run Test" to get started!</td>
+              <td colspan="9" class="text-center text-muted py-4">No test runs yet. Click "Run Test" to get started!</td>
             </tr>
           <% end %>
         </tbody>
@@ -166,9 +165,10 @@
   </div>
 </div>
 
-<!-- Evaluation Modals (outside table structure) -->
+<!-- Modals (outside table structure) -->
 <% if @recent_runs.any? %>
   <div data-controller="modal-fix">
+    <!-- Evaluation Modals -->
     <% @recent_runs.each do |run| %>
       <% if run.llm_response&.evaluations&.any? %>
         <% run.llm_response.evaluations.each do |evaluation| %>
@@ -214,6 +214,14 @@
           </div>
         <% end %>
       <% end %>
+    <% end %>
+
+    <!-- Human Evaluation Modals -->
+    <% @recent_runs.each do |run| %>
+      <%= render "prompt_tracker/shared/human_evaluation_modal",
+                 record: run,
+                 form_url: testing_run_human_evaluations_path(run),
+                 context: 'testing' %>
     <% end %>
   </div>
 <% end %>

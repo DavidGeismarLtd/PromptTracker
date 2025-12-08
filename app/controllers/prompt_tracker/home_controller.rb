@@ -4,15 +4,15 @@ module PromptTracker
   # Home controller for the main landing page
   class HomeController < ApplicationController
     # GET /
-    # Main landing page explaining Testing and Monitoring sections
+    # Main landing page with prompts accordion
     def index
-      # Get some quick stats for the dashboard
-      @total_prompts = Prompt.count
-      @active_prompts = Prompt.active.count
-      @total_test_runs = PromptTestRun.count
-      @total_tracked_calls = LlmResponse.tracked_calls.count
-      @total_evaluations = Evaluation.tracked.count
+      # Load all prompts with their versions for the accordion
+      @prompts = Prompt.includes(
+        prompt_versions: [
+          :prompt_tests,
+          { prompt_tests: :prompt_test_runs }
+        ]
+      ).order(created_at: :desc)
     end
   end
 end
-

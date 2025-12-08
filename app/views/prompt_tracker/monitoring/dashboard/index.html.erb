@@ -1,11 +1,3 @@
-<% content_for :breadcrumbs do %>
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item active" aria-current="page">Monitoring Dashboard</li>
-    </ol>
-  </nav>
-<% end %>
-
 <div class="monitoring-dashboard">
   <div class="page-header" style="background-color: #ECFDF5; border-left: 4px solid #10B981; padding: 1.5rem; margin-bottom: 2rem;">
     <h1 style="color: #065F46; margin: 0;">
@@ -220,148 +212,16 @@
       <% end %>
     </div>
 
-    <% if @recent_responses.any? %>
-      <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="border-bottom: 2px solid #D1FAE5;">
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 120px;">Prompt</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 200px;">Rendered Prompt</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 200px;">Response</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 100px;">Environment</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 100px;">User ID</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 100px;">Session ID</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 150px;">Context</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 150px;">Evaluations</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 80px;">Status</th>
-              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 100px;">Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @recent_responses.each do |response| %>
-              <tr style="border-bottom: 1px solid #F1F5F9;">
-                <!-- Prompt Name -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <%= link_to response.prompt_version.prompt.name, llm_response_path(response), style: "color: #10B981; text-decoration: none; font-weight: 500;" %>
-                  <br>
-                  <small style="color: #94A3B8;">v<%= response.prompt_version.version_number %></small>
-                </td>
-
-                <!-- Rendered Prompt (truncated) -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <div style="max-width: 300px; font-size: 0.875rem; color: #475569; line-height: 1.4;">
-                    <%= truncate_text(response.rendered_prompt, 150) %>
-                  </div>
-                </td>
-
-                <!-- Response Text (truncated) -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <div style="max-width: 300px; font-size: 0.875rem; color: #475569; line-height: 1.4;">
-                    <% if response.status == 'success' && response.response_text.present? %>
-                      <%= truncate_text(response.response_text, 150) %>
-                    <% elsif response.status == 'error' %>
-                      <span style="color: #DC2626; font-style: italic;">
-                        Error: <%= truncate_text(response.error_message || 'Unknown error', 100) %>
-                      </span>
-                    <% else %>
-                      <span style="color: #94A3B8; font-style: italic;">No response</span>
-                    <% end %>
-                  </div>
-                </td>
-
-                <!-- Environment -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; background-color: #F3F4F6; color: #374151; white-space: nowrap;">
-                    <%= response.environment || '-' %>
-                  </span>
-                </td>
-
-                <!-- User ID -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <% if response.user_id.present? %>
-                    <code style="font-size: 0.75rem; color: #475569;"><%= response.user_id %></code>
-                  <% else %>
-                    <span style="color: #94A3B8; font-size: 0.75rem;">-</span>
-                  <% end %>
-                </td>
-
-                <!-- Session ID -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <% if response.session_id.present? %>
-                    <code style="font-size: 0.75rem; color: #475569;"><%= response.session_id %></code>
-                  <% else %>
-                    <span style="color: #94A3B8; font-size: 0.75rem;">-</span>
-                  <% end %>
-                </td>
-
-                <!-- Context Metadata -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <% if response.context.present? && response.context.any? %>
-                    <details style="cursor: pointer;">
-                      <summary style="font-size: 0.75rem; color: #10B981; font-weight: 500;">View context</summary>
-                      <pre style="font-size: 0.65rem; margin-top: 0.5rem; padding: 0.5rem; background: #F9FAFB; border-radius: 4px; max-width: 300px; overflow-x: auto;"><%= JSON.pretty_generate(response.context) %></pre>
-                    </details>
-                  <% else %>
-                    <span style="color: #94A3B8; font-size: 0.75rem;">-</span>
-                  <% end %>
-                </td>
-
-                <!-- Evaluations Breakdown -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <% tracked_evals = response.evaluations.tracked %>
-                  <% if tracked_evals.any? %>
-                    <div style="font-size: 0.875rem;">
-                      <div style="margin-bottom: 0.25rem;">
-                        <strong style="color: #374151;"><%= tracked_evals.count %> evaluation<%= tracked_evals.count == 1 ? '' : 's' %></strong>
-                      </div>
-                      <% tracked_evals.group_by(&:evaluator_type).each do |type, evals| %>
-                        <%
-                          # Determine color based on evaluator class
-                          is_human = type.include?("HumanEvaluator")
-                          is_llm_judge = type.include?("LlmJudgeEvaluator")
-                          bg_color = is_human ? '#FEF3C7' : (is_llm_judge ? '#E0E7FF' : '#DBEAFE')
-                          text_color = is_human ? '#92400E' : (is_llm_judge ? '#4338CA' : '#1E40AF')
-                          display_name = type.demodulize.gsub("Evaluator", "").titleize
-                        %>
-                        <div style="margin-bottom: 0.25rem;">
-                          <span style="padding: 0.125rem 0.5rem; border-radius: 3px; font-size: 0.75rem; background-color: <%= bg_color %>; color: <%= text_color %>;">
-                            <%= display_name %>
-                          </span>
-                          <span style="color: #64748B; font-size: 0.75rem;">× <%= evals.count %></span>
-                        </div>
-                        <% evals.each do |eval| %>
-                          <div style="margin-left: 0.5rem; font-size: 0.75rem; color: #64748B;">
-                            • <%= eval.evaluator_name %>:
-                            <span style="font-weight: 600; color: <%= eval.score >= 0.7 ? '#10B981' : '#EF4444' %>;">
-                              <%= eval.score.round(2) %>
-                            </span>
-                          </div>
-                        <% end %>
-                      <% end %>
-                    </div>
-                  <% else %>
-                    <span style="color: #94A3B8; font-size: 0.875rem; font-style: italic;">No evals</span>
-                  <% end %>
-                </td>
-
-                <!-- Status -->
-                <td style="padding: 0.75rem; vertical-align: top;">
-                  <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; background-color: <%= response.status == 'success' ? '#D1FAE5' : '#FEE2E2' %>; color: <%= response.status == 'success' ? '#065F46' : '#991B1B' %>; white-space: nowrap;">
-                    <%= response.status %>
-                  </span>
-                </td>
-
-                <!-- Time -->
-                <td style="padding: 0.75rem; color: #64748B; font-size: 0.875rem; vertical-align: top; white-space: nowrap;">
-                  <%= time_ago_in_words(response.created_at) %> ago
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    <% else %>
-      <p style="color: #64748B;">No tracked calls yet.</p>
-    <% end %>
+    <%= render "prompt_tracker/monitoring/shared/tracked_calls_table",
+               tracked_calls: @recent_responses,
+               show_column_visibility: true,
+               show_pagination: false,
+               show_prompt_column: true,
+               show_evaluations_column: true,
+               title: "Recent Tracked Calls",
+               empty_message: "No recent tracked calls found" %>
   </div>
 </div>
+
+<!-- Evaluation Modals -->
+<%= render "prompt_tracker/monitoring/shared/evaluation_modals", tracked_calls: @recent_responses %>

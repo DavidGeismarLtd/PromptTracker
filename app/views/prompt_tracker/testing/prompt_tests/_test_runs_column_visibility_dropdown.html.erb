@@ -35,6 +35,14 @@
       <input class="form-check-input" type="checkbox" id="col-run-evaluations-<%= test.id %>" data-column-visibility-target="checkbox" data-column-name="run_evaluations" data-action="change->column-visibility#toggle" checked>
       <label class="form-check-label" for="col-run-evaluations-<%= test.id %>">Evaluations</label>
     </li>
+    <li class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" id="col-human-evaluations-<%= test.id %>" data-column-visibility-target="checkbox" data-column-name="human_evaluations" data-action="change->column-visibility#toggle" checked>
+      <label class="form-check-label" for="col-human-evaluations-<%= test.id %>">Human Evaluations</label>
+    </li>
+    <li class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" id="col-actions-<%= test.id %>" data-column-visibility-target="checkbox" data-column-name="actions" data-action="change->column-visibility#toggle" checked>
+      <label class="form-check-label" for="col-actions-<%= test.id %>">Actions</label>
+    </li>
     <li><hr class="dropdown-divider"></li>
     <li class="d-flex gap-2">
       <button class="btn btn-sm btn-outline-primary flex-fill" data-action="click->column-visibility#showAll">Show All</button>
@@ -42,4 +50,3 @@
     </li>
   </ul>
 </div>
-

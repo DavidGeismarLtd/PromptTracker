@@ -10,8 +10,6 @@
     <% response_length = metadata['response_length'] || 0 %>
     <% min_length = metadata['min_length'] || 0 %>
     <% max_length = metadata['max_length'] || 0 %>
-    <% ideal_min = metadata['ideal_min'] || 0 %>
-    <% ideal_max = metadata['ideal_max'] || 0 %>
 
     <div class="row mb-3">
       <div class="col-md-12">
@@ -22,15 +20,8 @@
         </div>
 
         <div class="position-relative mt-3" style="height: 60px;">
-          <!-- Background bar showing full range -->
-          <div class="position-absolute w-100 bg-light rounded" style="height: 30px; top: 15px;"></div>
-
-          <!-- Ideal range (green) -->
-          <% ideal_start_pct = ((ideal_min - min_length).to_f / (max_length - min_length) * 100).round(2) %>
-          <% ideal_width_pct = ((ideal_max - ideal_min).to_f / (max_length - min_length) * 100).round(2) %>
-          <div class="position-absolute bg-success rounded"
-               style="height: 30px; top: 15px; left: <%= ideal_start_pct %>%; width: <%= ideal_width_pct %>%; opacity: 0.3;">
-          </div>
+          <!-- Acceptable range (green background) -->
+          <div class="position-absolute w-100 bg-success rounded" style="height: 30px; top: 15px; opacity: 0.2;"></div>
 
           <!-- Actual position marker -->
           <% actual_pct = ((response_length - min_length).to_f / (max_length - min_length) * 100).clamp(0, 100).round(2) %>
@@ -43,7 +34,7 @@
 
         <div class="d-flex justify-content-between mt-2 small text-muted">
           <span>Min: <%= min_length %></span>
-          <span>Ideal: <%= ideal_min %>-<%= ideal_max %></span>
+          <span>Actual: <%= response_length %></span>
           <span>Max: <%= max_length %></span>
         </div>
       </div>
@@ -69,10 +60,6 @@
           <tr>
             <td>Maximum Acceptable</td>
             <td class="text-end"><%= max_length %> chars</td>
-          </tr>
-          <tr class="table-success">
-            <td>Ideal Range</td>
-            <td class="text-end"><%= ideal_min %>-<%= ideal_max %> chars</td>
           </tr>
         </tbody>
       </table>

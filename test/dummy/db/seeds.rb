@@ -314,9 +314,7 @@ test_comprehensive_quality.evaluator_configs.create!(
 
   config: {
     "min_length" => 50,
-    "max_length" => 200,
-    "ideal_min" => 80,
-    "ideal_max" => 150
+    "max_length" => 200
   },
   enabled: true
 )
@@ -337,10 +335,7 @@ test_comprehensive_quality.evaluator_configs.create!(
 
   config: {
     "judge_model" => "gpt-4o",
-    "criteria" => ["helpfulness", "professionalism", "clarity", "tone"],
-    "custom_instructions" => "Evaluate if the greeting is warm, professional, and acknowledges the customer's refund request appropriately.",
-    "score_min" => 0,
-    "score_max" => 100
+    "custom_instructions" => "Evaluate if the greeting is warm, professional, and acknowledges the customer's refund request appropriately. Consider helpfulness, professionalism, clarity, and tone."
   },
   enabled: true
 )
@@ -378,9 +373,7 @@ test_email_format.evaluator_configs.create!(
 
   config: {
     "min_length" => 100,
-    "max_length" => 400,
-    "ideal_min" => 150,
-    "ideal_max" => 300
+    "max_length" => 400
   },
   enabled: true
 )
@@ -400,10 +393,7 @@ test_email_format.evaluator_configs.create!(
 
   config: {
     "judge_model" => "gpt-4o",
-    "criteria" => ["accuracy", "conciseness", "completeness"],
-    "custom_instructions" => "Evaluate if the summary captures the key points of the email thread concisely and accurately.",
-    "score_min" => 0,
-    "score_max" => 100
+    "custom_instructions" => "Evaluate if the summary captures the key points of the email thread concisely and accurately. Consider accuracy, conciseness, and completeness."
   },
   enabled: true
 )
@@ -442,9 +432,7 @@ test_code_review_quality.evaluator_configs.create!(
 
   config: {
     "min_length" => 200,
-    "max_length" => 1000,
-    "ideal_min" => 300,
-    "ideal_max" => 700
+    "max_length" => 1000
   },
   enabled: true
 )
@@ -465,10 +453,7 @@ test_code_review_quality.evaluator_configs.create!(
 
   config: {
     "judge_model" => "gpt-4o",
-    "criteria" => ["helpfulness", "technical_accuracy", "professionalism", "completeness"],
-    "custom_instructions" => "Evaluate if the code review is constructive, technically accurate, and provides actionable feedback. The review should identify potential issues and suggest improvements.",
-    "score_min" => 0,
-    "score_max" => 100
+    "custom_instructions" => "Evaluate if the code review is constructive, technically accurate, and provides actionable feedback. The review should identify potential issues and suggest improvements. Consider helpfulness, technical accuracy, professionalism, and completeness."
   },
   enabled: true
 )
@@ -513,9 +498,7 @@ test_exact_match.evaluator_configs.create!(
 
   config: {
     "min_length" => 50,
-    "max_length" => 150,
-    "ideal_min" => 80,
-    "ideal_max" => 120
+    "max_length" => 150
   },
   enabled: true
 )
@@ -525,10 +508,7 @@ test_exact_match.evaluator_configs.create!(
 
   config: {
     "judge_model" => "gpt-4o",
-    "criteria" => ["accuracy", "tone", "clarity"],
-    "custom_instructions" => "Evaluate if the greeting matches the expected format and tone for a password reset inquiry.",
-    "score_min" => 0,
-    "score_max" => 100
+    "custom_instructions" => "Evaluate if the greeting matches the expected format and tone for a password reset inquiry. Consider accuracy, tone, and clarity."
   },
   enabled: true
 )
@@ -572,9 +552,7 @@ test_technical_patterns.evaluator_configs.create!(
 
   config: {
     "min_length" => 250,
-    "max_length" => 1200,
-    "ideal_min" => 400,
-    "ideal_max" => 800
+    "max_length" => 1200
   },
   enabled: true
 )
@@ -605,10 +583,7 @@ test_technical_patterns.evaluator_configs.create!(
 
   config: {
     "judge_model" => "gpt-4o",
-    "criteria" => ["technical_accuracy", "completeness", "helpfulness", "professionalism"],
-    "custom_instructions" => "Evaluate the technical accuracy and completeness of the code review. It should identify the list comprehension, discuss performance implications, mention edge cases, and suggest testing.",
-    "score_min" => 0,
-    "score_max" => 100
+    "custom_instructions" => "Evaluate the technical accuracy and completeness of the code review. It should identify the list comprehension, discuss performance implications, mention edge cases, and suggest testing. Consider technical accuracy, completeness, helpfulness, and professionalism."
   },
   enabled: true
 )
@@ -763,10 +738,7 @@ successful_responses.each_with_index do |response, i|
       feedback: "The response is helpful and maintains a professional yet friendly tone.",
       metadata: {
         "judge_model" => "gpt-4o",
-        "criteria_scores" => {
-          "helpfulness" => rand(70..95),
-          "professionalism" => rand(70..95)
-        },
+        "custom_instructions" => "Evaluate helpfulness and professionalism",
         "reasoning" => "Good balance of professionalism and warmth",
         "evaluation_cost_usd" => 0.0002
       }

@@ -17,9 +17,7 @@ module PromptTracker
       let(:config) do
         {
           judge_model: "gpt-4o-2024-08-06",
-          criteria: [ "accuracy", "helpfulness" ],
-          score_min: 0,
-          score_max: 10
+          custom_instructions: "Evaluate the quality and accuracy of the response"
         }
       end
 
@@ -28,29 +26,23 @@ module PromptTracker
       describe "#initialize" do
         it "merges config with defaults" do
           expect(evaluator.config[:judge_model]).to eq("gpt-4o-2024-08-06")
-          expect(evaluator.config[:criteria]).to eq([ "accuracy", "helpfulness" ])
-          expect(evaluator.config[:score_min]).to eq(0)
-          expect(evaluator.config[:score_max]).to eq(10)
+          expect(evaluator.config[:custom_instructions]).to eq("Evaluate the quality and accuracy of the response")
         end
 
         it "uses default values for missing config" do
           minimal_evaluator = described_class.new(llm_response, {})
           expect(minimal_evaluator.config[:judge_model]).to eq("gpt-4o")
-          expect(minimal_evaluator.config[:criteria]).to eq(%w[accuracy helpfulness tone])
-          expect(minimal_evaluator.config[:score_min]).to eq(0)
-          expect(minimal_evaluator.config[:score_max]).to eq(5)
+          expect(minimal_evaluator.config[:custom_instructions]).to eq("Evaluate the quality and appropriateness of the response")
         end
 
         it "symbolizes string keys in config" do
           string_config = {
             "judge_model" => "gpt-4o",
-            "criteria" => [ "clarity" ],
-            "score_max" => 100
+            "custom_instructions" => "Focus on clarity and conciseness"
           }
           evaluator = described_class.new(llm_response, string_config)
           expect(evaluator.config[:judge_model]).to eq("gpt-4o")
-          expect(evaluator.config[:criteria]).to eq([ "clarity" ])
-          expect(evaluator.config[:score_max]).to eq(100)
+          expect(evaluator.config[:custom_instructions]).to eq("Focus on clarity and conciseness")
         end
       end
 
@@ -65,9 +57,8 @@ module PromptTracker
           double(
             "RubyLLM::Response",
             content: {
-              overall_score: 8.5,
-              criteria_scores: { accuracy: 9.0, helpfulness: 8.0 },
-              feedback: "Good response"
+              overall_score: 85,
+              feedback: "Good response with accurate information"
             },
             raw: double("raw response")
           )
@@ -101,10 +92,9 @@ module PromptTracker
           evaluator.evaluate
 
           expect(schema_chat_double).to have_received(:ask) do |prompt_text|
-            # Check that the prompt includes the response text and criteria
+            # Check that the prompt includes the response text and custom instructions
             expect(prompt_text).to include(llm_response.response_text)
-            expect(prompt_text).to include("accuracy")
-            expect(prompt_text).to include("helpfulness")
+            expect(prompt_text).to include("Evaluate the quality and accuracy of the response")
           end
         end
 
@@ -116,21 +106,20 @@ module PromptTracker
           evaluation = Evaluation.last
           expect(evaluation.llm_response).to eq(llm_response)
           expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LlmJudgeEvaluator")
-          expect(evaluation.score).to eq(8.5)
+          expect(evaluation.score).to eq(85)
           expect(evaluation.score_min).to eq(0)
-          expect(evaluation.score_max).to eq(10)
-          expect(evaluation.passed).to eq(true)  # 8.5/10 = 0.85 >= 0.8
-          expect(evaluation.feedback).to eq("Good response")
+          expect(evaluation.score_max).to eq(100)
+          expect(evaluation.passed).to eq(true)  # 85 >= 70 (default threshold)
+          expect(evaluation.feedback).to eq("Good response with accurate information")
         end
 
-        it "includes metadata about structured output usage and criteria_scores" do
+        it "includes metadata about structured output usage and custom instructions" do
           evaluator.evaluate
 
           evaluation = Evaluation.last
           expect(evaluation.metadata["used_structured_output"]).to eq(true)
           expect(evaluation.metadata["judge_model"]).to eq("gpt-4o-2024-08-06")
-          expect(evaluation.metadata["criteria"]).to eq([ "accuracy", "helpfulness" ])
-          expect(evaluation.metadata["criteria_scores"]).to eq({ "accuracy" => 9.0, "helpfulness" => 8.0 })
+          expect(evaluation.metadata["custom_instructions"]).to eq("Evaluate the quality and accuracy of the response")
           expect(evaluation.metadata["mock_mode"]).to eq(false)
         end
 
@@ -138,7 +127,7 @@ module PromptTracker
           result = evaluator.evaluate
 
           expect(result).to be_a(Evaluation)
-          expect(result.score).to eq(8.5)
+          expect(result.score).to eq(85)
           expect(result.passed).to eq(true)
         end
 
@@ -173,7 +162,7 @@ module PromptTracker
             expect(evaluation.llm_response).to eq(llm_response)
             expect(evaluation.evaluator_type).to eq("PromptTracker::Evaluators::LlmJudgeEvaluator")
             expect(evaluation.score_min).to eq(0)
-            expect(evaluation.score_max).to eq(10)
+            expect(evaluation.score_max).to eq(100)
             expect(evaluation.feedback).to match(/MOCK EVALUATION/)
           end
 
@@ -184,11 +173,11 @@ module PromptTracker
             expect(evaluation.metadata["mock_mode"]).to eq(true)
           end
 
-          it "generates scores within configured range" do
+          it "generates scores within 0-100 range" do
             evaluation = evaluator.evaluate
 
-            # The mock should generate scores within the configured range
-            expect(evaluation.score).to be_between(0, 10).inclusive
+            # The mock should generate scores within 0-100 range
+            expect(evaluation.score).to be_between(0, 100).inclusive
           end
         end
       end
@@ -206,33 +195,22 @@ module PromptTracker
           expect(prompt).to include("The capital of France is Paris.")
         end
 
-        it "includes evaluation criteria" do
+        it "includes custom instructions" do
           prompt = evaluator.send(:build_judge_prompt)
 
-          expect(prompt).to include("accuracy")
-          expect(prompt).to include("helpfulness")
+          expect(prompt).to include("Evaluate the quality and accuracy of the response")
         end
 
-        it "includes score range" do
+        it "mentions 0-100 score range" do
           prompt = evaluator.send(:build_judge_prompt)
 
-          expect(prompt).to include("0")
-          expect(prompt).to include("10")
+          expect(prompt).to include("0 to 100")
         end
 
         it "mentions structured JSON output" do
           prompt = evaluator.send(:build_judge_prompt)
 
           expect(prompt).to include("structured as JSON")
-        end
-
-        it "includes custom instructions when provided" do
-          custom_config = config.merge(custom_instructions: "Focus on technical accuracy")
-          custom_evaluator = described_class.new(llm_response, custom_config)
-
-          prompt = custom_evaluator.send(:build_judge_prompt)
-
-          expect(prompt).to include("Focus on technical accuracy")
         end
       end
 
@@ -243,16 +221,12 @@ module PromptTracker
           expect(schema).to be < RubyLLM::Schema
         end
 
-        it "uses LlmJudgeSchema.for_criteria" do
-          allow(LlmJudgeSchema).to receive(:for_criteria).and_call_original
+        it "uses LlmJudgeSchema.simple_schema" do
+          allow(LlmJudgeSchema).to receive(:simple_schema).and_call_original
 
           evaluator.send(:build_schema)
 
-          expect(LlmJudgeSchema).to have_received(:for_criteria).with(
-            criteria: [ "accuracy", "helpfulness" ],
-            score_min: 0,
-            score_max: 10
-          )
+          expect(LlmJudgeSchema).to have_received(:simple_schema)
         end
       end
     end

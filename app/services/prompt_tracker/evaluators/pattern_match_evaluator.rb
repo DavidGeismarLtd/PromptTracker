@@ -48,6 +48,8 @@ module PromptTracker
       end
 
       def generate_feedback
+        return "⚠ No patterns configured" if patterns.empty?
+
         matched_patterns = []
         failed_patterns = []
 

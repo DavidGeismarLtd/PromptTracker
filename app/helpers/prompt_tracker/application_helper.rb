@@ -236,5 +236,36 @@ module PromptTracker
         {}
       end
     end
+
+    # Highlight variable values in rendered prompt
+    #
+    # @param rendered_prompt [String] the rendered prompt text
+    # @param variables_used [Hash] the variables that were used
+    # @return [String] HTML with highlighted variables
+    # @example
+    #   highlight_variables("Hello John", { "name" => "John" })
+    #   # => "Hello <mark>John</mark>"
+    def highlight_variables(rendered_prompt, variables_used)
+      return rendered_prompt if variables_used.blank?
+
+      result = rendered_prompt.dup
+
+      # Sort variables by value length (longest first) to avoid partial replacements
+      sorted_vars = variables_used.sort_by { |_k, v| -v.to_s.length }
+
+      sorted_vars.each do |_key, value|
+        next if value.blank?
+
+        # Escape the value for regex and HTML
+        escaped_value = Regexp.escape(value.to_s)
+
+        # Replace all occurrences with highlighted version
+        result = result.gsub(/#{escaped_value}/) do |match|
+          "<mark style='background-color: #FEF3C7; padding: 2px 4px; border-radius: 3px; font-weight: 500;'>#{ERB::Util.html_escape(match)}</mark>"
+        end
+      end
+
+      result.html_safe
+    end
   end
 end

@@ -1,6 +1,5 @@
 <% content_for :breadcrumbs do %>
   <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
-  <li class="breadcrumb-item"><%= link_to @prompt.name, testing_prompt_path(@prompt) %></li>
   <li class="breadcrumb-item"><%= link_to "v#{@version.version_number}", testing_prompt_prompt_version_path(@prompt, @version) %></li>
   <li class="breadcrumb-item"><%= link_to "Tests", testing_prompt_prompt_version_prompt_tests_path(@prompt, @version) %></li>
   <li class="breadcrumb-item"><%= link_to @test.name, testing_prompt_prompt_version_prompt_test_path(@prompt, @version, @test) %></li>

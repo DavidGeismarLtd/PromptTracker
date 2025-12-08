@@ -35,9 +35,7 @@ config = prompt.evaluator_configs.create!(
   weight: 1.0,
   config: {
     min_length: 5,
-    max_length: 100,
-    ideal_min: 10,
-    ideal_max: 50
+    max_length: 100
   }
 )
 

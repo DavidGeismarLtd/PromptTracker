@@ -1,7 +1,7 @@
-<div class="card" id="auto-evaluators">
-  <div class="card-header d-flex justify-content-between align-items-center">
+<div class="card" id="auto-evaluators" style="border: 2px solid #D1FAE5;">
+  <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ECFDF5; border-bottom: 2px solid #D1FAE5;">
     <div>
-      <h5 class="mb-0">
+      <h5 class="mb-0" style="color: #065F46;">
         <i class="bi bi-robot"></i> Auto-Evaluators
       </h5>
       <small class="text-muted">
@@ -23,7 +23,7 @@
       </ul>
     </div>
 
-    <% if @version.evaluator_configs.any? %>
+    <% if @evaluator_configs.any? %>
       <!-- Evaluator Configs Table -->
       <div class="table-responsive">
         <table class="table table-hover">
@@ -35,7 +35,7 @@
             </tr>
           </thead>
           <tbody>
-            <% @version.evaluator_configs.order(:created_at).each do |config| %>
+            <% @evaluator_configs.each do |config| %>
               <tr class="<%= 'table-secondary' unless config.enabled? %>">
                 <td>
                   <strong><%= config.name %></strong>

@@ -1,12 +1,6 @@
 <% content_for :breadcrumbs do %>
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
-      <li class="breadcrumb-item"><%= link_to @prompt.name, testing_prompt_path(@prompt) %></li>
-      <li class="breadcrumb-item"><%= link_to "v#{@version.version_number}", testing_prompt_prompt_version_path(@prompt, @version) %></li>
-      <li class="breadcrumb-item active" aria-current="page">Response #<%= @response.id %></li>
-    </ol>
-  </nav>
+  <li class="breadcrumb-item"><%= link_to "#{@prompt.name}-v#{@version.version_number}", testing_prompt_prompt_version_path(@prompt, @version) %></li>
+  <li class="breadcrumb-item active">Response #<%= @response.id %></li>
 <% end %>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -32,10 +26,6 @@
             <tr>
               <th style="width: 40%;">ID</th>
               <td><code>#<%= @response.id %></code></td>
-            </tr>
-            <tr>
-              <th>Prompt</th>
-              <td><%= link_to @prompt.name, testing_prompt_path(@prompt) %></td>
             </tr>
             <tr>
               <th>Version</th>

@@ -8,7 +8,7 @@ module PromptTracker
       # List all tracked LLM responses with filtering
       def index
         @responses = LlmResponse.tracked_calls
-                                .includes(:evaluations, prompt_version: :prompt)
+                                .includes(:evaluations, :human_evaluations, prompt_version: :prompt)
                                 .order(created_at: :desc)
 
         # Filter by prompt

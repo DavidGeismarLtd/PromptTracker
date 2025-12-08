@@ -1,0 +1,14 @@
+<td data-column="human_evaluations">
+  <% if run.human_evaluations.any? %>
+    <% run.human_evaluations.recent.each do |human_eval| %>
+      <div class="mb-1" title="<%= human_eval.feedback %>">
+        <i class="bi bi-person-check-fill text-primary"></i>
+        <span class="badge bg-primary"><%= number_with_precision(human_eval.score, precision: 0) %></span>
+        <small class="text-muted"><%= time_ago_in_words(human_eval.created_at) %> ago</small>
+      </div>
+    <% end %>
+  <% else %>
+    <span class="text-muted">-</span>
+  <% end %>
+</td>
+

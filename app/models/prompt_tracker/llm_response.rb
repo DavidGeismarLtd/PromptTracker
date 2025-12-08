@@ -87,6 +87,10 @@ module PromptTracker
              dependent: :destroy,
              inverse_of: :llm_response
 
+    has_many :human_evaluations,
+             class_name: "PromptTracker::HumanEvaluation",
+             dependent: :destroy
+
     # Callbacks
     after_create :trigger_auto_evaluation, unless: :is_test_run?
 

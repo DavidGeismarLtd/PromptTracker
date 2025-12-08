@@ -46,9 +46,7 @@ length_config = prompt.evaluator_configs.create!(
   weight: 0.15,
   config: {
     min_length: 10,
-    max_length: 200,
-    ideal_min: 30,
-    ideal_max: 100
+    max_length: 200
   }
 )
 puts "  ✅ Length Check configured (weight: 15%, sync, priority: 1)"
@@ -94,9 +92,8 @@ judge_config = prompt.evaluator_configs.create!(
   depends_on: "keyword",
   min_dependency_score: 80,
   config: {
-    judge_model: "gpt-4",
-    criteria: ["helpfulness", "professionalism", "clarity"],
-    custom_instructions: "Evaluate as a customer support manager"
+    judge_model: "gpt-4o",
+    custom_instructions: "Evaluate as a customer support manager. Consider helpfulness, professionalism, and clarity."
   }
 )
 puts "  ⚠️  GPT-4 Judge configured but DISABLED (weight: 30%, async, priority: 4, depends on: keyword >= 80)"
@@ -145,13 +142,6 @@ if response.evaluations.any?
     puts "     Weight: #{(eval[:normalized_weight] * 100).round(1)}%"
     puts "     Type: #{eval[:evaluator_type]}"
     puts "     Feedback: #{eval[:feedback]}" if eval[:feedback]
-
-    if eval[:criteria_scores].present?
-      puts "     Criteria:"
-      eval[:criteria_scores].each do |criterion, score|
-        puts "       - #{criterion}: #{score}"
-      end
-    end
   end
 
   # Check if response passes threshold

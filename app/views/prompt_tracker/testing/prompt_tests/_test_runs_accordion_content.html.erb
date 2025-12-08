@@ -1,4 +1,4 @@
-<% latest_runs = test.prompt_test_runs.includes(llm_response: :evaluations).order(created_at: :desc).limit(5) %>
+<% latest_runs = test.prompt_test_runs.includes(:human_evaluations, llm_response: :evaluations).order(created_at: :desc).limit(5) %>
 <% if latest_runs.any? %>
   <div class="bg-light p-3" data-controller="column-visibility" data-column-visibility-storage-key-value="testRunsTableColumns_<%= test.id %>">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -13,9 +13,11 @@
             <th style="width: 12%;" data-column="run_time">Run Time</th>
             <th style="width: 10%;" data-column="response_time">Response Time</th>
             <th style="width: 8%;" data-column="run_cost">Cost</th>
-            <th style="width: 25%;" data-column="rendered_prompt">Rendered Prompt</th>
-            <th style="width: 25%;" data-column="run_response">Response</th>
+            <th style="width: 20%;" data-column="rendered_prompt">Rendered Prompt</th>
+            <th style="width: 20%;" data-column="run_response">Response</th>
             <th style="width: 10%;" data-column="run_evaluations">Evaluations</th>
+            <th style="width: 10%;" data-column="human_evaluations">Human Evaluations</th>
+            <th style="width: 5%;" data-column="actions">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -25,6 +27,14 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Human Evaluation Modals -->
+    <% latest_runs.each do |run| %>
+      <%= render "prompt_tracker/shared/human_evaluation_modal",
+                 record: run,
+                 form_url: testing_run_human_evaluations_path(run),
+                 context: 'testing' %>
+    <% end %>
   </div>
 <% else %>
   <div class="bg-light p-3">

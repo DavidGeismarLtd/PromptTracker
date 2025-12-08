@@ -52,6 +52,8 @@ module PromptTracker
           evaluator_type: self.class.name,
           evaluator_config_id: config[:evaluator_config_id],
           score: score,
+          score_min: 0,
+          score_max: 100,
           passed: passed?,
           feedback: feedback_text,
           metadata: metadata,

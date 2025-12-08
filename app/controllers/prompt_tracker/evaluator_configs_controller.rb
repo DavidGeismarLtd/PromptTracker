@@ -87,12 +87,12 @@ module PromptTracker
 
       if @evaluator_config.save
         respond_to do |format|
-          format.html { redirect_to testing_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator configured successfully." }
+          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator configured successfully." }
           format.json { render json: @evaluator_config, status: :created }
         end
       else
         respond_to do |format|
-          format.html { redirect_to testing_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to configure evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
+          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to configure evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
           format.json { render json: { errors: @evaluator_config.errors.full_messages }, status: :unprocessable_entity }
         end
       end
@@ -107,12 +107,12 @@ module PromptTracker
 
       if @evaluator_config.update(processed_params)
         respond_to do |format|
-          format.html { redirect_to testing_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator updated successfully." }
+          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator updated successfully." }
           format.json { render json: @evaluator_config }
         end
       else
         respond_to do |format|
-          format.html { redirect_to testing_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to update evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
+          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to update evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
           format.json { render json: { errors: @evaluator_config.errors.full_messages }, status: :unprocessable_entity }
         end
       end
@@ -124,7 +124,7 @@ module PromptTracker
       @evaluator_config.destroy
 
       respond_to do |format|
-        format.html { redirect_to testing_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator removed successfully." }
+        format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator removed successfully." }
         format.json { head :no_content }
       end
     end
@@ -137,7 +137,6 @@ module PromptTracker
 
       unless @version
         respond_to do |format|
-          format.html { redirect_to testing_prompt_path(@prompt), alert: "No active version found. Please create a version first." }
           format.json { render json: { error: "No active version" }, status: :unprocessable_entity }
         end
       end

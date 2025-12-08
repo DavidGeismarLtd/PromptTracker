@@ -157,9 +157,8 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
                  {
                    evaluator_key: "llm_judge",
                    config: {
-                     judge_model: "gpt-4",
-                     criteria: [ "helpfulness", "clarity" ],
-                     score_max: 10
+                     judge_model: "gpt-4o",
+                     custom_instructions: "Evaluate helpfulness and clarity"
                    }
                  }
                ])
@@ -172,8 +171,7 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
         double(
           "RubyLLM::Response",
           content: {
-            overall_score: 8.0,
-            criteria_scores: { helpfulness: 8.0, clarity: 8.0 },
+            overall_score: 80,
             feedback: "Good response"
           },
           raw: double("raw response")

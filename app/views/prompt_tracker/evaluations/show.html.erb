@@ -77,7 +77,7 @@
       <!-- Response Link -->
       <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E5E7EB;">
         <span style="color: #6B7280; font-size: 0.875rem;">
-          Evaluation for <%= link_to "Response ##{@response.id}", llm_response_path(@response), style: "color: #3B82F6; text-decoration: none; font-weight: 500;" %>
+          Evaluation for Response #<%= @response.id %>
         </span>
       </div>
     </div>
@@ -253,11 +253,6 @@
       <% if @response.response_text.present? %>
         <div class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap;">
 <%= @response.response_text %></div>
-        <% if @response.response_text.length > 1000 %>
-          <div class="mt-2">
-            <%= link_to "View full response", llm_response_path(@response), class: "btn btn-sm btn-outline-primary" %>
-          </div>
-        <% end %>
       <% else %>
         <p class="text-muted mb-0">No response text available</p>
       <% end %>
@@ -319,12 +314,12 @@
     <% if @evaluation.human_evaluations.any? %>
       <div class="mb-4">
         <% @evaluation.human_evaluations.recent.each do |human_eval| %>
-          <div class="card mb-3" style="border-left: 4px solid <%= human_eval.passing? ? '#10B981' : '#EF4444' %>;">
+          <div class="card mb-3" style="border-left: 4px solid #3B82F6;">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
                   <h6 class="mb-1">
-                    <span class="badge <%= human_eval.passing? ? 'bg-success' : 'bg-danger' %>">
+                    <span class="badge bg-primary">
                       Score: <%= human_eval.score %> / 100
                     </span>
                     <% if human_eval.agrees_with_evaluation? %>

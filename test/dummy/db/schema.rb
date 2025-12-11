@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_12_09_064448) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_11_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -41,6 +41,32 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_09_064448) do
     t.index ["prompt_id"], name: "index_prompt_tracker_ab_tests_on_prompt_id"
     t.index ["started_at"], name: "index_prompt_tracker_ab_tests_on_started_at"
     t.index ["status"], name: "index_prompt_tracker_ab_tests_on_status"
+  end
+
+  create_table "prompt_tracker_dataset_rows", force: :cascade do |t|
+    t.bigint "dataset_id", null: false
+    t.jsonb "row_data", default: {}, null: false
+    t.string "source", default: "manual", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_prompt_tracker_dataset_rows_on_created_at"
+    t.index ["dataset_id"], name: "index_prompt_tracker_dataset_rows_on_dataset_id"
+    t.index ["source"], name: "index_prompt_tracker_dataset_rows_on_source"
+  end
+
+  create_table "prompt_tracker_datasets", force: :cascade do |t|
+    t.bigint "prompt_version_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.jsonb "schema", default: [], null: false
+    t.string "created_by"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_prompt_tracker_datasets_on_created_at"
+    t.index ["prompt_version_id", "name"], name: "index_prompt_tracker_datasets_on_prompt_version_id_and_name", unique: true
+    t.index ["prompt_version_id"], name: "index_prompt_tracker_datasets_on_prompt_version_id"
   end
 
   create_table "prompt_tracker_evaluations", force: :cascade do |t|
@@ -151,7 +177,12 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_09_064448) do
     t.jsonb "metadata", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "dataset_id"
+    t.bigint "dataset_row_id"
     t.index ["created_at"], name: "index_prompt_tracker_prompt_test_runs_on_created_at"
+    t.index ["dataset_id", "created_at"], name: "index_prompt_test_runs_on_dataset_and_created_at"
+    t.index ["dataset_id"], name: "index_prompt_tracker_prompt_test_runs_on_dataset_id"
+    t.index ["dataset_row_id"], name: "index_prompt_tracker_prompt_test_runs_on_dataset_row_id"
     t.index ["llm_response_id"], name: "index_prompt_tracker_prompt_test_runs_on_llm_response_id"
     t.index ["passed"], name: "index_prompt_tracker_prompt_test_runs_on_passed"
     t.index ["prompt_test_id", "created_at"], name: "idx_on_prompt_test_id_created_at_4bc08ca15a"
@@ -211,6 +242,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_09_064448) do
   end
 
   add_foreign_key "prompt_tracker_ab_tests", "prompt_tracker_prompts", column: "prompt_id"
+  add_foreign_key "prompt_tracker_dataset_rows", "prompt_tracker_datasets", column: "dataset_id"
+  add_foreign_key "prompt_tracker_datasets", "prompt_tracker_prompt_versions", column: "prompt_version_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_llm_responses", column: "llm_response_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_prompt_test_runs", column: "prompt_test_run_id"
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_evaluations", column: "evaluation_id"
@@ -218,6 +251,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_09_064448) do
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_prompt_test_runs", column: "prompt_test_run_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_ab_tests", column: "ab_test_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_prompt_versions", column: "prompt_version_id"
+  add_foreign_key "prompt_tracker_prompt_test_runs", "prompt_tracker_dataset_rows", column: "dataset_row_id"
+  add_foreign_key "prompt_tracker_prompt_test_runs", "prompt_tracker_datasets", column: "dataset_id"
   add_foreign_key "prompt_tracker_prompt_test_runs", "prompt_tracker_llm_responses", column: "llm_response_id"
   add_foreign_key "prompt_tracker_prompt_test_runs", "prompt_tracker_prompt_tests", column: "prompt_test_id"
   add_foreign_key "prompt_tracker_prompt_test_runs", "prompt_tracker_prompt_versions", column: "prompt_version_id"

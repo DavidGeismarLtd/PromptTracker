@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
   let(:prompt) { create(:prompt) }
-  let(:version) { create(:prompt_version, prompt: prompt, template: "Hello {{name}}") }
+  let(:version) { create(:prompt_version, prompt: prompt, user_prompt: "Hello {{name}}") }
   let(:llm_response) do
     create(:llm_response,
            prompt_version: version,

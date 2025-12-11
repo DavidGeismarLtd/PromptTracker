@@ -34,10 +34,10 @@ module PromptTracker
         expect(version).to be_valid
       end
 
-      it "requires template" do
-        version = PromptVersion.new(valid_attributes.except(:template))
+      it "requires user_prompt" do
+        version = PromptVersion.new(valid_attributes.except(:user_prompt))
         expect(version).not_to be_valid
-        expect(version.errors[:template]).to include("can't be blank")
+        expect(version.errors[:user_prompt]).to include("can't be blank")
       end
 
       it "auto-sets version_number if not provided" do
@@ -101,14 +101,14 @@ module PromptTracker
         expect(version.errors[:model_config]).to include("must be a hash")
       end
 
-      it "allows template changes when no responses exist" do
+      it "allows user_prompt changes when no responses exist" do
         version = PromptVersion.create!(valid_attributes)
-        version.template = "New template"
+        version.user_prompt = "New template"
         expect(version).to be_valid
         expect(version.save).to be true
       end
 
-      it "prevents template changes when responses exist" do
+      it "prevents user_prompt changes when responses exist" do
         version = PromptVersion.create!(valid_attributes)
         version.llm_responses.create!(
           rendered_prompt: "Test",
@@ -118,9 +118,9 @@ module PromptTracker
           status: "success"
         )
 
-        version.template = "New template"
+        version.user_prompt = "New template"
         expect(version).not_to be_valid
-        expect(version.errors[:template]).to include("cannot be changed after responses exist")
+        expect(version.errors[:user_prompt]).to include("cannot be changed after responses exist")
       end
     end
 
@@ -139,10 +139,10 @@ module PromptTracker
       end
 
       describe "auto-extracting variables_schema" do
-        it "extracts variables from template when variables_schema is not provided" do
+        it "extracts variables from user_prompt when variables_schema is not provided" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "Hello {{name}}, how can I help with {{issue}}?"
+              user_prompt: "Hello {{name}}, how can I help with {{issue}}?"
             )
           )
 
@@ -160,10 +160,10 @@ module PromptTracker
           expect(issue_var["required"]).to eq(false)
         end
 
-        it "extracts single variable from template" do
+        it "extracts single variable from user_prompt" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "tell me everything you know about {{historical_event}}"
+              user_prompt: "tell me everything you know about {{historical_event}}"
             )
           )
 
@@ -177,7 +177,7 @@ module PromptTracker
         it "extracts variables with Liquid filters" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "Hello {{ name | upcase }}, welcome!"
+              user_prompt: "Hello {{ name | upcase }}, welcome!"
             )
           )
 
@@ -189,7 +189,7 @@ module PromptTracker
         it "extracts variables from Liquid conditionals" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "{% if premium %}Premium content{% endif %}"
+              user_prompt: "{% if premium %}Premium content{% endif %}"
             )
           )
 
@@ -201,7 +201,7 @@ module PromptTracker
         it "extracts variables from Liquid loops" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "{% for product in products %}Product: {{ product.name }}{% endfor %}"
+              user_prompt: "{% for product in products %}Product: {{ product.name }}{% endfor %}"
             )
           )
 
@@ -214,7 +214,7 @@ module PromptTracker
         it "extracts multiple variables and removes duplicates" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "{{name}} and {{name}} and {{age}}"
+              user_prompt: "{{name}} and {{name}} and {{age}}"
             )
           )
 
@@ -230,7 +230,7 @@ module PromptTracker
 
           version = PromptVersion.create!(
             valid_attributes.merge(
-              template: "Hello {{name}}",
+              user_prompt: "Hello {{name}}",
               variables_schema: custom_schema
             )
           )
@@ -240,26 +240,26 @@ module PromptTracker
           expect(version.variables_schema.first["name"]).to eq("custom_var")
         end
 
-        it "does not extract variables when template has no variables" do
+        it "does not extract variables when user_prompt has no variables" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "This is a static template with no variables"
+              user_prompt: "This is a static template with no variables"
             )
           )
 
           expect(version.variables_schema).to be_blank
         end
 
-        it "extracts variables on update when template changes and schema is blank" do
+        it "extracts variables on update when user_prompt changes and schema is blank" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "Original template"
+              user_prompt: "Original template"
             )
           )
 
           expect(version.variables_schema).to be_blank
 
-          version.update!(template: "Updated {{template}} with {{variables}}")
+          version.update!(user_prompt: "Updated {{template}} with {{variables}}")
 
           expect(version.variables_schema).to be_present
           expect(version.variables_schema.length).to eq(2)
@@ -278,7 +278,7 @@ module PromptTracker
         it "sorts variables alphabetically" do
           version = PromptVersion.create!(
             valid_attributes.except(:variables_schema).merge(
-              template: "{{zebra}} {{apple}} {{banana}}"
+              user_prompt: "{{zebra}} {{apple}} {{banana}}"
             )
           )
 
@@ -470,7 +470,8 @@ module PromptTracker
         expect(export["name"]).to eq(prompt.name)
         expect(export["description"]).to eq(prompt.description)
         expect(export["category"]).to eq(prompt.category)
-        expect(export["template"]).to eq(version.template)
+        expect(export["user_prompt"]).to eq(version.user_prompt)
+        expect(export["system_prompt"]).to eq(version.system_prompt)
         expect(export["variables"]).to eq(version.variables_schema)
         expect(export["model_config"]).to eq(version.model_config)
       end

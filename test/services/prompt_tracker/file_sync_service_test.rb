@@ -28,7 +28,7 @@ module PromptTracker
         category: testing
         tags:
           - test
-        template: "Hello {{name}}"
+        user_prompt: "Hello {{name}}"
         variables:
           - name: name
             type: string
@@ -57,7 +57,7 @@ module PromptTracker
       subdir = File.join(@temp_dir, "support")
       FileUtils.mkdir_p(subdir)
       subfile = File.join(subdir, "greeting.yml")
-      File.write(subfile, "name: greeting\ntemplate: 'Hi'")
+      File.write(subfile, "name: greeting\nuser_prompt: 'Hi'")
 
       service = FileSyncService.new
       files = service.find_prompt_files
@@ -89,7 +89,7 @@ module PromptTracker
 
     test "validate_all should detect invalid files" do
       invalid_file = File.join(@temp_dir, "invalid.yml")
-      File.write(invalid_file, "name: Invalid Name\ntemplate: 'Hi'")
+      File.write(invalid_file, "name: Invalid Name\nuser_prompt: 'Hi'")
 
       result = FileSyncService.validate_all
 
@@ -113,7 +113,7 @@ module PromptTracker
       assert_equal "A test prompt", prompt.description
 
       version = result[:version]
-      assert_equal "Hello {{name}}", version.template
+      assert_equal "Hello {{name}}", version.user_prompt
       assert_equal "active", version.status
       assert_equal "file", version.source
       assert_equal 1, version.version_number
@@ -130,15 +130,15 @@ module PromptTracker
       assert result[:skipped]
     end
 
-    test "sync_file should create new version if template changes" do
+    test "sync_file should create new version if user_prompt changes" do
       # First sync
       FileSyncService.sync_file(@test_file_path)
 
-      # Modify template
+      # Modify user_prompt
       File.write(@test_file_path, <<~YAML)
         name: test_prompt
         description: A test prompt
-        template: "Hi {{name}}"
+        user_prompt: "Hi {{name}}"
         variables:
           - name: name
             type: string
@@ -150,7 +150,7 @@ module PromptTracker
       assert result[:success]
       assert_equal "updated", result[:action]
       assert_equal 2, result[:version].version_number
-      assert_equal "Hi {{name}}", result[:version].template
+      assert_equal "Hi {{name}}", result[:version].user_prompt
     end
 
     test "sync_file should create new version if variables change" do
@@ -160,7 +160,7 @@ module PromptTracker
       # Modify variables
       File.write(@test_file_path, <<~YAML)
         name: test_prompt
-        template: "Hello {{name}}"
+        user_prompt: "Hello {{name}}"
         variables:
           - name: name
             type: string
@@ -183,7 +183,7 @@ module PromptTracker
       # Modify model_config
       File.write(@test_file_path, <<~YAML)
         name: test_prompt
-        template: "Hello {{name}}"
+        user_prompt: "Hello {{name}}"
         model_config:
           temperature: 0.9
       YAML
@@ -216,7 +216,7 @@ module PromptTracker
       # Modify and sync again
       File.write(@test_file_path, <<~YAML)
         name: test_prompt
-        template: "Hi {{name}}"
+        user_prompt: "Hi {{name}}"
       YAML
 
       FileSyncService.sync_file(@test_file_path)
@@ -228,7 +228,7 @@ module PromptTracker
 
     test "sync_file should return error for invalid file" do
       invalid_file = File.join(@temp_dir, "invalid.yml")
-      File.write(invalid_file, "name: Invalid Name\ntemplate: 'Hi'")
+      File.write(invalid_file, "name: Invalid Name\nuser_prompt: 'Hi'")
 
       result = FileSyncService.sync_file(invalid_file)
 
@@ -240,14 +240,14 @@ module PromptTracker
       # First sync
       FileSyncService.sync_file(@test_file_path)
 
-      # Modify only description (not template/variables/config)
+      # Modify only description (not user_prompt/variables/config)
       File.write(@test_file_path, <<~YAML)
         name: test_prompt
         description: Updated description
         category: testing
         tags:
           - test
-        template: "Hello {{name}}"
+        user_prompt: "Hello {{name}}"
         variables:
           - name: name
             type: string
@@ -274,12 +274,12 @@ module PromptTracker
       # Create multiple files
       File.write(File.join(@temp_dir, "prompt1.yml"), <<~YAML)
         name: prompt1
-        template: "Test 1"
+        user_prompt: "Test 1"
       YAML
 
       File.write(File.join(@temp_dir, "prompt2.yml"), <<~YAML)
         name: prompt2
-        template: "Test 2"
+        user_prompt: "Test 2"
       YAML
 
       result = FileSyncService.sync_all
@@ -293,7 +293,7 @@ module PromptTracker
       # Create an invalid file
       File.write(File.join(@temp_dir, "invalid.yml"), <<~YAML)
         name: Invalid Name
-        template: "Test"
+        user_prompt: "Test"
       YAML
 
       result = FileSyncService.sync_all

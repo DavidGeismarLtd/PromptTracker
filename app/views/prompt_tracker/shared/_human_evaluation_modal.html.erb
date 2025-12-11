@@ -1,5 +1,5 @@
 <%# Reusable Human Evaluation Modal %>
-<%# Parameters: 
+<%# Parameters:
   - record: The record to evaluate (LlmResponse or PromptTestRun)
   - form_url: The URL to submit the form to
   - context: 'monitoring' or 'testing' (for styling)
@@ -36,8 +36,7 @@
 
       <%= form_with model: PromptTracker::HumanEvaluation.new,
                     url: form_url,
-                    method: :post,
-                    local: true do |f| %>
+                    method: :post do |f| %>
         <div class="modal-body">
           <div class="mb-3">
             <p class="text-muted small">
@@ -81,4 +80,3 @@
     </div>
   </div>
 </div>
-

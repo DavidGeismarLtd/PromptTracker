@@ -42,6 +42,16 @@ PromptTracker::Engine.routes.draw do
             post :run
           end
         end
+
+        # Datasets nested under prompt versions
+        resources :datasets, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
+          # Dataset rows nested under datasets
+          resources :dataset_rows, only: [:create, :update, :destroy], path: "rows" do
+            collection do
+              post :generate # LLM-powered generation
+            end
+          end
+        end
       end
     end
 
@@ -80,12 +90,20 @@ PromptTracker::Engine.routes.draw do
   resources :prompts, only: [] do
     # Evaluator configs nested under prompts (for monitoring)
     resources :evaluator_configs, only: [ :index, :show, :create, :update, :destroy ], path: "evaluators"
+
+    # A/B tests nested under prompts (for creating new tests)
+    resources :ab_tests, only: [:new, :create], path: "ab-tests"
   end
 
-  # LLM Responses (used by both monitoring and legacy routes)
-  resources :llm_responses, only: [:index, :show], path: "responses" do
-    collection do
-      get :search
+  # A/B Tests (for managing tests)
+  resources :ab_tests, path: "ab-tests" do
+    member do
+      post :start
+      post :pause
+      post :resume
+      post :complete
+      post :cancel
+      get :analyze
     end
   end
 

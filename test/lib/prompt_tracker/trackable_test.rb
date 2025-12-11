@@ -29,7 +29,7 @@ module PromptTracker
       )
 
       @version = @prompt.prompt_versions.create!(
-        template: "Hello {{name}}!",
+        user_prompt: "Hello {{name}}!",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true }
         ],
@@ -230,7 +230,7 @@ module PromptTracker
       # Create a prompt with no required variables
       prompt = Prompt.create!(name: "no_vars", description: "Test")
       prompt.prompt_versions.create!(
-        template: "Hello!",
+        user_prompt: "Hello!",
         variables_schema: [],
         status: "active",
         source: "api"

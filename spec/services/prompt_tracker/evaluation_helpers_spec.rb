@@ -14,7 +14,7 @@ module PromptTracker
 
     let(:version) do
       prompt.prompt_versions.create!(
-        template: "Test",
+        user_prompt: "Test",
         status: "active",
       )
     end

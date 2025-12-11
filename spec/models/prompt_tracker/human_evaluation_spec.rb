@@ -73,23 +73,7 @@ module PromptTracker
       end
     end
 
-    describe "#passing?" do
-      it "returns true when score >= 70" do
-        human_eval = build(:human_evaluation, score: 75)
-        expect(human_eval.passing?).to be true
-      end
 
-      it "returns false when score < 70" do
-        human_eval = build(:human_evaluation, score: 65)
-        expect(human_eval.passing?).to be false
-      end
-
-      it "accepts custom threshold" do
-        human_eval = build(:human_evaluation, score: 80)
-        expect(human_eval.passing?(85)).to be false
-        expect(human_eval.passing?(75)).to be true
-      end
-    end
 
     describe "#score_difference" do
       it "returns positive difference when human score is higher" do

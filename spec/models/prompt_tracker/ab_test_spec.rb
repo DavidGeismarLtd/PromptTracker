@@ -16,7 +16,7 @@ module PromptTracker
 
     let(:version_1) do
       prompt.prompt_versions.create!(
-        template: "Hello {{name}}, how can I help you today?",
+        user_prompt: "Hello {{name}}, how can I help you today?",
         version_number: 1,
         status: "active",
         variables_schema: [
@@ -29,7 +29,7 @@ module PromptTracker
 
     let(:version_2) do
       prompt.prompt_versions.create!(
-        template: "Hi {{name}}! Need help?",
+        user_prompt: "Hi {{name}}! Need help?",
         version_number: 2,
         status: "draft",
         variables_schema: [
@@ -268,7 +268,7 @@ module PromptTracker
         it "returns tests for specific prompt" do
           other_prompt = Prompt.create!(name: "other_prompt", description: "Other")
           other_version = other_prompt.prompt_versions.create!(
-            template: "Other template",
+            user_prompt: "Other template",
             version_number: 1,
             status: "active",
           )
@@ -523,7 +523,7 @@ module PromptTracker
     describe "multi-variant support" do
       it "supports more than 2 variants" do
         version_3 = prompt.prompt_versions.create!(
-          template: "Version 3",
+          user_prompt: "Version 3",
           version_number: 3,
           status: "draft",
         )

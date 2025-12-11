@@ -74,6 +74,11 @@ module PromptTracker
              class_name: "PromptTracker::EvaluatorConfig",
              dependent: :destroy
 
+    has_many :datasets,
+             class_name: "PromptTracker::Dataset",
+             dependent: :destroy,
+             inverse_of: :prompt_version
+
     # Validations
     validates :user_prompt, presence: true
     validates :version_number, presence: true, numericality: { only_integer: true, greater_than: 0 }

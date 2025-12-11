@@ -10,14 +10,15 @@
 #  prompt_id        :bigint           not null
 #  source           :string           default("file"), not null
 #  status           :string           default("draft"), not null
-#  template         :text             not null
+#  user_prompt      :text             not null
+#  system_prompt    :text
 #  updated_at       :datetime         not null
 #  variables_schema :jsonb
 #  version_number   :integer          not null
 #
 greeting_v1:
   prompt: greeting
-  template: "Hello {{name}}, how can I help you today?"
+  user_prompt: "Hello {{name}}, how can I help you today?"
   version_number: 1
   status: active
   source: file
@@ -30,7 +31,7 @@ greeting_v1:
 
 greeting_v2:
   prompt: greeting
-  template: "Hi {{name}}! Need help?"
+  user_prompt: "Hi {{name}}! Need help?"
   version_number: 2
   status: draft
   source: web_ui
@@ -43,7 +44,7 @@ greeting_v2:
 
 summary_v1:
   prompt: summary
-  template: "Summarize this conversation: {{conversation}}"
+  user_prompt: "Summarize this conversation: {{conversation}}"
   version_number: 1
   status: active
   source: file
@@ -53,4 +54,3 @@ summary_v1:
       required: true
   model_config: {}
   notes: "Initial version"
-

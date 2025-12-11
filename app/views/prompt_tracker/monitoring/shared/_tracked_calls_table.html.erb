@@ -48,6 +48,8 @@
         </thead>
         <tbody>
           <% tracked_calls.each do |call| %>
+            <%# Subscribe to Turbo Stream updates for this specific call %>
+            <%= turbo_stream_from "llm_response_#{call.id}" %>
             <tr style="border-bottom: 1px solid #F1F5F9;">
               <% if show_prompt_column %>
                 <td data-column="prompt" style="padding: 0.75rem; vertical-align: top;">
@@ -172,18 +174,8 @@
                   <% end %>
                 </td>
               <% end %>
-              <td data-column="human_evaluations" style="padding: 0.75rem; vertical-align: top;">
-                <% if call.human_evaluations.any? %>
-                  <% call.human_evaluations.recent.each do |human_eval| %>
-                    <div class="mb-1" title="<%= human_eval.feedback %>">
-                      <i class="bi bi-person-check-fill text-success"></i>
-                      <span class="badge bg-success"><%= number_with_precision(human_eval.score, precision: 0) %></span>
-                      <small class="text-muted"><%= time_ago_in_words(human_eval.created_at) %> ago</small>
-                    </div>
-                  <% end %>
-                <% else %>
-                  <span class="text-muted">-</span>
-                <% end %>
+              <td data-column="human_evaluations" id="human_evaluations_cell_<%= call.id %>" style="padding: 0.75rem; vertical-align: top;">
+                <%= render "prompt_tracker/shared/human_evaluations_cell", record: call, context: 'monitoring' %>
               </td>
               <td data-column="actions" style="padding: 0.75rem; vertical-align: top;">
                 <button type="button"
@@ -211,6 +203,7 @@
   <!-- Human Evaluation Modals -->
   <% tracked_calls.each do |call| %>
     <%= render "prompt_tracker/monitoring/shared/human_evaluation_modal", call: call %>
+    <%= render "prompt_tracker/shared/all_human_evaluations_modal", record: call, context: 'monitoring' %>
   <% end %>
 <% else %>
   <div style="background: white; border: 2px solid #E5E7EB; border-radius: 8px; padding: 3rem; text-align: center;">

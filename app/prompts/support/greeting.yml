@@ -6,7 +6,7 @@
 name: customer_support_greeting
 description: Initial greeting for customer support interactions
 
-template: |
+user_prompt: |
   Hi {{customer_name}}! Thanks for contacting us. I'm here to help with your {{issue_category}} question. What's going on?
 
 variables:

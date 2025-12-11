@@ -34,6 +34,8 @@
                  record: run,
                  form_url: testing_run_human_evaluations_path(run),
                  context: 'testing' %>
+      <%= render "prompt_tracker/testing/prompt_tests/all_human_evaluations_modal",
+                 run: run %>
     <% end %>
   </div>
 <% else %>

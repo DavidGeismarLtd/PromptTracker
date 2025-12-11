@@ -145,9 +145,7 @@
               <tr>
                 <td><code>#<%= evaluation.id %></code></td>
                 <td>
-                  <%= link_to llm_response_path(response) do %>
-                    <code>#<%= response.id %></code>
-                  <% end %>
+                  <code>#<%= response.id %></code>
                 </td>
                 <td>
                   <%= link_to prompt.name, testing_prompt_path(prompt) %>

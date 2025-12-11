@@ -44,6 +44,8 @@ module PromptTracker
     belongs_to :prompt_test, touch: true
     belongs_to :prompt_version
     belongs_to :llm_response, optional: true
+    belongs_to :dataset, optional: true, class_name: "PromptTracker::Dataset"
+    belongs_to :dataset_row, optional: true, class_name: "PromptTracker::DatasetRow"
     has_many :evaluations, class_name: "PromptTracker::Evaluation", foreign_key: :prompt_test_run_id, dependent: :destroy
     has_many :human_evaluations,
              class_name: "PromptTracker::HumanEvaluation",

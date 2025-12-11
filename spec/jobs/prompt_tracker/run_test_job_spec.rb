@@ -5,7 +5,7 @@ require "rails_helper"
 module PromptTracker
   RSpec.describe RunTestJob, type: :job do
     let(:prompt) { create(:prompt, name: "test_prompt") }
-    let(:version) { create(:prompt_version, prompt: prompt, template: "Hello {{name}}") }
+    let(:version) { create(:prompt_version, prompt: prompt, user_prompt: "Hello {{name}}") }
     let(:test) do
       create(:prompt_test,
              prompt_version: version,

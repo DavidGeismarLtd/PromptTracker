@@ -32,7 +32,7 @@ support_greeting = PromptTracker::Prompt.create!(
 
 # Version 1 - Original
 support_greeting_v1 = support_greeting.prompt_versions.create!(
-  template: "Hello {{customer_name}}! Thank you for contacting support. How can I help you with {{issue_category}} today?",
+  user_prompt: "Hello {{customer_name}}! Thank you for contacting support. How can I help you with {{issue_category}} today?",
   status: "deprecated",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
@@ -45,7 +45,7 @@ support_greeting_v1 = support_greeting.prompt_versions.create!(
 
 # Version 2 - More casual
 support_greeting_v2 = support_greeting.prompt_versions.create!(
-  template: "Hi {{customer_name}}! 👋 Thanks for reaching out. What can I help you with today?",
+  user_prompt: "Hi {{customer_name}}! 👋 Thanks for reaching out. What can I help you with today?",
   status: "deprecated",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true }
@@ -57,7 +57,7 @@ support_greeting_v2 = support_greeting.prompt_versions.create!(
 
 # Version 3 - Current active version
 support_greeting_v3 = support_greeting.prompt_versions.create!(
-  template: "Hi {{customer_name}}! Thanks for contacting us. I'm here to help with your {{issue_category}} question. What's going on?",
+  user_prompt: "Hi {{customer_name}}! Thanks for contacting us. I'm here to help with your {{issue_category}} question. What's going on?",
   status: "active",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
@@ -70,7 +70,7 @@ support_greeting_v3 = support_greeting.prompt_versions.create!(
 
 # Version 4 - Draft: Even shorter version for testing
 support_greeting_v4 = support_greeting.prompt_versions.create!(
-  template: "Hey {{customer_name}}! What's up with {{issue_category}}?",
+  user_prompt: "Hey {{customer_name}}! What's up with {{issue_category}}?",
   status: "draft",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
@@ -83,7 +83,7 @@ support_greeting_v4 = support_greeting.prompt_versions.create!(
 
 # Version 5 - Draft: More empathetic version
 support_greeting_v5 = support_greeting.prompt_versions.create!(
-  template: "Hi {{customer_name}}, I understand you're having an issue with {{issue_category}}. I'm here to help you resolve this. Can you tell me more about what's happening?",
+  user_prompt: "Hi {{customer_name}}, I understand you're having an issue with {{issue_category}}. I'm here to help you resolve this. Can you tell me more about what's happening?",
   status: "draft",
   variables_schema: [
     { "name" => "customer_name", "type" => "string", "required" => true },
@@ -109,7 +109,7 @@ email_summary = PromptTracker::Prompt.create!(
 )
 
 email_summary_v1 = email_summary.prompt_versions.create!(
-  template: "Summarize the following email thread in 2-3 sentences:\n\n{{email_thread}}",
+  user_prompt: "Summarize the following email thread in 2-3 sentences:\n\n{{email_thread}}",
   status: "active",
   variables_schema: [
     { "name" => "email_thread", "type" => "string", "required" => true }
@@ -120,7 +120,7 @@ email_summary_v1 = email_summary.prompt_versions.create!(
 
 # Version 2 - Draft: Bullet point format
 email_summary_v2 = email_summary.prompt_versions.create!(
-  template: "Summarize the following email thread as bullet points (3-5 key points):\n\n{{email_thread}}",
+  user_prompt: "Summarize the following email thread as bullet points (3-5 key points):\n\n{{email_thread}}",
   status: "draft",
   variables_schema: [
     { "name" => "email_thread", "type" => "string", "required" => true }
@@ -145,7 +145,7 @@ code_review = PromptTracker::Prompt.create!(
 )
 
 code_review_v1 = code_review.prompt_versions.create!(
-  template: <<~TEMPLATE,
+  user_prompt: <<~TEMPLATE,
     Review the following {{language}} code and provide constructive feedback:
 
     ```{{language}}

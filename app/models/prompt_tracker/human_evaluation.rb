@@ -47,20 +47,15 @@ module PromptTracker
     validates :feedback, presence: true
     validate :must_belong_to_evaluation_or_llm_response
 
+    # Callbacks
+    after_create_commit :broadcast_human_evaluation_created
+
     # Scopes
     scope :recent, -> { order(created_at: :desc) }
     scope :high_scores, -> { where("score >= ?", 70) }
     scope :low_scores, -> { where("score < ?", 70) }
 
     # Instance Methods
-
-    # Check if the human evaluation score is passing (>= 70)
-    #
-    # @param threshold [Float] passing threshold (default: 70)
-    # @return [Boolean] true if score is passing
-    def passing?(threshold = 70)
-      score >= threshold
-    end
 
     # Get the difference between human score and automated evaluation score
     #
@@ -89,6 +84,113 @@ module PromptTracker
       elsif associations.size > 1
         errors.add(:base, "Cannot belong to multiple associations")
       end
+    end
+
+    # Broadcast updates when a human evaluation is created
+    def broadcast_human_evaluation_created
+      if prompt_test_run_id.present?
+        broadcast_test_run_updates
+      elsif llm_response_id.present?
+        broadcast_llm_response_updates
+      end
+    end
+
+    # Broadcast updates for test run human evaluations
+    def broadcast_test_run_updates
+      # Reload the run and force reload of human_evaluations association
+      run = PromptTestRun.find(prompt_test_run_id)
+      run.human_evaluations.reload
+      version = run.prompt_version
+      test = run.prompt_test
+
+      # Update the test run row on the prompt version page
+      broadcast_replace(
+        stream: "prompt_version_#{version.id}",
+        target: "test_run_row_#{run.id}",
+        partial: "prompt_tracker/testing/prompt_tests/test_run_row",
+        locals: { run: run }
+      )
+
+      # Update the test row (shows last_run status)
+      broadcast_replace(
+        stream: "prompt_version_#{version.id}",
+        target: "test_row_#{test.id}",
+        partial: "prompt_tracker/testing/prompt_tests/test_row",
+        locals: { test: test, prompt: version.prompt, version: version }
+      )
+
+      # Update the "View all" modal body on the prompt version page
+      # Use broadcast_update to update innerHTML, keeping the wrapper div intact
+      broadcast_update(
+        stream: "prompt_version_#{version.id}",
+        target: "all-human-evals-modal-body-#{run.id}",
+        partial: "prompt_tracker/shared/all_human_evaluations_modal_body",
+        locals: { record: run, context: "testing" }
+      )
+
+      # Also update the "View all" modal body on the test show page
+      # Use broadcast_update to update innerHTML, keeping the wrapper div intact
+      broadcast_update(
+        stream: "prompt_test_#{test.id}",
+        target: "all-human-evals-modal-body-#{run.id}",
+        partial: "prompt_tracker/shared/all_human_evaluations_modal_body",
+        locals: { record: run, context: "testing" }
+      )
+    end
+
+    # Broadcast updates for LlmResponse (tracked call) human evaluations
+    def broadcast_llm_response_updates
+      # Reload the llm_response and force reload of human_evaluations association
+      call = LlmResponse.find(llm_response_id)
+      call.human_evaluations.reload
+
+      # Broadcast to the specific LlmResponse stream (not version stream)
+      # This allows any page showing this call to receive updates,
+      # regardless of whether it's showing one version or multiple versions
+
+      # Update the human evaluations cell in the tracked calls table
+      broadcast_update(
+        stream: "llm_response_#{call.id}",
+        target: "human_evaluations_cell_#{call.id}",
+        partial: "prompt_tracker/shared/human_evaluations_cell",
+        locals: { record: call, context: "monitoring" }
+      )
+
+      # Update the "View all" modal body
+      broadcast_update(
+        stream: "llm_response_#{call.id}",
+        target: "all-human-evals-modal-body-#{call.id}",
+        partial: "prompt_tracker/shared/all_human_evaluations_modal_body",
+        locals: { record: call, context: "monitoring" }
+      )
+    end
+
+    # Helper method to broadcast replace with proper rendering context
+    # Replaces the entire target element with new HTML
+    def broadcast_replace(stream:, target:, partial:, locals:)
+      html = ApplicationController.render(
+        partial: partial,
+        locals: locals
+      )
+      Turbo::StreamsChannel.broadcast_replace_to(
+        stream,
+        target: target,
+        html: html
+      )
+    end
+
+    # Helper method to broadcast update with proper rendering context
+    # Updates the innerHTML of the target element, keeping the element itself intact
+    def broadcast_update(stream:, target:, partial:, locals:)
+      html = ApplicationController.render(
+        partial: partial,
+        locals: locals
+      )
+      Turbo::StreamsChannel.broadcast_update_to(
+        stream,
+        target: target,
+        html: html
+      )
     end
   end
 end

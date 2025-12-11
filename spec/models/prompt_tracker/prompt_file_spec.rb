@@ -9,7 +9,7 @@ module PromptTracker
       <<~YAML
         name: test_prompt
         description: A test prompt
-        template: |
+        user_prompt: |
           Hello {{name}}!
           How are you doing with {{topic}}?
         variables:
@@ -96,13 +96,13 @@ module PromptTracker
         temp.unlink
       end
 
-      it "requires template field" do
-        yaml = valid_yaml.gsub(/template:.*How are you doing with.*?\n/m, "")
+      it "requires user_prompt field" do
+        yaml = valid_yaml.gsub(/user_prompt:.*How are you doing with.*?\n/m, "")
         temp = create_temp_file(yaml)
 
         file = PromptFile.new(temp.path)
         expect(file).not_to be_valid
-        expect(file.errors).to include(a_string_including("Missing required field: template"))
+        expect(file.errors).to include(a_string_including("Missing required field: user_prompt"))
 
         temp.unlink
       end
@@ -140,10 +140,10 @@ module PromptTracker
         temp.unlink
       end
 
-      it "validates template variables match schema" do
+      it "validates user_prompt variables match schema" do
         yaml = <<~YAML
           name: test_prompt
-          template: "Hello {{name}} and {{unknown_var}}"
+          user_prompt: "Hello {{name}} and {{unknown_var}}"
           variables:
             - name: name
               type: string
@@ -167,8 +167,8 @@ module PromptTracker
         expect(file.name).to eq("test_prompt")
       end
 
-      it "returns template" do
-        expect(file.template).to include("Hello {{name}}")
+      it "returns user_prompt" do
+        expect(file.user_prompt).to include("Hello {{name}}")
       end
 
       it "returns description" do
@@ -224,7 +224,7 @@ module PromptTracker
         expect(hash[:prompt][:name]).to eq("test_prompt")
         expect(hash[:prompt][:description]).to eq("A test prompt")
 
-        expect(hash[:version][:template]).to include("Hello {{name}}")
+        expect(hash[:version][:user_prompt]).to include("Hello {{name}}")
         expect(hash[:version][:variables_schema].length).to eq(2)
         expect(hash[:version][:model_config]["temperature"]).to eq(0.7)
         expect(hash[:version][:notes]).to eq("This is a test prompt")

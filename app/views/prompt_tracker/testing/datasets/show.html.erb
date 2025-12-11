@@ -1,0 +1,193 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item"><%= link_to @prompt.name, testing_prompt_prompt_version_path(@prompt, @version) %></li>
+  <li class="breadcrumb-item"><%= link_to "Datasets", testing_prompt_prompt_version_datasets_path(@prompt, @version) %></li>
+  <li class="breadcrumb-item active"><%= @dataset.name %></li>
+<% end %>
+
+<div class="page-header" style="background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 1.5rem; margin-bottom: 2rem;">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <h1 style="color: #1E40AF; margin: 0;">
+        <i class="bi bi-database"></i> <%= @dataset.name %>
+        <span class="badge bg-primary">v<%= @version.version_number %></span>
+        <% if !@dataset.schema_valid? %>
+          <span class="badge bg-danger" title="Schema no longer matches prompt version">
+            <i class="bi bi-exclamation-triangle"></i> Invalid Schema
+          </span>
+        <% end %>
+      </h1>
+      <% if @dataset.description.present? %>
+        <p style="color: #1E40AF; margin: 0.5rem 0 0 0;"><%= @dataset.description %></p>
+      <% end %>
+    </div>
+    <div class="d-flex gap-2">
+      <%= link_to testing_prompt_prompt_version_datasets_path(@prompt, @version), class: "btn btn-outline-primary" do %>
+        <i class="bi bi-arrow-left"></i> Back to Datasets
+      <% end %>
+      <%= link_to edit_testing_prompt_prompt_version_dataset_path(@prompt, @version, @dataset), class: "btn btn-outline-secondary" do %>
+        <i class="bi bi-pencil"></i> Edit
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Schema Invalid Warning -->
+<% if !@dataset.schema_valid? %>
+  <div class="alert alert-danger mb-4">
+    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Invalid Schema</h6>
+    <p class="mb-0">
+      This dataset's schema no longer matches the prompt version's variables schema.
+      The dataset cannot be used for running tests until the schema is fixed.
+    </p>
+  </div>
+<% end %>
+
+<!-- Add Row Section -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add Rows</h5>
+  </div>
+  <div class="card-body">
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRowModal">
+        <i class="bi bi-plus-circle"></i> Add Row Manually
+      </button>
+      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#generateRowsModal">
+        <i class="bi bi-stars"></i> Generate with AI
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Rows Table -->
+<div class="card" data-controller="modal-fix">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-table"></i> Dataset Rows (<%= @dataset.row_count %>)</h5>
+  </div>
+  <div class="card-body">
+    <% if @rows.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <% @dataset.variable_names.each do |var_name| %>
+                <th><%= var_name %></th>
+              <% end %>
+              <th style="width: 100px;">Source</th>
+              <th style="width: 120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dataset-rows">
+            <% @rows.each_with_index do |row, index| %>
+              <%= render "row", row: row, index: (@rows.current_page - 1) * @rows.limit_value + index + 1 %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%= paginate @rows %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+        <p class="text-muted mt-3">No rows in this dataset yet</p>
+        <p class="text-muted">Add rows manually or generate them with AI to get started.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Modals with fix controller -->
+<div data-controller="modal-fix">
+  <!-- Add Row Modal -->
+  <div class="modal fade" id="addRowModal" tabindex="-1" data-modal-fix-target="modal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Row Manually</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <%= form_with(model: @dataset.dataset_rows.build,
+                      url: testing_prompt_prompt_version_dataset_dataset_rows_path(@prompt, @version, @dataset),
+                      method: :post) do |f| %>
+          <div class="modal-body">
+            <%= f.hidden_field :source, value: "manual" %>
+
+            <% if @dataset.schema.present? %>
+              <% @dataset.schema.each do |var_schema| %>
+                <div class="mb-3">
+                  <%= label_tag "dataset_row[row_data][#{var_schema['name']}]", var_schema['name'], class: "form-label" %>
+                  <% if var_schema['required'] %>
+                    <span class="text-danger">*</span>
+                  <% end %>
+
+                  <% case var_schema['type'] %>
+                  <% when 'text' %>
+                    <%= text_area_tag "dataset_row[row_data][#{var_schema['name']}]",
+                                      nil,
+                                      class: "form-control",
+                                      rows: 3,
+                                      required: var_schema['required'],
+                                      placeholder: var_schema['description'] %>
+                  <% else %>
+                    <%= text_field_tag "dataset_row[row_data][#{var_schema['name']}]",
+                                       nil,
+                                       class: "form-control",
+                                       required: var_schema['required'],
+                                       placeholder: var_schema['description'] %>
+                  <% end %>
+
+                  <% if var_schema['description'].present? %>
+                    <div class="form-text"><%= var_schema['description'] %></div>
+                  <% end %>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                This dataset has no schema defined. Cannot add rows.
+              </div>
+            <% end %>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <% if @dataset.schema.present? %>
+              <%= f.submit "Add Row", class: "btn btn-primary" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate Rows Modal -->
+  <div class="modal fade" id="generateRowsModal" tabindex="-1" data-modal-fix-target="modal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-stars"></i> Generate Rows with AI</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Coming Soon:</strong> AI-powered dataset row generation will be implemented in the next phase.
+          </div>
+
+          <p class="text-muted">
+            This feature will allow you to:
+          </p>
+          <ul class="text-muted">
+            <li>Describe the type of data you need</li>
+            <li>Specify how many rows to generate</li>
+            <li>Choose which LLM provider to use</li>
+            <li>Automatically populate your dataset with realistic test data</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

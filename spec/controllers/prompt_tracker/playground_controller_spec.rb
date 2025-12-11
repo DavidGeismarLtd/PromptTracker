@@ -3,11 +3,12 @@
 require "rails_helper"
 
 module PromptTracker
-  RSpec.describe PlaygroundController, type: :controller do
-    routes { PromptTracker::Engine.routes }
+  module Testing
+    RSpec.describe PlaygroundController, type: :controller do
+      routes { PromptTracker::Engine.routes }
 
-    let!(:prompt) { create(:prompt) }
-    let!(:version) { create(:prompt_version, prompt: prompt, template: "Hello {{name}}!", status: "active") }
+      let!(:prompt) { create(:prompt) }
+      let!(:version) { create(:prompt_version, prompt: prompt, user_prompt: "Hello {{name}}!", status: "active") }
 
     describe "GET #show" do
       it "renders the playground page" do
@@ -36,35 +37,35 @@ module PromptTracker
       it "renders template successfully" do
         post :preview, params: {
           prompt_id: prompt.id,
-          template: "Hello {{name}}!",
+          user_prompt: "Hello {{name}}!",
           variables: { name: "John" }
         }, format: :json
 
         expect(response).to have_http_status(:success)
         json = JSON.parse(response.body)
         expect(json["success"]).to be true
-        expect(json["rendered"]).to eq("Hello John!")
+        expect(json["rendered_user"]).to eq("Hello John!")
         expect(json["engine"]).to eq("mustache")
       end
 
       it "detects Liquid templates" do
         post :preview, params: {
           prompt_id: prompt.id,
-          template: "Hello {{ name | upcase }}!",
+          user_prompt: "Hello {{ name | upcase }}!",
           variables: { name: "john" }
         }, format: :json
 
         expect(response).to have_http_status(:success)
         json = JSON.parse(response.body)
         expect(json["success"]).to be true
-        expect(json["rendered"]).to eq("Hello JOHN!")
+        expect(json["rendered_user"]).to eq("Hello JOHN!")
         expect(json["engine"]).to eq("liquid")
       end
 
       it "returns errors for invalid templates" do
         post :preview, params: {
           prompt_id: prompt.id,
-          template: "{% if %}",
+          user_prompt: "{% if %}",
           variables: {}
         }, format: :json
 
@@ -77,7 +78,7 @@ module PromptTracker
       it "extracts variables from template" do
         post :preview, params: {
           prompt_id: prompt.id,
-          template: "Hello {{name}}, welcome to {{place}}!",
+          user_prompt: "Hello {{name}}, welcome to {{place}}!",
           variables: { name: "Alice", place: "Wonderland" }
         }, format: :json
 
@@ -92,7 +93,7 @@ module PromptTracker
         expect {
           post :save, params: {
             prompt_id: prompt.id,
-            template: "New template {{var}}",
+            user_prompt: "New template {{var}}",
             notes: "Test draft",
             save_action: "new_version"
           }, format: :json
@@ -105,20 +106,19 @@ module PromptTracker
         expect(json["action"]).to eq("created")
 
         new_version = PromptVersion.find(json["version_id"])
-        expect(new_version.template).to eq("New template {{var}}")
+        expect(new_version.user_prompt).to eq("New template {{var}}")
         expect(new_version.status).to eq("draft")
-        expect(new_version.source).to eq("web_ui")
         expect(new_version.notes).to eq("Test draft")
       end
 
       it "updates existing version when save_action is 'update' and version has no responses" do
-        draft_version = create(:prompt_version, prompt: prompt, status: "draft", template: "Old template")
+        draft_version = create(:prompt_version, prompt: prompt, status: "draft", user_prompt: "Old template")
 
         expect {
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: draft_version.id,
-            template: "Updated template {{var}}",
+            user_prompt: "Updated template {{var}}",
             notes: "Updated notes",
             save_action: "update"
           }, format: :json
@@ -131,7 +131,7 @@ module PromptTracker
         expect(json["action"]).to eq("updated")
 
         draft_version.reload
-        expect(draft_version.template).to eq("Updated template {{var}}")
+        expect(draft_version.user_prompt).to eq("Updated template {{var}}")
         expect(draft_version.notes).to eq("Updated notes")
       end
 
@@ -143,7 +143,7 @@ module PromptTracker
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: version_with_responses.id,
-            template: "New template {{var}}",
+            user_prompt: "New template {{var}}",
             notes: "Should create new version",
             save_action: "update"
           }, format: :json
@@ -156,7 +156,7 @@ module PromptTracker
 
         # Original version should be unchanged
         version_with_responses.reload
-        expect(version_with_responses.template).not_to eq("New template {{var}}")
+        expect(version_with_responses.user_prompt).not_to eq("New template {{var}}")
       end
 
       it "creates new version when save_action is 'new_version' even if version has no responses" do
@@ -166,7 +166,7 @@ module PromptTracker
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: draft_version.id,
-            template: "New template {{var}}",
+            user_prompt: "New template {{var}}",
             notes: "Force new version",
             save_action: "new_version"
           }, format: :json
@@ -181,7 +181,7 @@ module PromptTracker
       it "returns errors for invalid template" do
         post :save, params: {
           prompt_id: prompt.id,
-          template: "",
+          user_prompt: "",
           notes: "Empty template"
         }, format: :json
 
@@ -233,5 +233,6 @@ module PromptTracker
         expect(json["variables"]).to include("items")
       end
     end
+  end
   end
 end

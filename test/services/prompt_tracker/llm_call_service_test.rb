@@ -12,7 +12,7 @@ module PromptTracker
       )
 
       @version = @prompt.prompt_versions.create!(
-        template: "Hello {{name}}, welcome to {{service}}!",
+        user_prompt: "Hello {{name}}, welcome to {{service}}!",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true },
           { "name" => "service", "type" => "string", "required" => true }
@@ -122,7 +122,7 @@ module PromptTracker
     test "should use specific version when provided" do
       # Create version 2
       version2 = @prompt.prompt_versions.create!(
-        template: "Hi {{name}}!",
+        user_prompt: "Hi {{name}}!",
         variables_schema: [{ "name" => "name", "type" => "string", "required" => true }],
         status: "deprecated",
         source: "api"

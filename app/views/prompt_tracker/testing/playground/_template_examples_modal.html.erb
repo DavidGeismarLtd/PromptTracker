@@ -100,6 +100,34 @@ Total items: {{ items.size }}</code></pre>
               </div>
             </div>
           </div>
+
+          <!-- Structured Prompt with Sections Example -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#example5">
+                Structured Prompt with Sections
+              </button>
+            </h2>
+            <div id="example5" class="accordion-collapse collapse" data-bs-parent="#examplesAccordion">
+              <div class="accordion-body">
+                <pre class="bg-light p-3 rounded mb-2"><code>#role
+You are an expert {{ domain }} consultant with deep knowledge in {{ specialty }}.
+
+#goal
+Help the user {{ task_description }}.
+
+#tone and style
+Be professional, clear, and {{ tone_preference }}.
+
+#format
+Provide your response as {{ output_format }}.</code></pre>
+                <p class="mb-2"><strong>Variables:</strong> <code>domain</code>, <code>specialty</code>, <code>task_description</code>, <code>tone_preference</code>, <code>output_format</code></p>
+                <button class="btn btn-sm btn-primary use-example-btn" data-template="#role&#10;You are an expert {{ domain }} consultant with deep knowledge in {{ specialty }}.&#10;&#10;#goal&#10;Help the user {{ task_description }}.&#10;&#10;#tone and style&#10;Be professional, clear, and {{ tone_preference }}.&#10;&#10;#format&#10;Provide your response as {{ output_format }}.">
+                  Use This Template
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

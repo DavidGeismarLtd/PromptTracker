@@ -94,21 +94,35 @@ module PromptTracker
       end
 
       <<~PROMPT
-        You are an expert prompt engineer. Create effective system and user prompts based on these requirements.
+        You are an expert prompt engineer following industry best practices. Create effective system and user prompts based on these requirements.
 
         Requirements:
         #{requirements}
 
         #{variables_section}
 
+        IMPORTANT - Use structured sections in your prompts:
+        Structure your prompts using these sections (use the ones that are relevant):
+        - #role - Define the AI persona, expertise, and capabilities
+        - #goal - Specify the main objective or task
+        - #context - Provide background information
+        - #format - Specify output format and structure
+        - #example - Show what good output looks like
+        - #audience - Describe who will read the output
+        - #tone and style - Suggest appropriate tone
+        - #what to prioritise - Highlight key aspects to focus on
+        - #out of scope - Define limits and boundaries
+        - #resources - Mention any resources that could be used
+
         Guidelines:
-        - System prompt: Define the AI's role, capabilities, tone, and constraints
-        - User prompt: Provide the template for user interactions, include variables where dynamic content is needed
-        - Make prompts clear, specific, and effective
-        - Use Liquid variable syntax: {{ variable_name }}
+        - System prompt: Use sections like #role, #goal, #tone and style to structure the AI's behavior
+        - User prompt: Use sections like #context, #format, #example to structure the user's request
+        - Include Liquid variables using {{ variable_name }} syntax where dynamic content is needed
+        - Make prompts clear, specific, and well-structured
+        - Each section should start on a new line with the # prefix
         - Ensure the prompts work well together
 
-        Generate the prompts now.
+        Generate the prompts now with proper section structure.
       PROMPT
     end
 

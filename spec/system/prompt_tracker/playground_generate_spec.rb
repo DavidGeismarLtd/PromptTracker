@@ -29,9 +29,9 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
       visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
 
       # Clear the prompts in the UI
-      page.execute_script("document.querySelector('[data-playground-target=\"systemPromptEditor\"]').value = ''")
-      page.execute_script("document.querySelector('[data-playground-target=\"userPromptEditor\"]').value = ''")
-      page.execute_script("document.querySelector('[data-playground-target=\"systemPromptEditor\"]').dispatchEvent(new Event('input', { bubbles: true }))")
+      page.execute_script("document.getElementById('system-prompt-editor').value = ''")
+      page.execute_script("document.getElementById('user-prompt-editor').value = ''")
+      page.execute_script("document.getElementById('system-prompt-editor').dispatchEvent(new Event('input', { bubbles: true }))")
 
       expect(page).to have_button("Generate", visible: :visible)
     end
@@ -53,9 +53,9 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
       visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
 
       # Clear the prompts in the UI to show Generate button
-      page.execute_script("document.querySelector('[data-playground-target=\"systemPromptEditor\"]').value = ''")
-      page.execute_script("document.querySelector('[data-playground-target=\"userPromptEditor\"]').value = ''")
-      page.execute_script("document.querySelector('[data-playground-target=\"systemPromptEditor\"]').dispatchEvent(new Event('input', { bubbles: true }))")
+      page.execute_script("document.getElementById('system-prompt-editor').value = ''")
+      page.execute_script("document.getElementById('user-prompt-editor').value = ''")
+      page.execute_script("document.getElementById('system-prompt-editor').dispatchEvent(new Event('input', { bubbles: true }))")
     end
 
     it "opens modal when Generate button is clicked" do
@@ -82,12 +82,12 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
       visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
 
       # Clear the prompts in the UI to show Generate button
-      page.execute_script("document.querySelector('[data-playground-target=\"systemPromptEditor\"]').value = ''")
-      page.execute_script("document.querySelector('[data-playground-target=\"userPromptEditor\"]').value = ''")
-      page.execute_script("document.querySelector('[data-playground-target=\"systemPromptEditor\"]').dispatchEvent(new Event('input', { bubbles: true }))")
+      page.execute_script("document.getElementById('system-prompt-editor').value = ''")
+      page.execute_script("document.getElementById('user-prompt-editor').value = ''")
+      page.execute_script("document.getElementById('system-prompt-editor').dispatchEvent(new Event('input', { bubbles: true }))")
     end
 
-    it "generates prompts from description successfully", :vcr do
+    it "generates prompts from description successfully" do
       # Click Generate button
       click_button "Generate"
 
@@ -100,15 +100,15 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
       # Should show generating modal
       expect(page).to have_css("#generatingModal.show", visible: :visible, wait: 1)
 
-      # Wait for generation to complete (modal should close)
-      expect(page).not_to have_css("#generatingModal.show", wait: 10)
+      # Wait for success message (indicates generation completed)
+      expect(page).to have_text("This prompt is designed for customer support interactions.", wait: 15)
 
       # Check that prompts were populated
       system_prompt_value = page.evaluate_script(
-        'document.querySelector("[data-playground-target=\'systemPromptEditor\']").value'
+        'document.getElementById("system-prompt-editor").value'
       )
       user_prompt_value = page.evaluate_script(
-        'document.querySelector("[data-playground-target=\'userPromptEditor\']").value'
+        'document.getElementById("user-prompt-editor").value'
       )
 
       expect(system_prompt_value).to eq("You are a helpful customer support assistant.")
@@ -117,9 +117,6 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
       # Check that variables were detected and inputs created
       expect(page).to have_field("customer_name")
       expect(page).to have_field("issue")
-
-      # Check success message
-      expect(page).to have_text("This prompt is designed for customer support interactions.")
     end
 
     it "handles generation errors gracefully" do

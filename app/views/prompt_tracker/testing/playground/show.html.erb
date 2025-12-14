@@ -120,14 +120,18 @@
               System Prompt
               <span class="badge bg-secondary">Optional</span>
             </label>
-            <textarea
-              id="system-prompt-editor"
-              class="form-control font-monospace"
-              rows="4"
-              placeholder="Set the AI's role, behavior, and constraints...&#10;&#10;Example: You are a helpful customer support agent. Be professional, empathetic, and concise."
-              data-playground-target="systemPromptEditor"
-              data-action="input->playground#onSystemPromptInput"
-            ><%= @version&.system_prompt %></textarea>
+            <div class="highlighted-editor-wrapper" data-controller="syntax-highlighter">
+              <div class="highlight-layer" data-syntax-highlighter-target="highlight"></div>
+              <textarea
+                id="system-prompt-editor"
+                class="form-control font-monospace"
+                rows="4"
+                placeholder="Set the AI's role, behavior, and constraints...&#10;&#10;Example: You are a helpful customer support agent. Be professional, empathetic, and concise."
+                data-playground-target="systemPromptEditor"
+                data-syntax-highlighter-target="textarea"
+                data-action="input->playground#onSystemPromptInput input->syntax-highlighter#onInput"
+              ><%= @version&.system_prompt %></textarea>
+            </div>
             <div class="form-text">
               Defines the AI's role and behavior. This is sent to the LLM as the system message.
             </div>
@@ -139,16 +143,21 @@
               User Prompt Template
               <span class="badge bg-danger">Required</span>
             </label>
-            <textarea
-              id="user-prompt-editor"
-              class="form-control font-monospace"
-              rows="10"
-              placeholder="Enter your user prompt template here...&#10;&#10;Examples:&#10;  Variable: Hello {{ name }}!&#10;  Filter: Hello {{ name | capitalize }}!&#10;  Conditional: {% if premium %}Premium user{% endif %}"
-              data-playground-target="userPromptEditor"
-              data-action="input->playground#onUserPromptInput"
-            ><%= @version&.user_prompt %></textarea>
+            <div class="highlighted-editor-wrapper" data-controller="syntax-highlighter">
+              <div class="highlight-layer" data-syntax-highlighter-target="highlight"></div>
+              <textarea
+                id="user-prompt-editor"
+                class="form-control font-monospace"
+                rows="10"
+                placeholder="Enter your user prompt template here...&#10;&#10;Examples:&#10;  Variable: Hello {{ name }}!&#10;  Filter: Hello {{ name | capitalize }}!&#10;  Conditional: {% if premium %}Premium user{% endif %}"
+                data-playground-target="userPromptEditor"
+                data-syntax-highlighter-target="textarea"
+                data-action="input->playground#onUserPromptInput input->syntax-highlighter#onInput"
+              ><%= @version&.user_prompt %></textarea>
+            </div>
             <div class="form-text">
               Use Liquid syntax: <code>{{ variable }}</code> for substitution, filters, conditionals, and loops.
+              <br>Use sections like <code>#role</code>, <code>#goal</code>, <code>#context</code> to structure your prompt.
             </div>
           </div>
 
@@ -178,6 +187,57 @@
                   <a href="https://shopify.github.io/liquid/" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
                     Full Liquid Documentation
                   </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sections help -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sectionsHelp">
+                  <i class="bi bi-hash me-2"></i>
+                  Prompt Sections
+                </button>
+              </h2>
+              <div id="sectionsHelp" class="accordion-collapse collapse" data-bs-parent="#syntaxHelp">
+                <div class="accordion-body">
+                  <p class="small text-muted mb-3">Structure your prompts using these sections (use the ones that are relevant):</p>
+
+                  <h6><code>#role</code></h6>
+                  <p class="small">Define the AI persona, expertise, and capabilities</p>
+
+                  <h6><code>#goal</code></h6>
+                  <p class="small">Specify the main objective or task</p>
+
+                  <h6><code>#context</code></h6>
+                  <p class="small">Provide background information</p>
+
+                  <h6><code>#format</code></h6>
+                  <p class="small">Specify output format and structure</p>
+
+                  <h6><code>#example</code></h6>
+                  <p class="small">Show what good output looks like</p>
+
+                  <h6><code>#audience</code></h6>
+                  <p class="small">Describe who will read the output</p>
+
+                  <h6><code>#step by step instructions</code></h6>
+                  <p class="small">Guide with step-by-step instructions</p>
+
+                  <h6><code>#reasoning approach</code></h6>
+                  <p class="small">Suggest a reasoning or analytical approach</p>
+
+                  <h6><code>#tone and style</code></h6>
+                  <p class="small">Suggest appropriate tone or style</p>
+
+                  <h6><code>#what to prioritise</code></h6>
+                  <p class="small">Highlight key aspects to focus on in the response</p>
+
+                  <h6><code>#out of scope</code></h6>
+                  <p class="small">Define the scope and limits of the response</p>
+
+                  <h6><code>#resources</code></h6>
+                  <p class="small">Mention any resources that could be used</p>
                 </div>
               </div>
             </div>

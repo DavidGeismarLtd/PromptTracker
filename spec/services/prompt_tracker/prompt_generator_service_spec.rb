@@ -9,11 +9,11 @@ module PromptTracker
       let(:mock_response) { double('response', content: 'Expanded requirements') }
       let(:mock_variables_response) { double('response', content: "customer_name\nissue_type\nproduct_name") }
       let(:mock_generation_response) do
-        double('response',
+        double('response', content: {
           system_prompt: 'You are a helpful customer support assistant.',
           user_prompt: 'Hello {{ customer_name }}, I can help with {{ issue_type }}.',
           explanation: 'This prompt provides friendly customer support.'
-        )
+        })
       end
 
       before do

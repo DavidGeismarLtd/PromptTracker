@@ -87,6 +87,30 @@ module PromptTracker
       end
     end
 
+    # POST /playground/generate
+    # POST /prompts/:prompt_id/playground/generate
+    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/generate
+    # Generate prompts from scratch based on a description
+    def generate
+      description = params[:description]
+
+      result = PromptGeneratorService.generate(description: description)
+
+      render json: {
+        success: true,
+        system_prompt: result[:system_prompt],
+        user_prompt: result[:user_prompt],
+        variables: result[:variables],
+        explanation: result[:explanation]
+      }
+    rescue => e
+      Rails.logger.error("Prompt generation failed: #{e.message}")
+      render json: {
+        success: false,
+        error: "Generation failed: #{e.message}"
+      }, status: :unprocessable_entity
+    end
+
     # POST /playground/save (standalone - creates new prompt)
     # POST /prompts/:prompt_id/playground/save (creates new version or updates existing)
     # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/save (updates specific version or creates new)

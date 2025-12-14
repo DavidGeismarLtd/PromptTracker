@@ -30,7 +30,10 @@ export default class extends Controller {
     "modelTopP",
     "modelFrequencyPenalty",
     "modelPresencePenalty",
-    "temperatureBadge"
+    "temperatureBadge",
+    "aiButton",
+    "aiButtonText",
+    "aiButtonIcon"
   ]
 
   static values = {
@@ -39,6 +42,7 @@ export default class extends Controller {
     versionHasResponses: Boolean,
     previewUrl: String,
     saveUrl: String,
+    generateUrl: String,
     isStandalone: Boolean
   }
 
@@ -47,7 +51,9 @@ export default class extends Controller {
     this.debounceDelay = 500 // ms
 
     this.attachEventListeners()
+    this.attachModalEventListeners() // Attach listeners for modals that get moved by modal-fix
     this.updatePreview() // Initial preview
+    this.updateAIButtonState() // Update button text based on content
   }
 
   disconnect() {
@@ -111,11 +117,27 @@ export default class extends Controller {
     this.updateCharCount()
   }
 
+  /**
+   * Attach event listeners for modal buttons
+   * These modals get moved to document.body by modal-fix controller,
+   * so we can't use data-action attributes (they lose controller scope)
+   */
+  attachModalEventListeners() {
+    // Generate Prompt button in modal
+    const generateButton = document.getElementById('generatePromptButton')
+    if (generateButton) {
+      generateButton.addEventListener('click', () => {
+        this.submitGeneration()
+      })
+    }
+  }
+
   // Action: User prompt editor input
   onUserPromptInput() {
     this.debouncedUpdatePreview()
     this.updateVariableInputs()
     this.updateCharCount()
+    this.updateAIButtonState()
   }
 
   // Action: System prompt editor input
@@ -123,6 +145,7 @@ export default class extends Controller {
     this.debouncedUpdatePreview()
     this.updateVariableInputs()
     this.updateCharCount()
+    this.updateAIButtonState()
   }
 
   // Backward compatibility
@@ -503,6 +526,282 @@ export default class extends Controller {
   showPreviewLoading(isLoading) {
     if (this.hasPreviewStatusTarget) {
       this.previewStatusTarget.style.display = isLoading ? 'inline-block' : 'none'
+    }
+  }
+
+  // ========================================
+  // ENHANCE PROMPT METHODS
+  // ========================================
+
+  /**
+   * Main action: Enhance or generate prompts using AI
+   */
+  async enhancePrompt() {
+    const systemPrompt = this.hasSystemPromptEditorTarget ? this.systemPromptEditorTarget.value : ''
+    const userPrompt = this.hasUserPromptEditorTarget ? this.userPromptEditorTarget.value : ''
+    const context = this.hasPromptNameInputTarget ? this.promptNameInputTarget.value : ''
+
+    // Show loading state
+    this.showEnhanceLoading(true)
+
+    try {
+      const response = await fetch(this.enhanceUrlValue, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.getCsrfToken(),
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          system_prompt: systemPrompt,
+          user_prompt: userPrompt,
+          context: context
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Server error (${response.status})`)
+      }
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Animate the enhanced prompts into the editors
+        if (data.system_prompt && this.hasSystemPromptEditorTarget) {
+          await this.animateTextInsertion(this.systemPromptEditorTarget, data.system_prompt)
+        }
+
+        if (data.user_prompt && this.hasUserPromptEditorTarget) {
+          await this.animateTextInsertion(this.userPromptEditorTarget, data.user_prompt)
+        }
+
+        // Update variables and preview
+        this.updateVariableInputs()
+        this.updatePreview()
+
+        // Show success message with explanation
+        const message = data.explanation || 'Prompt enhanced successfully!'
+        this.showAlert(message, 'success')
+      } else {
+        throw new Error(data.error || 'Enhancement failed')
+      }
+    } catch (error) {
+      console.error('Enhancement error:', error)
+      this.showAlert(`Enhancement failed: ${error.message}`, 'danger')
+    } finally {
+      this.showEnhanceLoading(false)
+    }
+  }
+
+  /**
+   * Animate text insertion with typewriter effect
+   */
+  async animateTextInsertion(textarea, newText, speed = 2) {
+    // Clear existing content
+    textarea.value = ''
+
+    // Animate character by character
+    for (let i = 0; i < newText.length; i++) {
+      textarea.value += newText[i]
+
+      // Trigger input event periodically for live updates
+      if (i % 50 === 0 || i === newText.length - 1) {
+        textarea.dispatchEvent(new Event('input'))
+      }
+
+      // Delay between characters (skip for whitespace to speed up)
+      const char = newText[i]
+      const delay = (char === ' ' || char === '\n') ? speed / 3 : speed
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+
+    // Final input event to ensure everything is updated
+    textarea.dispatchEvent(new Event('input'))
+  }
+
+  /**
+   * Show/hide enhancement loading overlay
+   */
+  showEnhanceLoading(isLoading) {
+    // Update button state
+    if (this.hasEnhanceBtnTarget) {
+      this.enhanceBtnTarget.disabled = isLoading
+      this.enhanceBtnTarget.innerHTML = isLoading ?
+        '<span class="spinner-border spinner-border-sm me-1"></span>Enhancing...' :
+        '<i class="bi bi-magic"></i> Enhance'
+    }
+
+    // Show/hide overlay
+    if (this.hasEnhanceOverlayTarget) {
+      this.enhanceOverlayTarget.style.display = isLoading ? 'flex' : 'none'
+    }
+  }
+
+  // ========================================
+  // AI BUTTON - GENERATE ONLY
+  // ========================================
+
+  /**
+   * Check if prompts are empty
+   */
+  get isPromptsEmpty() {
+    const systemPrompt = this.hasSystemPromptEditorTarget ? this.systemPromptEditorTarget.value.trim() : ''
+    const userPrompt = this.hasUserPromptEditorTarget ? this.userPromptEditorTarget.value.trim() : ''
+    return systemPrompt === '' && userPrompt === ''
+  }
+
+  /**
+   * Update AI button visibility based on content state
+   * Only show when prompts are empty (generate mode)
+   */
+  updateAIButtonState() {
+    if (!this.hasAiButtonTarget) return
+
+    if (this.isPromptsEmpty) {
+      this.aiButtonTarget.style.display = ''
+      if (this.hasAiButtonTextTarget) {
+        this.aiButtonTextTarget.textContent = 'Generate'
+      }
+      if (this.hasAiButtonIconTarget) {
+        this.aiButtonIconTarget.className = 'bi bi-stars'
+      }
+    } else {
+      // Hide button when prompts have content
+      this.aiButtonTarget.style.display = 'none'
+    }
+  }
+
+  /**
+   * Handle AI button click - opens generate modal
+   */
+  handleAIButtonClick() {
+    this.openGenerateModal()
+  }
+
+  // ========================================
+  // GENERATE FEATURE
+  // ========================================
+
+  /**
+   * Open the generate prompt modal
+   */
+  openGenerateModal() {
+    const modalEl = document.getElementById('generatePromptModal')
+    if (modalEl) {
+      const modal = new Modal(modalEl)
+      modal.show()
+    }
+  }
+
+  /**
+   * Submit generation request
+   */
+  async submitGeneration() {
+    // Use getElementById since modal gets moved to document.body by modal-fix
+    const descriptionTextarea = document.getElementById('generateDescription')
+
+    if (!descriptionTextarea) {
+      return
+    }
+
+    const description = descriptionTextarea.value.trim()
+
+    if (!description) {
+      this.showAlert('Please describe what your prompt should do', 'warning')
+      return
+    }
+
+    // Close the input modal
+    const inputModalEl = document.getElementById('generatePromptModal')
+    if (inputModalEl) {
+      const inputModal = Modal.getInstance(inputModalEl)
+      if (inputModal) inputModal.hide()
+    }
+
+    // Show generating modal
+    this.showGeneratingModal()
+
+    try {
+      await this.generatePromptFromDescription(description)
+    } catch (error) {
+      console.error('Generation error:', error)
+    } finally {
+      this.hideGeneratingModal()
+      // Clear the description for next time
+      if (descriptionTextarea) {
+        descriptionTextarea.value = ''
+      }
+    }
+  }
+
+  /**
+   * Generate prompt from description with animation
+   */
+  async generatePromptFromDescription(description) {
+    try {
+      const response = await fetch(this.generateUrlValue, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.getCsrfToken(),
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ description })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Server error (${response.status})`)
+      }
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Animate the generated prompts
+        if (data.system_prompt && this.hasSystemPromptEditorTarget) {
+          await this.animateTextInsertion(this.systemPromptEditorTarget, data.system_prompt)
+        }
+
+        if (data.user_prompt && this.hasUserPromptEditorTarget) {
+          await this.animateTextInsertion(this.userPromptEditorTarget, data.user_prompt)
+        }
+
+        // Update variables and preview
+        this.updateVariableInputs()
+        this.updatePreview()
+        this.updateAIButtonState()
+
+        // Show success message with explanation
+        const message = data.explanation || 'Prompt generated successfully!'
+        this.showAlert(message, 'success')
+      } else {
+        throw new Error(data.error || 'Generation failed')
+      }
+    } catch (error) {
+      console.error('Generation error:', error)
+      this.showAlert(`Generation failed: ${error.message}`, 'danger')
+    }
+  }
+
+  /**
+   * Show generating modal
+   */
+  showGeneratingModal() {
+    const modalEl = document.getElementById('generatingModal')
+    if (modalEl) {
+      this.generatingModal = new Modal(modalEl)
+      this.generatingModal.show()
+    }
+  }
+
+  /**
+   * Hide generating modal
+   */
+  hideGeneratingModal() {
+    if (this.generatingModal) {
+      this.generatingModal.hide()
+      this.generatingModal = null
     }
   }
 

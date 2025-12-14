@@ -10,6 +10,106 @@ module PromptTracker
       let!(:prompt) { create(:prompt) }
       let!(:version) { create(:prompt_version, prompt: prompt, user_prompt: "Hello {{name}}!", status: "active") }
 
+    describe "POST #enhance" do
+      let(:enhancement_result) do
+        {
+          system_prompt: "You are a professional greeter. Be warm and welcoming.",
+          user_prompt: "Greet {{ customer_name }} warmly and ask about {{ topic }}.",
+          suggested_variables: ["customer_name", "topic"],
+          explanation: "Enhanced with professional tone and clear variables"
+        }
+      end
+
+      before do
+        allow(PromptEnhancerService).to receive(:enhance).and_return(enhancement_result)
+      end
+
+      it "enhances existing prompts" do
+        post :enhance, params: {
+          prompt_id: prompt.id,
+          system_prompt: "You are helpful.",
+          user_prompt: "Say hello.",
+          context: "greeting"
+        }, format: :json
+
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+        expect(json["success"]).to be true
+        expect(json["system_prompt"]).to eq("You are a professional greeter. Be warm and welcoming.")
+        expect(json["user_prompt"]).to include("{{ customer_name }}")
+        expect(json["suggested_variables"]).to include("customer_name", "topic")
+        expect(json["explanation"]).to be_present
+      end
+
+      it "generates prompts from scratch" do
+        post :enhance, params: {
+          prompt_id: prompt.id,
+          system_prompt: "",
+          user_prompt: "",
+          context: "email generator"
+        }, format: :json
+
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+        expect(json["success"]).to be true
+      end
+
+      it "calls PromptEnhancerService with correct parameters" do
+        post :enhance, params: {
+          prompt_id: prompt.id,
+          system_prompt: "Test system",
+          user_prompt: "Test user",
+          context: "test context"
+        }, format: :json
+
+        expect(PromptEnhancerService).to have_received(:enhance).with(
+          system_prompt: "Test system",
+          user_prompt: "Test user",
+          context: "test context"
+        )
+      end
+
+      it "uses prompt_name as context when context not provided" do
+        post :enhance, params: {
+          prompt_id: prompt.id,
+          system_prompt: "",
+          user_prompt: "",
+          prompt_name: "My Prompt"
+        }, format: :json
+
+        expect(PromptEnhancerService).to have_received(:enhance).with(
+          system_prompt: "",
+          user_prompt: "",
+          context: "My Prompt"
+        )
+      end
+
+      it "handles errors gracefully" do
+        allow(PromptEnhancerService).to receive(:enhance).and_raise(StandardError.new("API error"))
+
+        post :enhance, params: {
+          prompt_id: prompt.id,
+          system_prompt: "Test",
+          user_prompt: "Test"
+        }, format: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json["success"]).to be false
+        expect(json["error"]).to eq("API error")
+      end
+
+      it "works in standalone mode" do
+        post :enhance, params: {
+          system_prompt: "",
+          user_prompt: "",
+          context: "standalone test"
+        }, format: :json
+
+        expect(response).to have_http_status(:success)
+      end
+    end
+
     describe "GET #show" do
       it "renders the playground page" do
         get :show, params: { prompt_id: prompt.id }

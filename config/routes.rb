@@ -11,6 +11,7 @@ PromptTracker::Engine.routes.draw do
     resource :playground, only: [:show], controller: 'playground' do
       post :preview, on: :member
       post :save, on: :member
+      post :generate, on: :member
     end
 
     # Prompt versions (for testing)
@@ -19,6 +20,7 @@ PromptTracker::Engine.routes.draw do
       resource :playground, only: [:show], controller: 'playground' do
         post :preview, on: :member
         post :save, on: :member
+        post :generate, on: :member
       end
 
       resources :prompt_versions, only: [:show], path: "versions" do
@@ -31,6 +33,7 @@ PromptTracker::Engine.routes.draw do
         resource :playground, only: [:show], controller: 'playground' do
           post :preview, on: :member
           post :save, on: :member
+          post :generate, on: :member
         end
 
         # Tests nested under prompt versions

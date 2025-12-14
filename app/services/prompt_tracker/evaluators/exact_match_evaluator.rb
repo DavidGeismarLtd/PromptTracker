@@ -31,6 +31,15 @@ module PromptTracker
         trim_whitespace: true   # Whether to trim whitespace before comparing
       }.freeze
 
+      # Parameter schema for form processing
+      def self.param_schema
+        {
+          expected_text: { type: :string },
+          case_sensitive: { type: :boolean },
+          trim_whitespace: { type: :boolean }
+        }
+      end
+
       # Metadata for registry auto-discovery
       def self.metadata
         {

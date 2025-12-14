@@ -246,6 +246,50 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
   end
 
+  describe "config processing delegation" do
+    it "delegates config processing to evaluator class" do
+      version # ensure version exists
+
+      # Mock the evaluator class to verify delegation
+      allow(PromptTracker::Evaluators::KeywordEvaluator).to receive(:process_params).and_call_original
+
+      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+        evaluator_config: {
+          evaluator_key: "keyword",
+          enabled: true,
+          config: {
+            required_keywords: "hello\nworld",
+            case_sensitive: "true"
+          }
+        }
+      }
+
+      expect(PromptTracker::Evaluators::KeywordEvaluator).to have_received(:process_params)
+    end
+
+    it "uses evaluator's param_schema for type conversion" do
+      version # ensure version exists
+
+      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+        evaluator_config: {
+          evaluator_key: "length",
+          enabled: true,
+          config: {
+            min_length: "50",  # String that should be converted to integer
+            max_length: "500"
+          }
+        }
+      }
+
+      config = PromptTracker::EvaluatorConfig.last
+      # Verify that the evaluator class converted the strings to integers
+      expect(config.config["min_length"]).to be_a(Integer)
+      expect(config.config["min_length"]).to eq(50)
+      expect(config.config["max_length"]).to be_a(Integer)
+      expect(config.config["max_length"]).to eq(500)
+    end
+  end
+
   describe "config processing" do
     it "processes required_keywords from textarea" do
       version # ensure version exists
@@ -289,20 +333,20 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       version # ensure version exists
       post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
         evaluator_config: {
-          evaluator_key: "keyword",
+          evaluator_key: "format",
           enabled: true,
           run_mode: "sync",
           priority: 100,
           weight: 1.0,
           config: {
-            case_sensitive: "true",
+            require_headers: "true",
             strict: "false"
           }
         }
       }
 
       config = PromptTracker::EvaluatorConfig.last
-      expect(config.config["case_sensitive"]).to eq(true)
+      expect(config.config["require_headers"]).to eq(true)
       expect(config.config["strict"]).to eq(false)
     end
 

@@ -30,6 +30,23 @@ module PromptTracker
         )
       end
 
+      describe ".param_schema" do
+        it "defines schema for min_length and max_length as integers" do
+          schema = LengthEvaluator.param_schema
+          expect(schema[:min_length]).to eq({ type: :integer })
+          expect(schema[:max_length]).to eq({ type: :integer })
+        end
+      end
+
+      describe ".process_params" do
+        it "converts string integers to integers" do
+          params = { min_length: "50", max_length: "500" }
+          result = LengthEvaluator.process_params(params)
+          expect(result["min_length"]).to eq(50)
+          expect(result["max_length"]).to eq(500)
+        end
+      end
+
       describe "#evaluate_score" do
         it "scores 100 for acceptable length" do
           response = create_response("a" * 100) # Within range (10-2000)

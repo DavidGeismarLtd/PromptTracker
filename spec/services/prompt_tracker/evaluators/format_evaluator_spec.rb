@@ -30,6 +30,32 @@ module PromptTracker
         )
       end
 
+      describe ".param_schema" do
+        it "defines schema for format parameters" do
+          schema = FormatEvaluator.param_schema
+          expect(schema[:format]).to eq({ type: :symbol })
+          expect(schema[:required_keys]).to eq({ type: :array })
+          expect(schema[:require_headers]).to eq({ type: :boolean })
+          expect(schema[:max_parse_errors]).to eq({ type: :integer })
+          expect(schema[:schema]).to eq({ type: :json })
+          expect(schema[:strict]).to eq({ type: :boolean })
+        end
+      end
+
+      describe ".process_params" do
+        it "converts format string to symbol" do
+          params = { format: "json" }
+          result = FormatEvaluator.process_params(params)
+          expect(result["format"]).to eq(:json)
+        end
+
+        it "parses JSON schema" do
+          params = { schema: '{"type": "object"}' }
+          result = FormatEvaluator.process_params(params)
+          expect(result["schema"]).to eq({ "type" => "object" })
+        end
+      end
+
       describe "JSON format" do
         it "scores 100 for valid JSON" do
           response = create_response('{"name": "John", "age": 30}')

@@ -30,6 +30,30 @@ module PromptTracker
         )
       end
 
+      describe ".param_schema" do
+        it "defines schema for keyword arrays and case_sensitive boolean" do
+          schema = KeywordEvaluator.param_schema
+          expect(schema[:required_keywords]).to eq({ type: :array })
+          expect(schema[:forbidden_keywords]).to eq({ type: :array })
+          expect(schema[:case_sensitive]).to eq({ type: :boolean })
+        end
+      end
+
+      describe ".process_params" do
+        it "converts textarea strings to arrays" do
+          params = { required_keywords: "hello\nworld\ntest", forbidden_keywords: "bad\nevil" }
+          result = KeywordEvaluator.process_params(params)
+          expect(result["required_keywords"]).to eq(["hello", "world", "test"])
+          expect(result["forbidden_keywords"]).to eq(["bad", "evil"])
+        end
+
+        it "converts string boolean to boolean" do
+          params = { case_sensitive: "true" }
+          result = KeywordEvaluator.process_params(params)
+          expect(result["case_sensitive"]).to eq(true)
+        end
+      end
+
       describe "required keywords" do
         it "scores 100 when all required keywords present" do
           response = create_response("This response contains apple and banana")

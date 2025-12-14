@@ -25,6 +25,14 @@ module PromptTracker
         max_length: 2000     # Maximum acceptable length
       }.freeze
 
+      # Parameter schema for form processing
+      def self.param_schema
+        {
+          min_length: { type: :integer },
+          max_length: { type: :integer }
+        }
+      end
+
       # Metadata for registry auto-discovery
       def self.metadata
         {

@@ -23,6 +23,23 @@ module PromptTracker
 
       subject(:evaluator) { described_class.new(llm_response, config) }
 
+      describe ".param_schema" do
+        it "defines schema for LLM judge parameters" do
+          schema = LlmJudgeEvaluator.param_schema
+          expect(schema[:judge_model]).to eq({ type: :string })
+          expect(schema[:custom_instructions]).to eq({ type: :string })
+          expect(schema[:threshold_score]).to eq({ type: :integer })
+        end
+      end
+
+      describe ".process_params" do
+        it "converts threshold_score to integer" do
+          params = { judge_model: "gpt-4o", custom_instructions: "Test", threshold_score: "80" }
+          result = LlmJudgeEvaluator.process_params(params)
+          expect(result["threshold_score"]).to eq(80)
+        end
+      end
+
       describe "#initialize" do
         it "merges config with defaults" do
           expect(evaluator.config[:judge_model]).to eq("gpt-4o-2024-08-06")

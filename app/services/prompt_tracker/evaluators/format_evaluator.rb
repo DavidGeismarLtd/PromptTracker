@@ -35,6 +35,18 @@ module PromptTracker
         strict: false            # Strict mode: no extra keys allowed in JSON
       }.freeze
 
+      # Parameter schema for form processing
+      def self.param_schema
+        {
+          format: { type: :symbol },
+          required_keys: { type: :array },
+          require_headers: { type: :boolean },
+          max_parse_errors: { type: :integer },
+          schema: { type: :json },
+          strict: { type: :boolean }
+        }
+      end
+
       # Metadata for registry auto-discovery
       def self.metadata
         {

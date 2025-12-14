@@ -28,6 +28,15 @@ module PromptTracker
         case_sensitive: false    # Whether to match case-sensitively
       }.freeze
 
+      # Parameter schema for form processing
+      def self.param_schema
+        {
+          required_keywords: { type: :array },
+          forbidden_keywords: { type: :array },
+          case_sensitive: { type: :boolean }
+        }
+      end
+
       # Metadata for registry auto-discovery
       def self.metadata
         {

@@ -79,9 +79,9 @@ module PromptTracker
     # POST /prompts/:prompt_id/evaluators
     # Create a new evaluator config for the active version
     def create
-      # Process config params (convert arrays from form to proper format)
+      # Process config params using evaluator class
       processed_params = evaluator_config_params
-      processed_params[:config] = process_config_params(processed_params[:config]) if processed_params[:config]
+      processed_params[:config] = process_config_with_evaluator(processed_params) if processed_params[:config]
 
       @evaluator_config = @version.evaluator_configs.build(processed_params)
 
@@ -101,9 +101,13 @@ module PromptTracker
     # PATCH/PUT /prompts/:prompt_id/evaluators/:id
     # Update an evaluator config
     def update
-      # Process config params (convert arrays from form to proper format)
+      # Process config params using evaluator class
       processed_params = evaluator_config_params
-      processed_params[:config] = process_config_params(processed_params[:config]) if processed_params[:config]
+      if processed_params[:config]
+        # Use the evaluator_key from params if provided, otherwise use the existing one
+        evaluator_key = processed_params[:evaluator_key] || @evaluator_config.evaluator_key
+        processed_params[:config] = process_config_with_evaluator(processed_params.merge(evaluator_key: evaluator_key))
+      end
 
       if @evaluator_config.update(processed_params)
         respond_to do |format|
@@ -173,46 +177,29 @@ module PromptTracker
       )
     end
 
-    # this should be scoped
-    # Process config params from form (handle arrays, convert types, etc.)
-    def process_config_params(config_hash)
+    # Process config params by delegating to the evaluator class
+    # Each evaluator class defines its own param_schema and handles type conversion
+    #
+    # @param params [Hash] the evaluator_config params including :evaluator_key and :config
+    # @return [Hash] processed config hash with correct types
+    def process_config_with_evaluator(params)
+      evaluator_key = params[:evaluator_key]
+      config_hash = params[:config]
+
       return {} if config_hash.blank?
 
-      processed = {}
+      # Look up the evaluator class from the registry
+      evaluator_metadata = EvaluatorRegistry.get(evaluator_key)
 
-      config_hash.each do |key, value|
-        case key
-        when "required_keywords", "forbidden_keywords", "patterns"
-          # Convert textarea input (one per line) to array
-          processed[key] = value.is_a?(String) ? value.split("\n").map(&:strip).reject(&:blank?) : value
-        when "criteria"
-          # Criteria comes as array from checkboxes
-          processed[key] = value.is_a?(Array) ? value.reject(&:blank?) : []
-        when "case_sensitive", "strict", "match_all"
-          # Convert checkbox values to boolean
-          processed[key] = value == "true" || value == true || value == "1"
-        when "min_length", "max_length", "ideal_min", "ideal_max", "score_min", "score_max", "threshold_score"
-          # Convert to integer
-          processed[key] = value.to_i
-        when "schema"
-          # Parse JSON schema if provided
-          if value.present? && value.is_a?(String)
-            begin
-              processed[key] = JSON.parse(value)
-            rescue JSON::ParserError => e
-              Rails.logger.warn("Failed to parse schema JSON: #{e.message}")
-              processed[key] = nil
-            end
-          else
-            processed[key] = value
-          end
-        else
-          # Keep as-is
-          processed[key] = value
-        end
+      if evaluator_metadata
+        # Delegate to the evaluator class to process params
+        evaluator_class = evaluator_metadata[:evaluator_class]
+        evaluator_class.process_params(config_hash)
+      else
+        # Fallback: if evaluator not found in registry, return config as-is
+        Rails.logger.warn("Evaluator '#{evaluator_key}' not found in registry, config params not processed")
+        config_hash
       end
-
-      processed
     end
   end
 end

@@ -28,6 +28,14 @@ module PromptTracker
         match_all: true    # true = all must match, false = any must match
       }.freeze
 
+      # Parameter schema for form processing
+      def self.param_schema
+        {
+          patterns: { type: :array },
+          match_all: { type: :boolean }
+        }
+      end
+
       # Metadata for registry auto-discovery
       def self.metadata
         {

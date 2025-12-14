@@ -32,6 +32,21 @@ module PromptTracker
         custom_instructions: "Evaluate the quality and appropriateness of the response"
       }.freeze
 
+      # Parameter schema for form processing
+      def self.param_schema
+        {
+          judge_model: { type: :string },
+          custom_instructions: { type: :string },
+          threshold_score: { type: :integer }
+        }
+      end
+
+      # Process raw parameters from form based on schema
+      # Delegates to BaseEvaluator for consistency
+      def self.process_params(raw_params)
+        BaseEvaluator.process_params_with_schema(raw_params, param_schema)
+      end
+
       # Metadata for registry auto-discovery
       def self.metadata
         {

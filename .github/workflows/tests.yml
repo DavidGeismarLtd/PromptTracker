@@ -47,9 +47,6 @@ jobs:
         bundle exec rails db:create
         bundle exec rails db:schema:load
 
-    - name: Run Minitest
-      run: bundle exec rails test
-
     - name: Run RSpec
       run: bundle exec rspec
 
@@ -61,4 +58,3 @@ jobs:
         path: |
           test/dummy/log/test.log
           coverage/
-

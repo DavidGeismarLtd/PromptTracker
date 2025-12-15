@@ -12,7 +12,6 @@ RSpec.describe PromptTracker::EvaluationJob, type: :job do
     create(:evaluator_config,
            :disabled,
            configurable: version,
-           evaluator_key: "length",
            config: { min_length: 10, max_length: 1000 })
   end
 

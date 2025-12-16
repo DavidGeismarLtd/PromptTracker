@@ -26,8 +26,8 @@ echo "Preparing database..."
 cd test/dummy
 # Drop and recreate database to ensure clean state
 bundle exec rails db:drop db:create
-# Install engine migrations first
-bundle exec rails prompt_tracker:install:migrations
+# Install engine migrations first (using the correct Rails task)
+bundle exec rails railties:install:migrations
 # Then run all migrations
 bundle exec rails db:migrate
 cd /app

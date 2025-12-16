@@ -6,6 +6,8 @@
 /tmp/
 /test/dummy/db/*.sqlite3
 /test/dummy/db/*.sqlite3-*
+/test/dummy/db/migrate/
+/test/dummy/db/schema.rb
 /test/dummy/log/*.log
 /test/dummy/log/*.log.*
 /test/dummy/storage/

@@ -1,0 +1,140 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item"><%= link_to "Traces", traces_path %></li>
+  <li class="breadcrumb-item active"><%= @trace.name %></li>
+<% end %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i class="bi bi-diagram-2"></i>
+    Trace: <%= @trace.name %>
+  </h1>
+  <%= link_to traces_path, class: "btn btn-outline-secondary" do %>
+    <i class="bi bi-arrow-left"></i> Back to Traces
+  <% end %>
+</div>
+
+<!-- Trace Status Card -->
+<div class="card mb-4 <%= @trace.status == 'error' ? 'border-danger' : 'border-success' %>">
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="bi bi-info-circle"></i> Trace Information</h5>
+      <% if @trace.status == 'completed' %>
+        <span class="badge bg-success">✓ Completed</span>
+      <% elsif @trace.status == 'error' %>
+        <span class="badge bg-danger">✗ Error</span>
+      <% elsif @trace.status == 'running' %>
+        <span class="badge bg-warning">⟳ Running</span>
+      <% end %>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3">
+        <strong>Session:</strong><br>
+        <% if @trace.session_id.present? %>
+          <%= link_to @trace.session_id, session_path(@trace.session_id), class: "text-decoration-none" %>
+        <% else %>
+          <span class="text-muted">-</span>
+        <% end %>
+      </div>
+      <div class="col-md-3">
+        <strong>User:</strong><br>
+        <% if @trace.user_id.present? %>
+          <span class="badge bg-secondary"><%= @trace.user_id %></span>
+        <% else %>
+          <span class="text-muted">-</span>
+        <% end %>
+      </div>
+      <div class="col-md-3">
+        <strong>Duration:</strong><br>
+        <%= format_duration(@trace.duration_ms) %>
+      </div>
+      <div class="col-md-3">
+        <strong>Started:</strong><br>
+        <%= format_timestamp(@trace.started_at) %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Metrics Row -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">Spans</h6>
+        <h3 class="mb-0"><%= @total_spans %></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">LLM Calls</h6>
+        <h3 class="mb-0"><%= @total_generations %></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">Total Tokens</h6>
+        <h3 class="mb-0"><%= format_tokens(@total_tokens) %></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">Total Cost</h6>
+        <h3 class="mb-0"><%= format_cost(@total_cost) %></h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Input/Output Cards -->
+<% if @trace.input.present? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> Input</h5>
+    </div>
+    <div class="card-body">
+      <div class="bg-light p-3 rounded" style="white-space: pre-wrap; font-family: monospace;"><%= @trace.input %></div>
+    </div>
+  </div>
+<% end %>
+
+<% if @trace.output.present? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="bi bi-box-arrow-right"></i> Output</h5>
+    </div>
+    <div class="card-body">
+      <div class="bg-light p-3 rounded" style="white-space: pre-wrap; font-family: monospace;"><%= @trace.output %></div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Timeline -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Execution Timeline</h5>
+  </div>
+  <div class="card-body">
+    <%= render "timeline", root_spans: @root_spans, orphan_generations: @orphan_generations %>
+  </div>
+</div>
+
+<!-- Metadata -->
+<% if @trace.metadata.present? %>
+  <div class="card mt-4">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="bi bi-code-square"></i> Metadata</h5>
+    </div>
+    <div class="card-body">
+      <pre class="bg-light p-3 rounded mb-0"><%= JSON.pretty_generate(@trace.metadata) %></pre>
+    </div>
+  </div>
+<% end %>
+

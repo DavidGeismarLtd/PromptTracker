@@ -78,6 +78,14 @@ module PromptTracker
                optional: true,
                inverse_of: :llm_responses
 
+    belongs_to :trace,
+               class_name: "PromptTracker::Trace",
+               optional: true
+
+    belongs_to :span,
+               class_name: "PromptTracker::Span",
+               optional: true
+
     has_one :prompt,
             through: :prompt_version,
             class_name: "PromptTracker::Prompt"

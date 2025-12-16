@@ -11,6 +11,8 @@ PromptTracker::Evaluation.delete_all
 PromptTracker::PromptTestRun.delete_all  # Delete test runs before LLM responses
 PromptTracker::PromptTest.delete_all
 PromptTracker::LlmResponse.delete_all
+PromptTracker::Span.delete_all
+PromptTracker::Trace.delete_all
 PromptTracker::AbTest.delete_all
 PromptTracker::EvaluatorConfig.delete_all
 PromptTracker::PromptVersion.delete_all
@@ -179,6 +181,7 @@ puts "  Creating sample tests..."
 test_greeting_premium = support_greeting_v3.prompt_tests.create!(
   name: "Premium Customer Greeting",
   description: "Test greeting for premium customers with billing issues",
+<<<<<<< HEAD
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "premium", "billing" ],
   enabled: true
@@ -195,12 +198,26 @@ test_greeting_premium.evaluator_configs.create!(
 test_greeting_premium.evaluator_configs.create!(
   evaluator_type: "PromptTracker::Evaluators::LengthEvaluator",
   config: { "min_length" => 10, "max_length" => 500 },
+=======
+  template_variables: { "customer_name" => "John Smith", "issue_category" => "billing" },
+  expected_patterns: [ "John Smith", "billing" ],
+  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 0,
+      "config" => { "min_length" => 10, "max_length" => 500 }
+    }
+  ],
+  tags: [ "premium", "billing" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
 test_greeting_technical = support_greeting_v3.prompt_tests.create!(
   name: "Technical Support Greeting",
   description: "Test greeting for technical support inquiries",
+<<<<<<< HEAD
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "technical" ],
   enabled: true
@@ -215,12 +232,26 @@ test_greeting_technical.evaluator_configs.create!(
 test_greeting_technical.evaluator_configs.create!(
   evaluator_type: "PromptTracker::Evaluators::LengthEvaluator",
   config: { "min_length" => 10, "max_length" => 500 },
+=======
+  template_variables: { "customer_name" => "Sarah Johnson", "issue_category" => "technical" },
+  expected_patterns: [ "Sarah Johnson", "technical" ],
+  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 0,
+      "config" => { "min_length" => 10, "max_length" => 500 }
+    }
+  ],
+  tags: [ "technical" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
 test_greeting_account = support_greeting_v3.prompt_tests.create!(
   name: "Account Issue Greeting",
   description: "Test greeting for account-related questions",
+<<<<<<< HEAD
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "account" ],
   enabled: true
@@ -235,12 +266,26 @@ test_greeting_account.evaluator_configs.create!(
 test_greeting_account.evaluator_configs.create!(
   evaluator_type: "PromptTracker::Evaluators::LengthEvaluator",
   config: { "min_length" => 10, "max_length" => 500 },
+=======
+  template_variables: { "customer_name" => "Mike Davis", "issue_category" => "account" },
+  expected_patterns: [ "Mike Davis", "account" ],
+  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 0,
+      "config" => { "min_length" => 10, "max_length" => 500 }
+    }
+  ],
+  tags: [ "account" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
 test_greeting_general = support_greeting_v3.prompt_tests.create!(
   name: "General Inquiry Greeting",
   description: "Test greeting for general customer inquiries",
+<<<<<<< HEAD
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "general" ],
   enabled: true
@@ -255,6 +300,19 @@ test_greeting_general.evaluator_configs.create!(
 test_greeting_general.evaluator_configs.create!(
   evaluator_type: "PromptTracker::Evaluators::LengthEvaluator",
   config: { "min_length" => 10, "max_length" => 500 },
+=======
+  template_variables: { "customer_name" => "Emily Chen", "issue_category" => "general" },
+  expected_patterns: [ "Emily Chen", "general" ],
+  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 0,
+      "config" => { "min_length" => 10, "max_length" => 500 }
+    }
+  ],
+  tags: [ "general" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
@@ -262,7 +320,14 @@ test_greeting_general.evaluator_configs.create!(
 test_greeting_edge = support_greeting_v3.prompt_tests.create!(
   name: "Edge Case - Very Long Name",
   description: "Test greeting with unusually long customer name",
+<<<<<<< HEAD
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+=======
+  template_variables: { "customer_name" => "Alexander Maximilian Christopher Wellington III", "issue_category" => "billing" },
+  expected_patterns: [ "Alexander", "billing" ],
+  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+  evaluator_configs: [],
+>>>>>>> 9f13033 (WIP)
   tags: [ "edge-case" ],
   enabled: false
 )
@@ -284,6 +349,7 @@ test_comprehensive_quality = support_greeting_v3.prompt_tests.create!(
   name: "Comprehensive Quality Check",
   description: "Tests greeting quality with multiple evaluators including LLM judge, length, and keyword checks",
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+<<<<<<< HEAD
   tags: [ "comprehensive", "quality", "critical" ],
   enabled: true
 )
@@ -331,6 +397,44 @@ test_comprehensive_quality.evaluator_configs.create!(
     "judge_model" => "gpt-4o",
     "custom_instructions" => "Evaluate if the greeting is warm, professional, and acknowledges the customer's refund request appropriately. Consider helpfulness, professionalism, clarity, and tone."
   },
+=======
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 80,
+      "weight" => 0.2,
+      "config" => {
+        "min_length" => 50,
+        "max_length" => 200,
+        "ideal_min" => 80,
+        "ideal_max" => 150
+      }
+    },
+    {
+      "evaluator_key" => "keyword_check",
+      "threshold" => 90,
+      "weight" => 0.3,
+      "config" => {
+        "required_keywords" => [ "help", "refund" ],
+        "forbidden_keywords" => [ "unfortunately", "cannot", "unable" ],
+        "case_sensitive" => false
+      }
+    },
+    {
+      "evaluator_key" => "gpt4_judge",
+      "threshold" => 85,
+      "weight" => 0.5,
+      "config" => {
+        "judge_model" => "gpt-4o",
+        "criteria" => [ "helpfulness", "professionalism", "clarity", "tone" ],
+        "custom_instructions" => "Evaluate if the greeting is warm, professional, and acknowledges the customer's refund request appropriately.",
+        "score_min" => 0,
+        "score_max" => 100
+      }
+    }
+  ],
+  tags: [ "comprehensive", "quality", "critical" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
@@ -339,6 +443,7 @@ test_email_format = email_summary_v1.prompt_tests.create!(
   name: "Email Summary Format Validation",
   description: "Validates email summary format with complex regex patterns",
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.3 },
+<<<<<<< HEAD
   tags: [ "format", "validation", "email" ],
   enabled: true
 )
@@ -386,6 +491,43 @@ test_email_format.evaluator_configs.create!(
     "judge_model" => "gpt-4o",
     "custom_instructions" => "Evaluate if the summary captures the key points of the email thread concisely and accurately. Consider accuracy, conciseness, and completeness."
   },
+=======
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 75,
+      "weight" => 0.25,
+      "config" => {
+        "min_length" => 100,
+        "max_length" => 400,
+        "ideal_min" => 150,
+        "ideal_max" => 300
+      }
+    },
+    {
+      "evaluator_key" => "format_check",
+      "threshold" => 80,
+      "weight" => 0.25,
+      "config" => {
+        "expected_format" => "plain",
+        "strict" => false
+      }
+    },
+    {
+      "evaluator_key" => "gpt4_judge",
+      "threshold" => 80,
+      "weight" => 0.5,
+      "config" => {
+        "judge_model" => "gpt-4o",
+        "criteria" => [ "accuracy", "conciseness", "completeness" ],
+        "custom_instructions" => "Evaluate if the summary captures the key points of the email thread concisely and accurately.",
+        "score_min" => 0,
+        "score_max" => 100
+      }
+    }
+  ],
+  tags: [ "format", "validation", "email" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
@@ -394,6 +536,7 @@ test_code_review_quality = code_review_v1.prompt_tests.create!(
   name: "Code Review Quality Assessment",
   description: "Tests code review feedback quality with LLM judge and keyword validation",
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.4 },
+<<<<<<< HEAD
   tags: [ "code-review", "quality", "technical" ],
   enabled: true
 )
@@ -442,6 +585,44 @@ test_code_review_quality.evaluator_configs.create!(
     "judge_model" => "gpt-4o",
     "custom_instructions" => "Evaluate if the code review is constructive, technically accurate, and provides actionable feedback. The review should identify potential issues and suggest improvements. Consider helpfulness, technical accuracy, professionalism, and completeness."
   },
+=======
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 70,
+      "weight" => 0.15,
+      "config" => {
+        "min_length" => 200,
+        "max_length" => 1000,
+        "ideal_min" => 300,
+        "ideal_max" => 700
+      }
+    },
+    {
+      "evaluator_key" => "keyword_check",
+      "threshold" => 85,
+      "weight" => 0.25,
+      "config" => {
+        "required_keywords" => [ "code", "quality", "readability" ],
+        "forbidden_keywords" => [ "terrible", "awful", "stupid" ],
+        "case_sensitive" => false
+      }
+    },
+    {
+      "evaluator_key" => "gpt4_judge",
+      "threshold" => 90,
+      "weight" => 0.6,
+      "config" => {
+        "judge_model" => "gpt-4o",
+        "criteria" => [ "helpfulness", "technical_accuracy", "professionalism", "completeness" ],
+        "custom_instructions" => "Evaluate if the code review is constructive, technically accurate, and provides actionable feedback. The review should identify potential issues and suggest improvements.",
+        "score_min" => 0,
+        "score_max" => 100
+      }
+    }
+  ],
+  tags: [ "code-review", "quality", "technical" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
@@ -450,6 +631,7 @@ test_exact_match = support_greeting_v3.prompt_tests.create!(
   name: "Exact Output Validation",
   description: "Tests for exact expected output with additional quality checks",
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
+<<<<<<< HEAD
   tags: [ "exact-match", "critical", "smoke" ],
   enabled: true
 )
@@ -496,6 +678,34 @@ test_exact_match.evaluator_configs.create!(
     "judge_model" => "gpt-4o",
     "custom_instructions" => "Evaluate if the greeting matches the expected format and tone for a password reset inquiry. Consider accuracy, tone, and clarity."
   },
+=======
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 90,
+      "weight" => 0.3,
+      "config" => {
+        "min_length" => 50,
+        "max_length" => 150,
+        "ideal_min" => 80,
+        "ideal_max" => 120
+      }
+    },
+    {
+      "evaluator_key" => "gpt4_judge",
+      "threshold" => 95,
+      "weight" => 0.7,
+      "config" => {
+        "judge_model" => "gpt-4o",
+        "criteria" => [ "accuracy", "tone", "clarity" ],
+        "custom_instructions" => "Evaluate if the greeting matches the expected format and tone for a password reset inquiry.",
+        "score_min" => 0,
+        "score_max" => 100
+      }
+    }
+  ],
+  tags: [ "exact-match", "critical", "smoke" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
@@ -504,6 +714,7 @@ test_technical_patterns = code_review_v1.prompt_tests.create!(
   name: "Technical Content Pattern Validation",
   description: "Validates technical content with complex regex patterns for code snippets, technical terms, and formatting",
   model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.4 },
+<<<<<<< HEAD
   tags: [ "technical", "complex-patterns", "code-review" ],
   enabled: true
 )
@@ -567,6 +778,53 @@ test_technical_patterns.evaluator_configs.create!(
     "judge_model" => "gpt-4o",
     "custom_instructions" => "Evaluate the technical accuracy and completeness of the code review. It should identify the list comprehension, discuss performance implications, mention edge cases, and suggest testing. Consider technical accuracy, completeness, helpfulness, and professionalism."
   },
+=======
+  evaluator_configs: [
+    {
+      "evaluator_key" => "length_check",
+      "threshold" => 75,
+      "weight" => 0.2,
+      "config" => {
+        "min_length" => 250,
+        "max_length" => 1200,
+        "ideal_min" => 400,
+        "ideal_max" => 800
+      }
+    },
+    {
+      "evaluator_key" => "keyword_check",
+      "threshold" => 80,
+      "weight" => 0.2,
+      "config" => {
+        "required_keywords" => [ "comprehension", "performance", "edge case" ],
+        "forbidden_keywords" => [],
+        "case_sensitive" => false
+      }
+    },
+    {
+      "evaluator_key" => "format_check",
+      "threshold" => 85,
+      "weight" => 0.1,
+      "config" => {
+        "expected_format" => "markdown",
+        "strict" => false
+      }
+    },
+    {
+      "evaluator_key" => "gpt4_judge",
+      "threshold" => 88,
+      "weight" => 0.5,
+      "config" => {
+        "judge_model" => "gpt-4o",
+        "criteria" => [ "technical_accuracy", "completeness", "helpfulness", "professionalism" ],
+        "custom_instructions" => "Evaluate the technical accuracy and completeness of the code review. It should identify the list comprehension, discuss performance implications, mention edge cases, and suggest testing.",
+        "score_min" => 0,
+        "score_max" => 100
+      }
+    }
+  ],
+  tags: [ "technical", "complex-patterns", "code-review" ],
+>>>>>>> 9f13033 (WIP)
   enabled: true
 )
 
@@ -683,6 +941,7 @@ successful_responses.each_with_index do |response, i|
   # Keyword evaluation
   score = rand(70..100)
   response.evaluations.create!(
+<<<<<<< HEAD
     score: score,
     score_max: 100,
     passed: score >= 80,
@@ -693,6 +952,19 @@ successful_responses.each_with_index do |response, i|
       "forbidden_found" => 0,
       "total_keywords" => 3
     }
+=======
+    score: rand(3.5..5.0).round(1),
+    score_max: 5,
+    criteria_scores: {
+      "helpfulness" => rand(4..5),
+      "tone" => rand(3..5),
+      "accuracy" => rand(4..5),
+      "conciseness" => rand(3..5)
+    },
+    evaluator_type: "human",
+    evaluator_id: "manager@example.com",
+    feedback: [ "Great response!", "Very helpful", "Could be more concise", "Perfect tone" ][i % 4]
+>>>>>>> 9f13033 (WIP)
   )
 
   # Length evaluation
@@ -873,6 +1145,357 @@ ab_test_email_completed = email_summary.ab_tests.create!(
 )
 
 # ============================================================================
+# 7. Create Tracing Data (Sessions, Traces, Spans)
+# ============================================================================
+
+puts "  Creating tracing data (sessions, traces, spans)..."
+
+# Session 1: Customer Support Chat - Simple workflow
+# ============================================================================
+session_1 = "support_chat_abc123"
+
+# Trace 1: Simple greeting (no spans, just direct LLM call)
+trace_1_greeting = PromptTracker::Trace.create!(
+  name: "customer_greeting",
+  session_id: session_1,
+  user_id: "user_alice",
+  input: "New customer inquiry - billing issue",
+  output: "Greeting sent successfully",
+  status: "completed",
+  started_at: 10.minutes.ago,
+  ended_at: 10.minutes.ago + 1.2.seconds,
+  metadata: { "channel" => "web_chat", "priority" => "high" }
+)
+
+# Link one of the existing successful responses to this trace
+support_greeting_v3.llm_responses.successful.first&.update!(
+  trace: trace_1_greeting,
+  session_id: session_1,
+  user_id: "user_alice"
+)
+
+# Trace 2: Follow-up question (simple)
+trace_2_followup = PromptTracker::Trace.create!(
+  name: "customer_greeting",
+  session_id: session_1,
+  user_id: "user_alice",
+  input: "Follow-up question about refund",
+  output: "Response provided",
+  status: "completed",
+  started_at: 8.minutes.ago,
+  ended_at: 8.minutes.ago + 1.5.seconds,
+  metadata: { "channel" => "web_chat", "priority" => "high" }
+)
+
+support_greeting_v3.llm_responses.successful.second&.update!(
+  trace: trace_2_followup,
+  session_id: session_1,
+  user_id: "user_alice"
+)
+
+# Session 2: RAG Q&A Workflow - Multi-span workflow
+# ============================================================================
+session_2 = "rag_session_xyz789"
+
+# Trace 3: RAG workflow with 2 spans
+trace_3_rag = PromptTracker::Trace.create!(
+  name: "rag_qa_workflow",
+  session_id: session_2,
+  user_id: "user_bob",
+  input: "How do I reset my password?",
+  output: "To reset your password, go to Settings > Security > Reset Password. You'll receive an email with instructions.",
+  status: "completed",
+  started_at: 5.minutes.ago,
+  ended_at: 5.minutes.ago + 3.5.seconds,
+  metadata: { "channel" => "api", "kb_version" => "v2.1" }
+)
+
+# Span 1: Search knowledge base
+span_3_search = trace_3_rag.spans.create!(
+  name: "search_knowledge_base",
+  span_type: "retrieval",
+  input: "password reset",
+  output: "Found 3 relevant articles: [KB-101, KB-205, KB-312]",
+  status: "completed",
+  started_at: 5.minutes.ago,
+  ended_at: 5.minutes.ago + 0.8.seconds,
+  metadata: { "search_engine" => "elasticsearch", "results_count" => 3 }
+)
+
+# Span 2: Generate answer
+span_3_generate = trace_3_rag.spans.create!(
+  name: "generate_answer",
+  span_type: "function",
+  input: "Articles: KB-101, KB-205, KB-312 | Question: How do I reset my password?",
+  output: "To reset your password, go to Settings > Security > Reset Password...",
+  status: "completed",
+  started_at: 5.minutes.ago + 0.8.seconds,
+  ended_at: 5.minutes.ago + 3.5.seconds,
+  metadata: { "model_used" => "gpt-4o", "temperature" => 0.7 }
+)
+
+# Link email summary response to this span
+email_summary_v1.llm_responses.successful.first&.update!(
+  trace: trace_3_rag,
+  span: span_3_generate,
+  session_id: session_2,
+  user_id: "user_bob"
+)
+
+# Trace 4: Another RAG query in same session
+trace_4_rag = PromptTracker::Trace.create!(
+  name: "rag_qa_workflow",
+  session_id: session_2,
+  user_id: "user_bob",
+  input: "What are your refund policies?",
+  output: "Our refund policy allows returns within 30 days...",
+  status: "completed",
+  started_at: 3.minutes.ago,
+  ended_at: 3.minutes.ago + 2.8.seconds,
+  metadata: { "channel" => "api", "kb_version" => "v2.1" }
+)
+
+span_4_search = trace_4_rag.spans.create!(
+  name: "search_knowledge_base",
+  span_type: "retrieval",
+  input: "refund policy",
+  output: "Found 2 relevant articles: [KB-450, KB-451]",
+  status: "completed",
+  started_at: 3.minutes.ago,
+  ended_at: 3.minutes.ago + 0.6.seconds,
+  metadata: { "search_engine" => "elasticsearch", "results_count" => 2 }
+)
+
+span_4_generate = trace_4_rag.spans.create!(
+  name: "generate_answer",
+  span_type: "function",
+  input: "Articles: KB-450, KB-451 | Question: What are your refund policies?",
+  output: "Our refund policy allows returns within 30 days...",
+  status: "completed",
+  started_at: 3.minutes.ago + 0.6.seconds,
+  ended_at: 3.minutes.ago + 2.8.seconds,
+  metadata: { "model_used" => "gpt-4o", "temperature" => 0.7 }
+)
+
+email_summary_v1.llm_responses.successful.second&.update!(
+  trace: trace_4_rag,
+  span: span_4_generate,
+  session_id: session_2,
+  user_id: "user_bob"
+)
+
+# Session 3: Code Review Workflow - Complex multi-step
+# ============================================================================
+session_3 = "code_review_def456"
+
+# Trace 5: Code review with 3 spans
+trace_5_review = PromptTracker::Trace.create!(
+  name: "code_review_workflow",
+  session_id: session_3,
+  user_id: "user_charlie",
+  input: "def calculate_total(items)\n  items.map { |i| i[:price] }.sum\nend",
+  output: "Code review completed with 3 suggestions",
+  status: "completed",
+  started_at: 15.minutes.ago,
+  ended_at: 15.minutes.ago + 8.5.seconds,
+  metadata: { "language" => "ruby", "file" => "app/models/order.rb" }
+)
+
+# Span 1: Analyze code
+span_5_analyze = trace_5_review.spans.create!(
+  name: "analyze_code",
+  span_type: "function",
+  input: "def calculate_total(items)...",
+  output: "Analysis complete: 2 potential issues found",
+  status: "completed",
+  started_at: 15.minutes.ago,
+  ended_at: 15.minutes.ago + 2.0.seconds,
+  metadata: { "analyzer" => "rubocop", "issues_found" => 2 }
+)
+
+# Span 2: Generate suggestions (child of analyze)
+span_5_suggest = span_5_analyze.create_child_span(
+  name: "generate_suggestions",
+  span_type: "function",
+  input: "Issues: nil handling, edge cases",
+  output: "Generated 3 improvement suggestions",
+  status: "completed",
+  started_at: 15.minutes.ago + 2.0.seconds,
+  ended_at: 15.minutes.ago + 6.5.seconds,
+  metadata: { "model_used" => "gpt-4o" }
+)
+
+code_review_v1.llm_responses.successful.first&.update!(
+  trace: trace_5_review,
+  span: span_5_suggest,
+  session_id: session_3,
+  user_id: "user_charlie"
+)
+
+# Span 3: Validate suggestions
+span_5_validate = trace_5_review.spans.create!(
+  name: "validate_suggestions",
+  span_type: "function",
+  input: "Suggestions: 1. Add nil check, 2. Handle empty array, 3. Add tests",
+  output: "All suggestions validated and approved",
+  status: "completed",
+  started_at: 15.minutes.ago + 6.5.seconds,
+  ended_at: 15.minutes.ago + 8.5.seconds,
+  metadata: { "validator" => "human", "approved" => true }
+)
+
+# Session 4: Failed Trace Example
+# ============================================================================
+session_4 = "error_session_ghi789"
+
+# Trace 6: Failed trace with error
+trace_6_error = PromptTracker::Trace.create!(
+  name: "rag_qa_workflow",
+  session_id: session_4,
+  user_id: "user_diana",
+  input: "Complex query that causes timeout",
+  status: "error",
+  started_at: 20.minutes.ago,
+  ended_at: 20.minutes.ago + 30.seconds,
+  metadata: { "error" => "Request timeout after 30 seconds", "channel" => "api" }
+)
+
+span_6_search = trace_6_error.spans.create!(
+  name: "search_knowledge_base",
+  span_type: "retrieval",
+  input: "complex query",
+  status: "error",
+  started_at: 20.minutes.ago,
+  ended_at: 20.minutes.ago + 30.seconds,
+  metadata: { "error" => "Elasticsearch timeout" }
+)
+
+# Link the timeout response to this trace
+timeout_response.update!(
+  trace: trace_6_error,
+  span: span_6_search,
+  session_id: session_4,
+  user_id: "user_diana"
+)
+
+# Session 5: Long conversation session
+# ============================================================================
+session_5 = "long_chat_jkl012"
+
+# Create 8 simple traces in this session
+8.times do |i|
+  trace = PromptTracker::Trace.create!(
+    name: "customer_greeting",
+    session_id: session_5,
+    user_id: "user_eve",
+    input: "Message #{i + 1} in conversation",
+    output: "Response #{i + 1}",
+    status: "completed",
+    started_at: (30 - i * 3).minutes.ago,
+    ended_at: (30 - i * 3).minutes.ago + rand(1.0..2.5).seconds,
+    metadata: { "message_number" => i + 1, "channel" => "web_chat" }
+  )
+
+  # Link some responses to these traces
+  if i < 3
+    support_greeting_v3.llm_responses.successful.offset(i + 2).first&.update!(
+      trace: trace,
+      session_id: session_5,
+      user_id: "user_eve"
+    )
+  end
+end
+
+# Session 6: Multi-user collaboration session
+# ============================================================================
+session_6 = "team_collab_mno345"
+
+# Trace by user 1
+trace_7_collab = PromptTracker::Trace.create!(
+  name: "code_review_workflow",
+  session_id: session_6,
+  user_id: "user_frank",
+  input: "Initial code review request",
+  output: "Review completed",
+  status: "completed",
+  started_at: 1.hour.ago,
+  ended_at: 1.hour.ago + 5.seconds,
+  metadata: { "role" => "developer" }
+)
+
+# Trace by user 2 in same session
+trace_8_collab = PromptTracker::Trace.create!(
+  name: "code_review_workflow",
+  session_id: session_6,
+  user_id: "user_grace",
+  input: "Follow-up review",
+  output: "Additional suggestions provided",
+  status: "completed",
+  started_at: 55.minutes.ago,
+  ended_at: 55.minutes.ago + 4.seconds,
+  metadata: { "role" => "senior_developer" }
+)
+
+# Session 7: Email processing workflow
+# ============================================================================
+session_7 = "email_proc_pqr678"
+
+trace_9_email = PromptTracker::Trace.create!(
+  name: "email_processing_workflow",
+  session_id: session_7,
+  user_id: "user_henry",
+  input: "Process incoming email from customer",
+  output: "Email categorized and summarized",
+  status: "completed",
+  started_at: 2.hours.ago,
+  ended_at: 2.hours.ago + 6.5.seconds,
+  metadata: { "email_id" => "email_12345", "from" => "customer@example.com" }
+)
+
+# Span 1: Parse email
+span_9_parse = trace_9_email.spans.create!(
+  name: "parse_email",
+  span_type: "function",
+  input: "Raw email content",
+  output: "Extracted: subject, body, attachments",
+  status: "completed",
+  started_at: 2.hours.ago,
+  ended_at: 2.hours.ago + 0.5.seconds,
+  metadata: { "parser" => "mail_parser_v2" }
+)
+
+# Span 2: Summarize email
+span_9_summarize = trace_9_email.spans.create!(
+  name: "summarize_email",
+  span_type: "function",
+  input: "Email body: Long email thread...",
+  output: "Summary: Customer requesting refund for order #12345",
+  status: "completed",
+  started_at: 2.hours.ago + 0.5.seconds,
+  ended_at: 2.hours.ago + 3.5.seconds,
+  metadata: { "model_used" => "gpt-4o" }
+)
+
+email_summary_v1.llm_responses.successful.third&.update!(
+  trace: trace_9_email,
+  span: span_9_summarize,
+  session_id: session_7,
+  user_id: "user_henry"
+)
+
+# Span 3: Categorize email
+span_9_categorize = trace_9_email.spans.create!(
+  name: "categorize_email",
+  span_type: "function",
+  input: "Summary: Customer requesting refund...",
+  output: "Category: refund_request, Priority: high",
+  status: "completed",
+  started_at: 2.hours.ago + 3.5.seconds,
+  ended_at: 2.hours.ago + 6.5.seconds,
+  metadata: { "classifier" => "ml_classifier_v3", "confidence" => 0.95 }
+)
+
+# ============================================================================
 # Summary
 # ============================================================================
 
@@ -899,6 +1522,11 @@ puts "  - #{PromptTracker::AbTest.count} A/B tests"
 puts "    - #{PromptTracker::AbTest.draft.count} draft"
 puts "    - #{PromptTracker::AbTest.running.count} running"
 puts "    - #{PromptTracker::AbTest.completed.count} completed"
+puts "  - #{PromptTracker::Trace.count} traces"
+puts "    - #{PromptTracker::Trace.completed.count} completed"
+puts "    - #{PromptTracker::Trace.with_errors.count} with errors"
+puts "  - #{PromptTracker::Span.count} spans"
+puts "  - #{PromptTracker::Trace.where.not(session_id: nil).distinct.count(:session_id)} unique sessions"
 puts "\nTotal cost: $#{PromptTracker::LlmResponse.sum(:cost_usd).round(4)}"
 puts "Average response time: #{PromptTracker::LlmResponse.successful.average(:response_time_ms).to_i}ms"
 puts "\n🎉 Ready to explore!"
@@ -913,3 +1541,11 @@ puts "    • Code Review Quality Assessment (LLM judge + keyword validation)"
 puts "    • Exact Output Validation (exact match + quality checks)"
 puts "    • Technical Content Pattern Validation (10 complex regex patterns + 4 evaluators)"
 puts "  - Create new A/B tests with draft versions v4 and v5"
+puts "\n🔍 Tracing Examples:"
+puts "  - Session 'support_chat_abc123' - Simple customer support chat (2 traces)"
+puts "  - Session 'rag_session_xyz789' - RAG Q&A workflow with search + generate spans (2 traces)"
+puts "  - Session 'code_review_def456' - Complex code review with nested spans (1 trace)"
+puts "  - Session 'long_chat_jkl012' - Long conversation with 8 traces"
+puts "  - Session 'email_proc_pqr678' - Email processing workflow (parse → summarize → categorize)"
+puts "  - Visit /prompt_tracker/sessions to browse all sessions"
+puts "  - Visit /prompt_tracker/traces to browse all traces"

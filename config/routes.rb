@@ -1,29 +1,42 @@
 PromptTracker::Engine.routes.draw do
   root to: "home#index"
 
-  # ========================================
-  # TESTING SECTION (Blue) - Pre-deployment validation
-  # ========================================
-  namespace :testing do
-    get "/", to: "dashboard#index", as: :root
+  # Standalone playground (not tied to a specific prompt)
+  resource :playground, only: [ :show ], controller: "playground" do
+    post :preview, on: :member
+    post :save, on: :member
+  end
 
-    # Standalone playground (not tied to a specific prompt)
+  resources :prompts, only: [ :index, :show ] do
+    member do
+      get :analytics
+    end
+
+    # Playground for editing existing prompts
     resource :playground, only: [ :show ], controller: "playground" do
       post :preview, on: :member
       post :save, on: :member
       post :generate, on: :member
     end
 
-    # Prompt versions (for testing)
-    resources :prompts, only: [ :index, :show ] do
-      # Playground for editing existing prompts
+    resources :prompt_versions, only: [ :show ], path: "versions" do
+      member do
+        get :compare
+        post :activate
+      end
+
+      # Playground for specific version
       resource :playground, only: [ :show ], controller: "playground" do
         post :preview, on: :member
         post :save, on: :member
         post :generate, on: :member
       end
 
-      resources :prompt_versions, only: [ :show ], path: "versions" do
+      # Tests nested under prompt versions
+      resources :prompt_tests, only: [ :index, :new, :create, :show, :edit, :update, :destroy ], path: "tests" do
+        collection do
+          post :run_all
+        end
         member do
           get :compare
           post :activate
@@ -59,10 +72,18 @@ PromptTracker::Engine.routes.draw do
       end
     end
 
-    # Test runs (for viewing results)
-    resources :runs, controller: "prompt_test_runs", only: [ :index, :show ] do
-      # Human evaluations nested under test runs
-      resources :human_evaluations, only: [ :create ]
+    # A/B tests nested under prompts for creation
+    resources :ab_tests, only: [ :new, :create ], path: "ab-tests"
+
+    # Evaluator configs nested under prompts
+    resources :evaluator_configs, only: [ :index, :show, :create, :update, :destroy ], path: "evaluators"
+  end
+
+  resources :llm_responses, only: [ :index, :show ], path: "responses"
+
+  resources :evaluations, only: [ :index, :show, :create ] do
+    collection do
+      get :form_template
     end
   end
 
@@ -90,26 +111,8 @@ PromptTracker::Engine.routes.draw do
     end
   end
 
-  # Documentation
-  namespace :docs do
-    get :tracking
-  end
-
-  # Prompts (for monitoring - evaluator configs)
-  resources :prompts, only: [] do
-    # Evaluator configs nested under prompts (for monitoring)
-    resources :evaluator_configs, only: [ :index, :show, :create, :update, :destroy ], path: "evaluators" do
-      collection do
-        post :copy_from_tests
-      end
-    end
-
-    # A/B tests nested under prompts (for creating new tests)
-    resources :ab_tests, only: [ :new, :create ], path: "ab-tests"
-  end
-
-  # A/B Tests (for managing tests)
-  resources :ab_tests, path: "ab-tests" do
+  # A/B tests at top level for management
+  resources :ab_tests, only: [ :index, :show, :edit, :update, :destroy ], path: "ab-tests" do
     member do
       post :start
       post :pause
@@ -120,19 +123,27 @@ PromptTracker::Engine.routes.draw do
     end
   end
 
-  # Evaluations (used by both monitoring and test sections)
-  resources :evaluations, only: [ :index, :show ] do
-    # Human evaluations nested under evaluations
-    resources :human_evaluations, only: [ :create ]
-  end
-
-  # Evaluator config forms (not nested, for AJAX loading)
-  resources :evaluator_configs, only: [] do
-    collection do
-      get :config_form
+  # Test suites at top level
+  resources :prompt_test_suites, only: [ :index, :show, :new, :create, :edit, :update, :destroy ], path: "test-suites" do
+    member do
+      post :run
     end
   end
 
-  # Test runs (legacy, redirects to /testing/runs)
+  # Test runs (for viewing results)
   resources :prompt_test_runs, only: [ :index, :show ], path: "test-runs"
+  resources :prompt_test_suite_runs, only: [ :index, :show ], path: "suite-runs"
+
+  # Analytics & Reports
+  namespace :analytics do
+    get "/", to: "dashboard#index", as: :root
+    get "costs", to: "dashboard#costs"
+    get "performance", to: "dashboard#performance"
+    get "quality", to: "dashboard#quality"
+  end
+
+  # Tracing routes
+  resources :sessions, only: [ :index, :show ]
+  resources :traces, only: [ :index, :show ]
+  resources :spans, only: [ :show ]
 end

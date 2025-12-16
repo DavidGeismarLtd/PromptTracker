@@ -2,7 +2,6 @@ module PromptTracker
   class Engine < ::Rails::Engine
     isolate_namespace PromptTracker
 
-
     initializer "prompt_tracker.assets.precompile" do |app|
       app.config.assets.precompile += %w[
         prompt_tracker/application.js

@@ -32,13 +32,10 @@ FactoryBot.definition_file_paths = [
 ]
 FactoryBot.find_definitions
 
-# Checks for pending migrations and applies them before tests are run.
-# If you are not using ActiveRecord, you can remove these lines.
-begin
-  ActiveRecord::Migration.maintain_test_schema!
-rescue ActiveRecord::PendingMigrationError => e
-  abort e.to_s.strip
-end
+# Load schema instead of running migrations (faster and avoids engine migration conflicts)
+# For Rails engines, this is preferred because it avoids checking engine source migrations
+ActiveRecord::Schema.verbose = false
+load Rails.root.join("db/schema.rb")
 
 RSpec.configure do |config|
   # Include Rails::Controller::Testing helpers for controller specs

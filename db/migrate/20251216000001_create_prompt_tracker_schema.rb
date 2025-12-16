@@ -135,7 +135,10 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.boolean :passed
       t.bigint :prompt_test_run_id
       t.string :evaluation_context, null: false, default: "tracked_call"
+<<<<<<< HEAD
       t.bigint :evaluator_config_id
+=======
+>>>>>>> ade89e6 (WIP)
       t.timestamps
     end
 
@@ -145,7 +148,10 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_evaluations, [ :evaluator_type, :created_at ], name: "index_evaluations_on_type_and_created_at"
     add_index :prompt_tracker_evaluations, :prompt_test_run_id
     add_index :prompt_tracker_evaluations, :evaluation_context
+<<<<<<< HEAD
     add_index :prompt_tracker_evaluations, :evaluator_config_id
+=======
+>>>>>>> ade89e6 (WIP)
 
     # ============================================================================
     # TABLE 5: ab_tests
@@ -300,12 +306,13 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     # ============================================================================
     # TABLE 11: traces
     # Distributed tracing for LLM calls
+    # Merged from: 20250116000001_create_prompt_tracker_traces.rb
     # ============================================================================
     create_table :prompt_tracker_traces do |t|
       t.string :name, null: false
       t.text :input
       t.text :output
-      t.string :status, default: "running", null: false
+      t.string :status, null: false, default: "running"
       t.string :session_id
       t.string :user_id
       t.datetime :started_at, null: false
@@ -317,21 +324,22 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
 
     add_index :prompt_tracker_traces, :session_id
     add_index :prompt_tracker_traces, :user_id
+    add_index :prompt_tracker_traces, [ :status, :created_at ]
     add_index :prompt_tracker_traces, :started_at
-    add_index :prompt_tracker_traces, [ :status, :created_at ], name: "index_prompt_tracker_traces_on_status_and_created_at"
 
     # ============================================================================
     # TABLE 12: spans
     # Individual spans within traces
+    # Merged from: 20250116000002_create_prompt_tracker_spans.rb
     # ============================================================================
     create_table :prompt_tracker_spans do |t|
-      t.bigint :trace_id, null: false
-      t.bigint :parent_span_id
+      t.references :trace, null: false, foreign_key: { to_table: :prompt_tracker_traces }, index: true
+      t.references :parent_span, foreign_key: { to_table: :prompt_tracker_spans }, index: true
       t.string :name, null: false
       t.string :span_type
       t.text :input
       t.text :output
-      t.string :status, default: "running", null: false
+      t.string :status, null: false, default: "running"
       t.datetime :started_at, null: false
       t.datetime :ended_at
       t.integer :duration_ms
@@ -339,10 +347,8 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :prompt_tracker_spans, :trace_id
-    add_index :prompt_tracker_spans, :parent_span_id
+    add_index :prompt_tracker_spans, [ :status, :created_at ]
     add_index :prompt_tracker_spans, :span_type
-    add_index :prompt_tracker_spans, [ :status, :created_at ], name: "index_prompt_tracker_spans_on_status_and_created_at"
 
     # ============================================================================
     # TABLE 13: datasets
@@ -441,7 +447,6 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_foreign_key :prompt_tracker_prompt_test_runs, :prompt_tracker_dataset_rows, column: :dataset_row_id
     add_foreign_key :prompt_tracker_prompt_tests, :prompt_tracker_prompt_versions, column: :prompt_version_id
     add_foreign_key :prompt_tracker_prompt_versions, :prompt_tracker_prompts, column: :prompt_id
-    add_foreign_key :prompt_tracker_spans, :prompt_tracker_spans, column: :parent_span_id
-    add_foreign_key :prompt_tracker_spans, :prompt_tracker_traces, column: :trace_id
+    # Note: Foreign keys for spans table are created inline with t.references
   end
 end

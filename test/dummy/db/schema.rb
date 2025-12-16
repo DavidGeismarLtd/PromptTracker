@@ -81,11 +81,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_16_203315) do
     t.boolean "passed"
     t.bigint "prompt_test_run_id"
     t.string "evaluation_context", default: "tracked_call", null: false
+<<<<<<< HEAD
     t.bigint "evaluator_config_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index [ "evaluation_context" ], name: "index_prompt_tracker_evaluations_on_evaluation_context"
     t.index [ "evaluator_config_id" ], name: "index_prompt_tracker_evaluations_on_evaluator_config_id"
+=======
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "evaluation_context" ], name: "index_prompt_tracker_evaluations_on_evaluation_context"
+>>>>>>> ade89e6 (WIP)
     t.index [ "evaluator_type", "created_at" ], name: "index_evaluations_on_type_and_created_at"
     t.index [ "evaluator_type" ], name: "index_prompt_tracker_evaluations_on_evaluator_type"
     t.index [ "llm_response_id" ], name: "index_prompt_tracker_evaluations_on_llm_response_id"
@@ -149,18 +155,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_16_203315) do
     t.string "ab_variant"
     t.bigint "trace_id"
     t.bigint "span_id"
-<<<<<<< HEAD
     t.boolean "is_test_run", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-=======
-<<<<<<< HEAD
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-=======
->>>>>>> 654a6b9 (fix)
     t.boolean "is_test_run", default: false, null: false
->>>>>>> 1932ff1 (fix conflict)
+    t.boolean "is_test_run", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "ab_test_id", "ab_variant" ], name: "index_llm_responses_on_ab_test_and_variant"
     t.index [ "ab_test_id" ], name: "index_prompt_tracker_llm_responses_on_ab_test_id"
     t.index [ "environment" ], name: "index_prompt_tracker_llm_responses_on_environment"

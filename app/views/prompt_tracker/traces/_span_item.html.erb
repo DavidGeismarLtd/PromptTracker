@@ -1,0 +1,81 @@
+<div class="timeline-item span-item <%= span.status == 'error' ? 'error' : '' %>" style="margin-left: <%= level * 20 %>px;">
+  <div class="timeline-content <%= span.status == 'error' ? 'error' : '' %>">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div>
+        <h6 class="mb-1">
+          <i class="bi bi-box"></i>
+          <strong><%= span.name %></strong>
+          <% if span.span_type.present? %>
+            <span class="badge bg-info"><%= span.span_type %></span>
+          <% end %>
+          <% if span.status == 'completed' %>
+            <span class="badge bg-success">✓</span>
+          <% elsif span.status == 'error' %>
+            <span class="badge bg-danger">✗</span>
+          <% elsif span.status == 'running' %>
+            <span class="badge bg-warning">⟳</span>
+          <% end %>
+        </h6>
+        <small class="text-muted">
+          <%= format_timestamp(span.started_at) %> •
+          <%= format_duration(span.duration_ms) %>
+          <% if span.child_spans.any? %>
+            • <%= span.child_spans.count %> child spans
+          <% end %>
+          <% if span.llm_responses.any? %>
+            • <%= span.llm_responses.count %> LLM calls
+          <% end %>
+        </small>
+      </div>
+      <% if span.id.present? %>
+        <%= link_to "Details", span_path(span), class: "btn btn-sm btn-outline-primary", target: "_blank" %>
+      <% end %>
+    </div>
+
+    <% if span.input.present? %>
+      <div class="mt-2">
+        <strong class="text-muted">Input:</strong>
+        <div class="bg-white p-2 rounded mt-1" style="font-size: 0.9em; white-space: pre-wrap; font-family: monospace;">
+          <%= truncate_text(span.input, 200) %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if span.output.present? %>
+      <div class="mt-2">
+        <strong class="text-muted">Output:</strong>
+        <div class="bg-white p-2 rounded mt-1" style="font-size: 0.9em; white-space: pre-wrap; font-family: monospace;">
+          <%= truncate_text(span.output, 200) %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if span.metadata.present? && span.metadata['error'].present? %>
+      <div class="mt-2">
+        <strong class="text-danger">Error:</strong>
+        <div class="bg-white p-2 rounded mt-1 text-danger" style="font-size: 0.9em;">
+          <%= span.metadata['error'] %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Nested child spans -->
+  <% if span.child_spans.any? %>
+    <div class="nested-timeline">
+      <% span.child_spans.order(:started_at).each do |child_span| %>
+        <%= render "span_item", span: child_span, level: level + 1 %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- LLM generations in this span -->
+  <% if span.llm_responses.any? %>
+    <div class="nested-timeline">
+      <% span.llm_responses.order(:created_at).each do |generation| %>
+        <%= render "generation_item", generation: generation, level: level + 1 %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+

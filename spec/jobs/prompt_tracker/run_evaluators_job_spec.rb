@@ -147,16 +147,20 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
 
     context "with LLM judge evaluator" do
       let(:test) do
-        test = create(:prompt_test,
-                      prompt_version: version)
-        create(:evaluator_config,
-               configurable: test,
-               evaluator_key: "llm_judge",
-               config: {
-                 judge_model: "gpt-4o",
-                 custom_instructions: "Evaluate helpfulness and clarity"
-               })
-        test
+        create(:prompt_test,
+               prompt_version: version,
+               template_variables: { name: "John" },
+               evaluator_configs: [
+                 {
+                   evaluator_key: "gpt4_judge",
+                   threshold: 7,
+                   config: {
+                     judge_model: "gpt-4",
+                     criteria: [ "helpfulness", "clarity" ],
+                     score_max: 10
+                   }
+                 }
+               ])
       end
 
       # Mock RubyLLM responses
@@ -190,11 +194,10 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
       end
 
       context "with real LLM enabled" do
-        around do |example|
-          original_env = ENV["PROMPT_TRACKER_USE_REAL_LLM"]
-          ENV["PROMPT_TRACKER_USE_REAL_LLM"] = "true"
-          example.run
-          ENV["PROMPT_TRACKER_USE_REAL_LLM"] = original_env
+        before do
+          # Enable real LLM mode
+          allow(ENV).to receive(:[]).and_call_original
+          allow(ENV).to receive(:[]).with("PROMPT_TRACKER_USE_REAL_LLM").and_return("true")
         end
 
         it "calls RubyLLM.chat with the judge model" do

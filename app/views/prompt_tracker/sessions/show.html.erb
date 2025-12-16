@@ -1,0 +1,136 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item"><%= link_to "Sessions", sessions_path %></li>
+  <li class="breadcrumb-item active"><%= @session_id %></li>
+<% end %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i class="bi bi-diagram-3"></i>
+    Session: <code><%= @session_id %></code>
+  </h1>
+  <%= link_to sessions_path, class: "btn btn-outline-secondary" do %>
+    <i class="bi bi-arrow-left"></i> Back to Sessions
+  <% end %>
+</div>
+
+<!-- Session Metrics -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">Total Traces</h6>
+        <h3 class="mb-0"><%= @total_traces %></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">Completed</h6>
+        <h3 class="mb-0 text-success"><%= @completed_traces %></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">Errors</h6>
+        <h3 class="mb-0 <%= @error_traces > 0 ? 'text-danger' : 'text-muted' %>"><%= @error_traces %></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="text-muted mb-2">Total Cost</h6>
+        <h3 class="mb-0"><%= format_cost(@total_cost) %></h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session Info -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Session Information</h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3">
+        <strong>Users:</strong>
+        <% @users.each do |user| %>
+          <span class="badge bg-secondary"><%= user %></span>
+        <% end %>
+      </div>
+      <div class="col-md-3">
+        <strong>First Activity:</strong><br>
+        <%= format_timestamp(@first_activity) %>
+      </div>
+      <div class="col-md-3">
+        <strong>Last Activity:</strong><br>
+        <%= format_timestamp(@last_activity) %>
+      </div>
+      <div class="col-md-3">
+        <strong>Duration:</strong><br>
+        <%= format_duration(@total_duration) %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Traces Timeline -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Traces Timeline</h5>
+  </div>
+  <div class="card-body">
+    <% if @traces.any? %>
+      <div class="timeline">
+        <% @traces.each_with_index do |trace, index| %>
+          <div class="trace-item mb-3 p-3 border rounded <%= trace.status == 'error' ? 'border-danger' : 'border-success' %>">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <h6 class="mb-1">
+                  <%= index + 1 %>. <%= trace.name %>
+                  <% if trace.status == 'completed' %>
+                    <span class="badge bg-success">✓</span>
+                  <% elsif trace.status == 'error' %>
+                    <span class="badge bg-danger">✗</span>
+                  <% elsif trace.status == 'running' %>
+                    <span class="badge bg-warning">⟳</span>
+                  <% end %>
+                </h6>
+                <small class="text-muted">
+                  <%= format_timestamp(trace.started_at) %> •
+                  <%= format_duration(trace.duration_ms) %> •
+                  <%= trace.spans.count %> spans •
+                  <%= trace.llm_responses.count %> LLM calls
+                </small>
+                <% if trace.input.present? %>
+                  <div class="mt-2">
+                    <strong>Input:</strong>
+                    <div class="text-muted"><%= truncate_text(trace.input, 100) %></div>
+                  </div>
+                <% end %>
+              </div>
+              <div>
+                <%= link_to "View Details →", trace_path(trace), class: "btn btn-sm btn-outline-primary" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Pagination -->
+      <div class="mt-3">
+        <%= paginate @traces %>
+      </div>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+        <p class="text-muted mt-3">No traces found in this session</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+

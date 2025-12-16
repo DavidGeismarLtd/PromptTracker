@@ -78,6 +78,21 @@ module PromptTracker
       end
     end
 
+    # Check if template contains Liquid-specific syntax
+    #
+    # @return [Boolean] true if template uses Liquid syntax
+    def liquid_template?
+      # Check for Liquid-specific patterns:
+      # - Filters: {{ variable | filter }}
+      # - Tags: {% if %}, {% for %}, etc.
+      # - Objects with dot notation: {{ user.name }}
+      # - Spaces around variables: {{ name }} (Liquid style vs {{name}} Mustache style)
+      template_string.match?(/\{\{.*\|.*\}\}/) ||
+        template_string.match?(/\{%.*%\}/) ||
+        template_string.match?(/\{\{.*\..*\}\}/) ||
+        template_string.match?(/\{\{\s+\w+\s+\}\}/)
+    end
+
     private
 
     # Render template using Liquid engine

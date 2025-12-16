@@ -1,0 +1,78 @@
+<div class="timeline-item generation-item <%= generation.status == 'error' ? 'error' : '' %>" style="margin-left: <%= level * 20 %>px;">
+  <div class="timeline-content <%= generation.status == 'error' ? 'error' : '' %>">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div>
+        <h6 class="mb-1">
+          <i class="bi bi-cpu"></i>
+          <strong>LLM Generation</strong>
+          <% if generation.prompt_version.present? %>
+            <span class="badge bg-secondary"><%= generation.prompt_version.prompt.name %></span>
+          <% end %>
+          <% if generation.status == 'success' %>
+            <span class="badge bg-success">✓</span>
+          <% elsif generation.status == 'error' %>
+            <span class="badge bg-danger">✗</span>
+          <% elsif generation.status == 'timeout' %>
+            <span class="badge bg-warning">⏱</span>
+          <% end %>
+        </h6>
+        <small class="text-muted">
+          <%= format_timestamp(generation.created_at) %> •
+          <%= format_duration(generation.response_time_ms) %> •
+          <%= generation.provider %> / <%= generation.model %> •
+          <%= format_tokens(generation.tokens_total) %> tokens •
+          <%= format_cost(generation.cost_usd) %>
+        </small>
+      </div>
+      <%= link_to "View Response", llm_response_path(generation), class: "btn btn-sm btn-outline-success", target: "_blank" %>
+    </div>
+
+    <% if generation.rendered_prompt.present? %>
+      <div class="mt-2">
+        <strong class="text-muted">Prompt:</strong>
+        <div class="bg-white p-2 rounded mt-1" style="font-size: 0.9em; white-space: pre-wrap; font-family: monospace;">
+          <%= truncate_text(generation.rendered_prompt, 150) %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if generation.response_text.present? %>
+      <div class="mt-2">
+        <strong class="text-muted">Response:</strong>
+        <div class="bg-white p-2 rounded mt-1" style="font-size: 0.9em; white-space: pre-wrap; font-family: monospace;">
+          <%= truncate_text(generation.response_text, 150) %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if generation.error_message.present? %>
+      <div class="mt-2">
+        <strong class="text-danger">Error:</strong>
+        <div class="bg-white p-2 rounded mt-1 text-danger" style="font-size: 0.9em;">
+          <%= generation.error_message %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Evaluations -->
+    <% if generation.evaluations.any? %>
+      <div class="mt-2">
+        <strong class="text-muted">Evaluations:</strong>
+        <div class="mt-1">
+          <% generation.evaluations.each do |evaluation| %>
+            <% if evaluation.passed %>
+              <span class="badge bg-success" title="<%= evaluation.evaluator_config.name %>">
+                ✓ <%= evaluation.evaluator_config.name %> (<%= evaluation.score %>)
+              </span>
+            <% else %>
+              <span class="badge bg-danger" title="<%= evaluation.evaluator_config.name %>">
+                ✗ <%= evaluation.evaluator_config.name %> (<%= evaluation.score %>)
+              </span>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+

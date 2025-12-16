@@ -38,7 +38,7 @@ module PromptTracker
       context "with Liquid templates" do
         it "renders simple Liquid variables" do
           renderer = TemplateRenderer.new("Hello {{ name }}!")
-          result = renderer.render({ name: "John" }, engine: :liquid)
+          result = renderer.render({ name: "John" })
 
           expect(result).to eq("Hello John!")
         end

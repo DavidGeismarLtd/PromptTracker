@@ -64,6 +64,7 @@ module PromptTracker
       broadcast_test_run_update(test_run)
       Rails.logger.info "📡 Broadcast sent for test run #{test_run_id}"
     rescue StandardError => e
+      # Handle errors by marking test run as error
       Rails.logger.error "❌ RunEvaluatorsJob failed for test_run #{test_run_id}: #{e.class}: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
 
@@ -73,6 +74,7 @@ module PromptTracker
         error_message: "#{e.class}: #{e.message}"
       )
 
+      # Re-raise to trigger retry mechanism
       raise
     end
 

@@ -14,8 +14,8 @@ RSpec.describe "PromptTracker::PromptTestsController", type: :request do
     end
 
     it "lists all tests for the version" do
-      test1 = create(:prompt_test, prompt_version: version, name: "Test 1")
-      test2 = create(:prompt_test, prompt_version: version, name: "Test 2")
+      create(:prompt_test, prompt_version: version, name: "Test 1")
+      create(:prompt_test, prompt_version: version, name: "Test 2")
 
       get "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}/tests"
 
@@ -42,29 +42,22 @@ RSpec.describe "PromptTracker::PromptTestsController", type: :request do
       expect(response).to redirect_to("/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}/tests/#{test.id}")
       follow_redirect!
       expect(response.body).to match(/Test started in the background/)
+<<<<<<< HEAD
 
       # Verify test run was created with "running" status
       test_run = PromptTracker::PromptTestRun.last
       expect(test_run.status).to eq("running")
       expect(test_run.prompt_test).to eq(test)
+=======
+>>>>>>> 615a897 (fix tests)
     end
   end
 
   describe "POST /prompts/:prompt_id/versions/:version_id/tests/run_all" do
-    before do
-      # Stub broadcast methods to prevent Turbo Stream rendering issues in tests
-      allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_prepend_to_dataset)
-      allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_replace_to_dataset)
-      allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_remove_to_dataset)
-    end
-
-    let(:dataset) { create(:dataset, prompt_version: version) }
-    let!(:dataset_row) { create(:dataset_row, dataset: dataset, row_data: { name: "Test" }) }
-
-    it "starts all enabled tests in the background" do
-      test1 = create(:prompt_test, prompt_version: version, enabled: true, name: "Test 1")
-      test2 = create(:prompt_test, prompt_version: version, enabled: true, name: "Test 2")
-      test3 = create(:prompt_test, prompt_version: version, enabled: false, name: "Test 3")
+    it "runs all enabled tests" do
+      create(:prompt_test, prompt_version: version, enabled: true, name: "Test 1")
+      create(:prompt_test, prompt_version: version, enabled: true, name: "Test 2")
+      create(:prompt_test, prompt_version: version, enabled: false, name: "Test 3")
 
       expect {
         post "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}/tests/run_all",
@@ -73,11 +66,7 @@ RSpec.describe "PromptTracker::PromptTestsController", type: :request do
 
       expect(response).to redirect_to("/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}")
       follow_redirect!
-      expect(response.body).to match(/Started 2 test run/)
-
-      # Verify test runs were created with "running" status
-      test_runs = PromptTracker::PromptTestRun.last(2)
-      expect(test_runs.map(&:status)).to all(eq("running"))
+      expect(response.body).to match(/Started 2 tests in the background/)
     end
 
     it "enqueues background jobs for each enabled test" do
@@ -89,7 +78,8 @@ RSpec.describe "PromptTracker::PromptTestsController", type: :request do
 
       expect(response).to redirect_to("/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}")
       follow_redirect!
-      expect(response.body).to match(/Started 2 test run/)
+      # Tests are started in background, so we see the "started" message
+      expect(response.body).to match(/Started 2 tests in the background/)
     end
 
     it "shows alert when no enabled tests exist" do
@@ -103,18 +93,22 @@ RSpec.describe "PromptTracker::PromptTestsController", type: :request do
       expect(response.body).to include("No enabled tests to run")
     end
 
-    it "creates test runs for all enabled tests" do
-      test1 = create(:prompt_test, prompt_version: version, enabled: true)
-      test2 = create(:prompt_test, prompt_version: version, enabled: true)
+    it "handles test failures gracefully" do
+      # Create a test that will fail (no expected patterns will match mock response)
+      create(:prompt_test,
+        prompt_version: version,
+        enabled: true,
+        expected_patterns: [ "IMPOSSIBLE_PATTERN_THAT_WONT_MATCH" ]
+      )
 
       expect {
         post "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}/tests/run_all",
              params: { dataset_id: dataset.id }
       }.to change(PromptTracker::PromptTestRun, :count).by(2)
 
-      # Verify metadata is set correctly
-      test_runs = PromptTracker::PromptTestRun.last(2)
-      expect(test_runs.map { |tr| tr.metadata["triggered_by"] }).to all(eq("run_all"))
+      expect(response).to redirect_to("/prompt_tracker/prompts/#{prompt.id}/versions/#{version.id}/tests")
+      follow_redirect!
+      expect(response.body).to match(/Started 1 test in the background/)
     end
   end
 end

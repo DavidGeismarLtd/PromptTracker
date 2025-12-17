@@ -11,6 +11,8 @@ PromptTracker::Evaluation.delete_all
 PromptTracker::PromptTestRun.delete_all  # Delete test runs before LLM responses
 PromptTracker::PromptTest.delete_all
 PromptTracker::LlmResponse.delete_all
+PromptTracker::Span.delete_all  # Delete spans before traces
+PromptTracker::Trace.delete_all
 PromptTracker::AbTest.delete_all
 PromptTracker::EvaluatorConfig.delete_all
 PromptTracker::DatasetRow.delete_all  # Delete dataset rows before datasets
@@ -875,6 +877,383 @@ ab_test_email_completed = email_summary.ab_tests.create!(
 )
 
 # ============================================================================
+# 7. Create Sample Traces and Spans
+# ============================================================================
+
+puts "  Creating sample traces and spans..."
+
+# Trace 1: Simple customer support workflow (completed successfully)
+trace_support_1 = PromptTracker::Trace.create!(
+  name: "customer_support_workflow",
+  session_id: "session_cs_001",
+  user_id: "user_alice",
+  input: "Customer Alice asking about billing issue",
+  status: "completed",
+  started_at: 2.hours.ago,
+  ended_at: 2.hours.ago + 3.seconds,
+  duration_ms: 3000,
+  output: "Successfully handled customer inquiry",
+  metadata: {
+    "customer_tier" => "premium",
+    "issue_type" => "billing",
+    "priority" => "high"
+  }
+)
+
+# Span 1.1: Greeting step
+span_greeting = trace_support_1.spans.create!(
+  name: "generate_greeting",
+  span_type: "function",
+  input: "Generate greeting for Alice about billing",
+  status: "completed",
+  started_at: 2.hours.ago,
+  ended_at: 2.hours.ago + 1.2.seconds,
+  duration_ms: 1200,
+  output: "Hi Alice! Thanks for contacting us. I'm here to help with your billing question. What's going on?",
+  metadata: {
+    "model" => "gpt-4o",
+    "temperature" => 0.7
+  }
+)
+
+# Link LLM response to trace and span
+greeting_response = support_greeting_v3.llm_responses.create!(
+  rendered_prompt: "Hi Alice! Thanks for contacting us. I'm here to help with your billing question. What's going on?",
+  variables_used: { "customer_name" => "Alice", "issue_category" => "billing" },
+  provider: "openai",
+  model: "gpt-4o",
+  user_id: "user_alice",
+  session_id: "session_cs_001",
+  environment: "production",
+  trace: trace_support_1,
+  span: span_greeting
+)
+
+greeting_response.mark_success!(
+  response_text: "Hi Alice! Thanks for contacting us. I'm here to help with your billing question. What's going on?",
+  response_time_ms: 1150,
+  tokens_prompt: 25,
+  tokens_completion: 22,
+  tokens_total: 47,
+  cost_usd: 0.0012,
+  response_metadata: { "finish_reason" => "stop", "model" => "gpt-4-0125-preview" }
+)
+
+# Span 1.2: Database lookup step
+span_lookup = trace_support_1.spans.create!(
+  name: "lookup_customer_account",
+  span_type: "database",
+  input: "user_id: user_alice",
+  status: "completed",
+  started_at: 2.hours.ago + 1.2.seconds,
+  ended_at: 2.hours.ago + 1.5.seconds,
+  duration_ms: 300,
+  output: "Found account: premium tier, last payment: 2024-12-01",
+  metadata: {
+    "query_type" => "SELECT",
+    "table" => "customers",
+    "rows_returned" => 1
+  }
+)
+
+# Span 1.3: Response generation step
+span_response = trace_support_1.spans.create!(
+  name: "generate_response",
+  span_type: "function",
+  input: "Generate response based on account info",
+  status: "completed",
+  started_at: 2.hours.ago + 1.5.seconds,
+  ended_at: 2.hours.ago + 3.seconds,
+  duration_ms: 1500,
+  output: "I can see you're a premium customer. Let me help you with your billing question right away.",
+  metadata: {
+    "model" => "gpt-4o",
+    "temperature" => 0.7
+  }
+)
+
+# Trace 2: RAG (Retrieval-Augmented Generation) workflow with nested spans
+trace_rag = PromptTracker::Trace.create!(
+  name: "rag_qa_workflow",
+  session_id: "session_rag_001",
+  user_id: "user_bob",
+  input: "What are the best practices for Rails testing?",
+  status: "completed",
+  started_at: 1.hour.ago,
+  ended_at: 1.hour.ago + 5.seconds,
+  duration_ms: 5000,
+  output: "Comprehensive answer about Rails testing best practices",
+  metadata: {
+    "query_type" => "technical",
+    "knowledge_base" => "rails_docs"
+  }
+)
+
+# Span 2.1: Query embedding
+span_embedding = trace_rag.spans.create!(
+  name: "embed_query",
+  span_type: "function",
+  input: "What are the best practices for Rails testing?",
+  status: "completed",
+  started_at: 1.hour.ago,
+  ended_at: 1.hour.ago + 0.5.seconds,
+  duration_ms: 500,
+  output: "[0.123, 0.456, 0.789, ...]",
+  metadata: {
+    "model" => "text-embedding-ada-002",
+    "dimensions" => 1536
+  }
+)
+
+# Span 2.2: Vector search (parent span with nested spans)
+span_search = trace_rag.spans.create!(
+  name: "vector_search",
+  span_type: "retrieval",
+  input: "Search for similar documents",
+  status: "completed",
+  started_at: 1.hour.ago + 0.5.seconds,
+  ended_at: 1.hour.ago + 2.seconds,
+  duration_ms: 1500,
+  output: "Found 5 relevant documents",
+  metadata: {
+    "similarity_threshold" => 0.8,
+    "max_results" => 5
+  }
+)
+
+# Nested span 2.2.1: Database query
+span_db_query = trace_rag.spans.create!(
+  name: "query_vector_db",
+  span_type: "database",
+  parent_span: span_search,
+  input: "SELECT * FROM documents ORDER BY similarity DESC LIMIT 5",
+  status: "completed",
+  started_at: 1.hour.ago + 0.5.seconds,
+  ended_at: 1.hour.ago + 1.2.seconds,
+  duration_ms: 700,
+  output: "5 documents retrieved",
+  metadata: {
+    "database" => "pgvector",
+    "query_time_ms" => 650
+  }
+)
+
+# Nested span 2.2.2: Reranking
+span_rerank = trace_rag.spans.create!(
+  name: "rerank_results",
+  span_type: "function",
+  parent_span: span_search,
+  input: "Rerank 5 documents by relevance",
+  status: "completed",
+  started_at: 1.hour.ago + 1.2.seconds,
+  ended_at: 1.hour.ago + 2.seconds,
+  duration_ms: 800,
+  output: "Reranked documents: [doc3, doc1, doc5, doc2, doc4]",
+  metadata: {
+    "reranking_model" => "cross-encoder",
+    "top_k" => 3
+  }
+)
+
+# Span 2.3: Answer generation
+span_generate = trace_rag.spans.create!(
+  name: "generate_answer",
+  span_type: "function",
+  input: "Generate answer using retrieved context",
+  status: "completed",
+  started_at: 1.hour.ago + 2.seconds,
+  ended_at: 1.hour.ago + 5.seconds,
+  duration_ms: 3000,
+  output: "Rails testing best practices include: 1) Use RSpec for behavior-driven development...",
+  metadata: {
+    "model" => "gpt-4o",
+    "temperature" => 0.3,
+    "context_docs" => 3
+  }
+)
+
+# Link LLM response to RAG trace and span
+rag_response = code_review_v1.llm_responses.create!(
+  rendered_prompt: "Based on the following context, answer the question about Rails testing...",
+  variables_used: { "language" => "ruby", "code" => "# Rails testing example" },
+  provider: "openai",
+  model: "gpt-4o",
+  user_id: "user_bob",
+  session_id: "session_rag_001",
+  environment: "production",
+  trace: trace_rag,
+  span: span_generate
+)
+
+rag_response.mark_success!(
+  response_text: "Rails testing best practices include: 1) Use RSpec for behavior-driven development, 2) Write unit tests for models, 3) Use factories instead of fixtures, 4) Test edge cases and error conditions.",
+  response_time_ms: 2800,
+  tokens_prompt: 450,
+  tokens_completion: 85,
+  tokens_total: 535,
+  cost_usd: 0.0145,
+  response_metadata: { "finish_reason" => "stop", "model" => "gpt-4-0125-preview" }
+)
+
+# Trace 3: Failed workflow with error handling
+trace_failed = PromptTracker::Trace.create!(
+  name: "email_summary_workflow",
+  session_id: "session_email_001",
+  user_id: "user_charlie",
+  input: "Summarize email thread about Q4 planning",
+  status: "error",
+  started_at: 30.minutes.ago,
+  ended_at: 30.minutes.ago + 2.seconds,
+  duration_ms: 2000,
+  metadata: {
+    "error" => "Rate limit exceeded",
+    "retry_count" => 3,
+    "error_type" => "OpenAI::RateLimitError"
+  }
+)
+
+# Span 3.1: Email parsing (successful)
+span_parse = trace_failed.spans.create!(
+  name: "parse_email_thread",
+  span_type: "function",
+  input: "Parse email thread HTML",
+  status: "completed",
+  started_at: 30.minutes.ago,
+  ended_at: 30.minutes.ago + 0.3.seconds,
+  duration_ms: 300,
+  output: "Extracted 5 emails from thread",
+  metadata: {
+    "email_count" => 5,
+    "total_chars" => 2500
+  }
+)
+
+# Span 3.2: Summarization (failed)
+span_summarize = trace_failed.spans.create!(
+  name: "generate_summary",
+  span_type: "function",
+  input: "Generate summary of 5 emails",
+  status: "error",
+  started_at: 30.minutes.ago + 0.3.seconds,
+  ended_at: 30.minutes.ago + 2.seconds,
+  duration_ms: 1700,
+  metadata: {
+    "error" => "Rate limit exceeded. Please try again in 20 seconds.",
+    "error_type" => "OpenAI::RateLimitError",
+    "retry_attempts" => 3
+  }
+)
+
+# Link failed LLM response to trace and span
+failed_summary_response = email_summary_v1.llm_responses.create!(
+  rendered_prompt: "Summarize the following email thread in 2-3 sentences:\n\n[Email thread content]",
+  variables_used: { "email_thread" => "[Email thread content]" },
+  provider: "openai",
+  model: "gpt-4o",
+  user_id: "user_charlie",
+  session_id: "session_email_001",
+  environment: "production",
+  trace: trace_failed,
+  span: span_summarize
+)
+
+failed_summary_response.mark_error!(
+  error_type: "OpenAI::RateLimitError",
+  error_message: "Rate limit exceeded. Please try again in 20 seconds.",
+  response_time_ms: 1650
+)
+
+# Trace 4: Multi-step code review workflow
+trace_code_review = PromptTracker::Trace.create!(
+  name: "code_review_workflow",
+  session_id: "session_cr_001",
+  user_id: "user_diana",
+  input: "Review Python code for list comprehension",
+  status: "completed",
+  started_at: 15.minutes.ago,
+  ended_at: 15.minutes.ago + 4.seconds,
+  duration_ms: 4000,
+  output: "Code review completed with 3 suggestions",
+  metadata: {
+    "language" => "python",
+    "file_size" => 150,
+    "complexity_score" => 7
+  }
+)
+
+# Span 4.1: Code analysis
+span_analyze = trace_code_review.spans.create!(
+  name: "analyze_code_structure",
+  span_type: "function",
+  input: "Analyze Python code structure",
+  status: "completed",
+  started_at: 15.minutes.ago,
+  ended_at: 15.minutes.ago + 0.5.seconds,
+  duration_ms: 500,
+  output: "Found: 1 function, 1 list comprehension, 0 edge case handling",
+  metadata: {
+    "ast_nodes" => 15,
+    "complexity" => 7
+  }
+)
+
+# Span 4.2: Generate review
+span_review = trace_code_review.spans.create!(
+  name: "generate_code_review",
+  span_type: "function",
+  input: "Generate constructive code review",
+  status: "completed",
+  started_at: 15.minutes.ago + 0.5.seconds,
+  ended_at: 15.minutes.ago + 3.5.seconds,
+  duration_ms: 3000,
+  output: "Review: Consider edge cases, add type hints, improve variable naming",
+  metadata: {
+    "model" => "gpt-4o",
+    "temperature" => 0.4,
+    "suggestions_count" => 3
+  }
+)
+
+# Link LLM response to code review trace
+code_review_response = code_review_v1.llm_responses.create!(
+  rendered_prompt: "Review the following python code and provide constructive feedback:\n\n```python\ndef sum_evens(numbers):\n    return sum([n for n in numbers if n % 2 == 0])\n```",
+  variables_used: { "language" => "python", "code" => "def sum_evens(numbers):\n    return sum([n for n in numbers if n % 2 == 0])" },
+  provider: "openai",
+  model: "gpt-4o",
+  user_id: "user_diana",
+  session_id: "session_cr_001",
+  environment: "production",
+  trace: trace_code_review,
+  span: span_review
+)
+
+code_review_response.mark_success!(
+  response_text: "The code is concise and uses list comprehension effectively. Consider: 1) Add type hints for better code clarity, 2) Handle edge case of empty list, 3) Consider using a generator expression for better memory efficiency with large lists.",
+  response_time_ms: 2900,
+  tokens_prompt: 120,
+  tokens_completion: 65,
+  tokens_total: 185,
+  cost_usd: 0.0048,
+  response_metadata: { "finish_reason" => "stop", "model" => "gpt-4-0125-preview" }
+)
+
+# Span 4.3: Format response
+span_format = trace_code_review.spans.create!(
+  name: "format_review_output",
+  span_type: "function",
+  input: "Format review as markdown",
+  status: "completed",
+  started_at: 15.minutes.ago + 3.5.seconds,
+  ended_at: 15.minutes.ago + 4.seconds,
+  duration_ms: 500,
+  output: "Formatted review with markdown syntax highlighting",
+  metadata: {
+    "format" => "markdown",
+    "sections" => [ "strengths", "suggestions", "examples" ]
+  }
+)
+
+# ============================================================================
 # Summary
 # ============================================================================
 
@@ -901,6 +1280,12 @@ puts "  - #{PromptTracker::AbTest.count} A/B tests"
 puts "    - #{PromptTracker::AbTest.draft.count} draft"
 puts "    - #{PromptTracker::AbTest.running.count} running"
 puts "    - #{PromptTracker::AbTest.completed.count} completed"
+puts "  - #{PromptTracker::Trace.count} traces"
+puts "    - #{PromptTracker::Trace.where(status: 'completed').count} completed"
+puts "    - #{PromptTracker::Trace.where(status: 'error').count} failed"
+puts "  - #{PromptTracker::Span.count} spans"
+puts "    - #{PromptTracker::Span.where(parent_span_id: nil).count} root spans"
+puts "    - #{PromptTracker::Span.where.not(parent_span_id: nil).count} nested spans"
 puts "\nTotal cost: $#{PromptTracker::LlmResponse.sum(:cost_usd).round(4)}"
 puts "Average response time: #{PromptTracker::LlmResponse.successful.average(:response_time_ms).to_i}ms"
 puts "\n🎉 Ready to explore!"
@@ -915,3 +1300,9 @@ puts "    • Code Review Quality Assessment (LLM judge + keyword validation)"
 puts "    • Exact Output Validation (exact match + quality checks)"
 puts "    • Technical Content Pattern Validation (10 complex regex patterns + 4 evaluators)"
 puts "  - Create new A/B tests with draft versions v4 and v5"
+puts "\n🔍 Tracing Examples:"
+puts "  - #{trace_support_1.name}: Simple customer support workflow (#{trace_support_1.spans.count} spans)"
+puts "  - #{trace_rag.name}: RAG workflow with nested spans (#{trace_rag.spans.count} spans, #{trace_rag.spans.where.not(parent_span_id: nil).count} nested)"
+puts "  - #{trace_failed.name}: Failed workflow with error handling"
+puts "  - #{trace_code_review.name}: Multi-step code review (#{trace_code_review.spans.count} spans)"
+puts "  - #{PromptTracker::LlmResponse.where.not(trace_id: nil).count} LLM responses linked to traces"

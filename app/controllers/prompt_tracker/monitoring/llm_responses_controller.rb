@@ -79,7 +79,7 @@ module PromptTracker
         @environments = LlmResponse.tracked_calls.distinct.pluck(:environment).compact.sort
         @user_ids = LlmResponse.tracked_calls.distinct.pluck(:user_id).compact.sort
         @session_ids = LlmResponse.tracked_calls.distinct.pluck(:session_id).compact.sort
-        @evaluator_types = EvaluatorRegistry.all.values.map { |meta| meta[:evaluator_class].name }.uniq.sort
+        @evaluator_types = EvaluatorRegistry.all.values.map { |meta| meta[:evaluator_class]&.name }.compact.uniq.sort
 
         # Calculate summary stats
         @total_responses = @responses.total_count

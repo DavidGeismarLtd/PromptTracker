@@ -1,4 +1,11 @@
 <% dataset ||= @dataset # Support both local and instance variable %>
+<% prompt_version = dataset.prompt_version %>
+<% prompt = prompt_version.prompt %>
+<%
+  # Use engine routes explicitly for background job context compatibility
+  delete_path = PromptTracker::Engine.routes.url_helpers.testing_prompt_prompt_version_dataset_dataset_row_path(prompt, prompt_version, dataset, row)
+  update_path = PromptTracker::Engine.routes.url_helpers.testing_prompt_prompt_version_dataset_dataset_row_path(prompt, prompt_version, dataset, row)
+%>
 <tr id="dataset-row-<%= row.id %>">
   <td class="text-muted"><%= index %></td>
   <% dataset.variable_names.each do |var_name| %>
@@ -28,7 +35,7 @@
       <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editRowModal-<%= row.id %>" title="Edit">
         <i class="bi bi-pencil"></i>
       </button>
-      <%= button_to testing_prompt_prompt_version_dataset_dataset_row_path(@prompt || row.dataset.prompt_version.prompt, @version || row.dataset.prompt_version, dataset, row),
+      <%= button_to delete_path,
                     method: :delete,
                     class: "btn btn-outline-danger btn-sm",
                     data: { confirm: "Delete this row?", turbo_method: :delete },
@@ -40,7 +47,7 @@
 </tr>
 
 <!-- Edit Row Modal -->
-<div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-modal-fix-target="modal">
+<div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-controller="modal-fix" data-modal-fix-target="modal">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -48,7 +55,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <%= form_with(model: row,
-                    url: testing_prompt_prompt_version_dataset_dataset_row_path(@prompt || row.dataset.prompt_version.prompt, @version || row.dataset.prompt_version, dataset, row),
+                    url: update_path,
                     method: :patch) do |f| %>
         <div class="modal-body">
           <%= f.hidden_field :source, value: row.source %>

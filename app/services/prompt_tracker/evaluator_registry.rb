@@ -153,10 +153,7 @@ module PromptTracker
           class_name = filename.camelize
 
           begin
-            # Require the file first to ensure it's loaded
-            require_dependency file
-
-            # Constantize the class
+            # Constantize the class (Rails autoloading will load the file)
             evaluator_class = "PromptTracker::Evaluators::#{class_name}".constantize
 
             # Register the evaluator

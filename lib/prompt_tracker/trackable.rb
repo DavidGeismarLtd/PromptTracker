@@ -133,7 +133,8 @@ module PromptTracker
     #     )  # Returns hash in correct format
     #   end
     def track_llm_call(prompt_slug, variables: {}, provider: nil, model: nil, version: nil,
-                       user_id: nil, session_id: nil, environment: nil, metadata: nil, &block)
+                       user_id: nil, session_id: nil, environment: nil, metadata: nil,
+                       trace: nil, span: nil, &block)
       LlmCallService.track(
         prompt_slug: prompt_slug,
         variables: variables,
@@ -144,8 +145,109 @@ module PromptTracker
         session_id: session_id,
         environment: environment,
         metadata: metadata,
+        trace: trace,
+        span: span,
         &block
       )
+    end
+
+    # Execute a block within a trace context with automatic lifecycle management.
+    #
+    # Creates a trace, executes the block, and automatically completes or marks
+    # the trace as error based on the block's execution.
+    #
+    # @param name [String] name of the trace
+    # @param session_id [String, nil] session identifier
+    # @param user_id [String, nil] user identifier
+    # @param input [String, nil] input description
+    # @param metadata [Hash] additional metadata
+    # @yield [trace] block to execute within the trace context
+    # @yieldparam trace [Trace] the created trace
+    # @yieldreturn [Object] the result of the block (captured as trace output)
+    # @return [Object] the result of the block
+    #
+    # @example Simple trace
+    #   result = with_trace("greeting_workflow", session_id: "chat_123") do |trace|
+    #     # Your code here
+    #     "Hello!"
+    #   end
+    #
+    # @example With LLM call
+    #   with_trace("rag_qa", session_id: "chat_123", input: "What is Rails?") do |trace|
+    #     track_llm_call("answer", variables: { q: "Rails" }, trace: trace) { |p| call_llm(p) }
+    #   end
+    #
+    def with_trace(name, session_id: nil, user_id: nil, input: nil, metadata: {})
+      trace = PromptTracker::Trace.create!(
+        name: name,
+        session_id: session_id,
+        user_id: user_id,
+        input: input,
+        started_at: Time.current,
+        status: "running",
+        metadata: metadata
+      )
+
+      result = yield(trace)
+
+      trace.complete!(output: result.is_a?(String) ? result : result.to_s)
+      result
+    rescue StandardError => e
+      trace&.mark_error!(error_message: e.message)
+      raise
+    end
+
+    # Execute a block within a span context with automatic lifecycle management.
+    #
+    # Creates a span under a trace, executes the block, and automatically completes
+    # or marks the span as error based on the block's execution.
+    #
+    # @param trace [Trace] the parent trace
+    # @param name [String] name of the span
+    # @param type [String, Symbol, nil] span type (function, tool, retrieval, database, http)
+    # @param input [String, nil] input description
+    # @param metadata [Hash] additional metadata
+    # @yield [span] block to execute within the span context
+    # @yieldparam span [Span] the created span
+    # @yieldreturn [Object] the result of the block (captured as span output)
+    # @return [Object] the result of the block
+    #
+    # @example Simple span
+    #   with_trace("workflow") do |trace|
+    #     result = with_span(trace, "search", type: :retrieval) do |span|
+    #       # Your search code
+    #       search_results
+    #     end
+    #   end
+    #
+    # @example Span with LLM call
+    #   with_trace("rag_qa") do |trace|
+    #     docs = with_span(trace, "search", type: :retrieval) do
+    #       VectorStore.search(query)
+    #     end
+    #
+    #     with_span(trace, "generate", type: :function) do |span|
+    #       track_llm_call("answer", variables: { docs: docs }, trace: trace, span: span) { |p| call_llm(p) }
+    #     end
+    #   end
+    #
+    def with_span(trace, name, type: nil, input: nil, metadata: {})
+      span = trace.spans.create!(
+        name: name,
+        span_type: type&.to_s,
+        input: input,
+        started_at: Time.current,
+        status: "running",
+        metadata: metadata
+      )
+
+      result = yield(span)
+
+      span.complete!(output: result.is_a?(String) ? result : result.to_s)
+      result
+    rescue StandardError => e
+      span&.mark_error!(error_message: e.message)
+      raise
     end
   end
 end

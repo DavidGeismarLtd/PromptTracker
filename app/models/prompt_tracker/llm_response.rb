@@ -22,10 +22,12 @@
 #  response_text     :text
 #  response_time_ms  :integer
 #  session_id        :string
+#  span_id           :bigint
 #  status            :string           default("pending"), not null
 #  tokens_completion :integer
 #  tokens_prompt     :integer
 #  tokens_total      :integer
+#  trace_id          :bigint
 #  updated_at        :datetime         not null
 #  user_id           :string
 #  variables_used    :jsonb
@@ -75,6 +77,16 @@ module PromptTracker
 
     belongs_to :ab_test,
                class_name: "PromptTracker::AbTest",
+               optional: true,
+               inverse_of: :llm_responses
+
+    belongs_to :trace,
+               class_name: "PromptTracker::Trace",
+               optional: true,
+               inverse_of: :llm_responses
+
+    belongs_to :span,
+               class_name: "PromptTracker::Span",
                optional: true,
                inverse_of: :llm_responses
 

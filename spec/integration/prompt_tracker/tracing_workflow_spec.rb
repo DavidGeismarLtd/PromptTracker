@@ -7,12 +7,12 @@ module PromptTracker
   RSpec.describe "Tracing Workflow", type: :integration do
     include PromptTracker::Trackable
 
-    let(:prompt) { create(:prompt, name: "test_prompt") }
+    let(:prompt) { create(:prompt, name: "test_prompt", slug: "test_prompt") }
     let!(:version) do
-      create(:prompt_version,
+    create(:prompt_version,
              :active,
              prompt: prompt,
-             template: "Hello {{name}}",
+             user_prompt: "Hello {{name}}",
              model_config: { "provider" => "openai", "model" => "gpt-4" })
     end
 
@@ -90,6 +90,7 @@ module PromptTracker
 
     describe "integration with track_llm_call" do
       it "links LLM responses to trace and span" do
+        version # Ensure version and prompt are created
         llm_response = nil
 
         with_trace("llm_workflow", session_id: "chat_123") do |trace|
@@ -116,6 +117,8 @@ module PromptTracker
 
     describe "complex multi-step workflow" do
       it "handles nested spans and multiple LLM calls" do
+        version # Ensure version and prompt are created
+
         with_trace("rag_qa", session_id: "chat_789", input: "What is Rails?") do |trace|
           # Step 1: Search
           docs = with_span(trace, "search_knowledge_base", type: :retrieval) do

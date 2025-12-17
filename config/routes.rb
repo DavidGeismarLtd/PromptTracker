@@ -84,10 +84,22 @@ PromptTracker::Engine.routes.draw do
     end
 
     # LLM Responses (tracked calls from all environments)
-    resources :llm_responses, only: [ :index ], path: "responses" do
+    resources :llm_responses, only: [ :index, :show ], path: "responses" do
       # Human evaluations nested under llm_responses
       resources :human_evaluations, only: [ :create ]
     end
+
+    # Traces (execution traces with spans)
+    resources :traces, only: [ :index, :show ] do
+      # Spans nested under traces
+      resources :spans, only: [ :show ]
+    end
+
+    # Standalone spans route (for direct access)
+    resources :spans, only: [ :show ]
+
+    # Sessions (for viewing all traces in a session)
+    resources :sessions, only: [ :index, :show ]
   end
 
   # Documentation

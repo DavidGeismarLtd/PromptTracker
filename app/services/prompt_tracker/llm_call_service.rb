@@ -74,7 +74,8 @@ module PromptTracker
     class NoBlockGivenError < StandardError; end
 
     attr_reader :prompt_slug, :version_number, :variables, :provider, :model,
-                :user_id, :session_id, :environment, :metadata, :ab_test, :ab_variant
+                :user_id, :session_id, :environment, :metadata, :ab_test, :ab_variant,
+                :trace, :span
 
     # Track an LLM call
     #
@@ -97,7 +98,8 @@ module PromptTracker
     # @raise [ArgumentError] if provider/model not specified and not in version's model_config
     # @raise [LlmResponseContract::InvalidResponseError] if block returns invalid response format
     def self.track(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
-                   user_id: nil, session_id: nil, environment: nil, metadata: nil, &block)
+                   user_id: nil, session_id: nil, environment: nil, metadata: nil,
+                   trace: nil, span: nil, &block)
       new(
         prompt_slug: prompt_slug,
         variables: variables,
@@ -107,7 +109,9 @@ module PromptTracker
         user_id: user_id,
         session_id: session_id,
         environment: environment,
-        metadata: metadata
+        metadata: metadata,
+        trace: trace,
+        span: span
       ).track(&block)
     end
 
@@ -123,7 +127,8 @@ module PromptTracker
     # @param environment [String, nil] environment
     # @param metadata [Hash, nil] additional metadata
     def initialize(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
-                   user_id: nil, session_id: nil, environment: nil, metadata: nil)
+                   user_id: nil, session_id: nil, environment: nil, metadata: nil,
+                   trace: nil, span: nil)
       @prompt_slug = prompt_slug
       @version_number = version
       @variables = variables || {}
@@ -137,6 +142,8 @@ module PromptTracker
       @metadata = metadata || {}
       @ab_test = nil
       @ab_variant = nil
+      @trace = trace
+      @span = span
     end
 
     # Execute the tracking flow
@@ -270,7 +277,9 @@ module PromptTracker
         environment: environment,
         context: metadata,
         ab_test: ab_test,
-        ab_variant: ab_variant
+        ab_variant: ab_variant,
+        trace: trace,
+        span: span
       )
     end
 

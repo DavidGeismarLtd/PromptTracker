@@ -34,6 +34,11 @@ module PromptTracker
     # @return [String, nil] the password
     attr_accessor :basic_auth_password
 
+    # Base ActiveRecord class to inherit from.
+    # Stored as a string constant name, e.g. "::ActiveRecord::Base".
+    # @return [String] the base record class name
+    attr_accessor :base_record_class
+
     # Initialize with default values.
     def initialize
       @prompts_path = default_prompts_path
@@ -41,6 +46,7 @@ module PromptTracker
       @auto_sync_in_production = false
       @basic_auth_username = nil
       @basic_auth_password = nil
+      @base_record_class = "::ActiveRecord::Base"
     end
 
     # Check if auto-sync is enabled for the current environment.

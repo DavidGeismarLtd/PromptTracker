@@ -182,13 +182,31 @@
                 <%= render "prompt_tracker/shared/human_evaluations_cell", record: call, context: 'monitoring' %>
               </td>
               <td data-column="actions" style="padding: 0.75rem; vertical-align: top;">
-                <button type="button"
-                        class="btn btn-sm btn-success"
-                        data-bs-toggle="modal"
-                        data-bs-target="#human-evaluation-modal-<%= call.id %>"
-                        title="Add Human Evaluation">
-                  <i class="bi bi-person-check"></i> Evaluate
-                </button>
+                <div class="d-flex flex-column gap-1">
+                  <%= link_to monitoring_llm_response_path(call), class: "btn btn-sm btn-outline-primary", title: "View details" do %>
+                    <i class="bi bi-eye"></i> View
+                  <% end %>
+
+                  <% if call.trace_id.present? %>
+                    <%= link_to monitoring_trace_path(call.trace_id), class: "btn btn-sm btn-outline-info", title: "View in execution trace" do %>
+                      <i class="bi bi-diagram-2"></i> Trace
+                    <% end %>
+                  <% end %>
+
+                  <% if call.session_id.present? %>
+                    <%= link_to monitoring_sessions_path(session_id: call.session_id), class: "btn btn-sm btn-outline-secondary", title: "View all traces in this session" do %>
+                      <i class="bi bi-collection"></i> Session
+                    <% end %>
+                  <% end %>
+
+                  <button type="button"
+                          class="btn btn-sm btn-success"
+                          data-bs-toggle="modal"
+                          data-bs-target="#human-evaluation-modal-<%= call.id %>"
+                          title="Add Human Evaluation">
+                    <i class="bi bi-person-check"></i> Evaluate
+                  </button>
+                </div>
               </td>
             </tr>
           <% end %>

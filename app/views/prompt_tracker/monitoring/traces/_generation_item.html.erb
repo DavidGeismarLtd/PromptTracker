@@ -59,21 +59,39 @@
 
     <!-- Evaluations -->
     <% if generation.evaluations.any? %>
-      <div class="mt-2">
-        <strong class="text-muted">Evaluations:</strong>
-        <div class="mt-1">
-          <% generation.evaluations.each do |evaluation| %>
-            <% if evaluation.passed %>
-              <span class="badge bg-success" title="<%= evaluation.evaluator_config.name %>">
-                ✓ <%= evaluation.evaluator_config.name %> (<%= evaluation.score %>)
-              </span>
-            <% else %>
-              <span class="badge bg-danger" title="<%= evaluation.evaluator_config.name %>">
-                ✗ <%= evaluation.evaluator_config.name %> (<%= evaluation.score %>)
-              </span>
+      <div class="mt-2 pt-2 border-top">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <strong class="text-muted small">Evaluations:</strong>
+          <div class="d-flex gap-1 flex-wrap">
+            <% generation.evaluations.each do |evaluation| %>
+              <%= link_to monitoring_evaluation_path(evaluation),
+                          class: "badge #{evaluation.passed? ? 'bg-success' : 'bg-danger'} text-decoration-none",
+                          title: "#{evaluation.evaluator_key}: #{evaluation.score} - Click for details",
+                          data: { turbo_frame: "_top" } do %>
+                <%= evaluation.evaluator_key %>: <%= evaluation.score.round %>
+                <% if evaluation.passed? %>
+                  <i class="bi bi-check-circle-fill ms-1"></i>
+                <% else %>
+                  <i class="bi bi-x-circle-fill ms-1"></i>
+                <% end %>
+              <% end %>
             <% end %>
-          <% end %>
+          </div>
         </div>
+
+        <!-- Show failed evaluation feedback -->
+        <% failed_evals = generation.evaluations.where(passed: false) %>
+        <% if failed_evals.any? %>
+          <div class="mt-2">
+            <% failed_evals.each do |eval| %>
+              <% if eval.feedback.present? %>
+                <div class="alert alert-danger alert-sm mb-1 py-1 px-2">
+                  <small><strong><%= eval.evaluator_key %>:</strong> <%= eval.feedback %></small>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
       </div>
     <% end %>
   </div>

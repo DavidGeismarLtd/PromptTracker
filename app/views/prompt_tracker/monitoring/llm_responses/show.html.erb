@@ -1,0 +1,325 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item"><%= link_to "Tracked Calls", monitoring_llm_responses_path %></li>
+  <li class="breadcrumb-item active">Response #<%= @response.id %></li>
+<% end %>
+
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="mb-4">
+        <i class="bi bi-chat-dots"></i> LLM Response Detail
+      </h2>
+
+      <!-- Execution Context Card (if traced) -->
+      <% if @response.trace.present? %>
+        <div class="card mb-4 border-info">
+          <div class="card-header bg-info bg-opacity-10">
+            <h5 class="mb-0">
+              <i class="bi bi-diagram-2"></i> Execution Context
+            </h5>
+          </div>
+          <div class="card-body">
+            <dl class="row mb-0">
+              <dt class="col-sm-2">Trace</dt>
+              <dd class="col-sm-10">
+                <%= link_to monitoring_trace_path(@response.trace), class: "fw-bold" do %>
+                  <%= @response.trace.name %>
+                <% end %>
+                <span class="badge bg-<%= @response.trace.status == 'completed' ? 'success' : @response.trace.status == 'error' ? 'danger' : 'warning' %> ms-2">
+                  <%= @response.trace.status %>
+                </span>
+                <% if @response.trace.duration_ms.present? %>
+                  <span class="text-muted ms-2">
+                    <i class="bi bi-clock"></i> <%= @response.trace.duration_ms %>ms
+                  </span>
+                <% end %>
+              </dd>
+
+              <% if @response.span.present? %>
+                <dt class="col-sm-2">Span</dt>
+                <dd class="col-sm-10">
+                  <%= @response.span.name %>
+                  <% if @response.span.span_type.present? %>
+                    <span class="badge bg-info ms-2"><%= @response.span.span_type %></span>
+                  <% end %>
+                  <% if @response.span.duration_ms.present? %>
+                    <span class="text-muted ms-2">
+                      <i class="bi bi-clock"></i> <%= @response.span.duration_ms %>ms
+                    </span>
+                  <% end %>
+                </dd>
+              <% end %>
+
+              <% if @response.trace.session_id.present? %>
+                <dt class="col-sm-2">Session</dt>
+                <dd class="col-sm-10">
+                  <%= link_to monitoring_sessions_path(session_id: @response.trace.session_id) do %>
+                    <%= truncate(@response.trace.session_id, length: 50) %>
+                    <i class="bi bi-box-arrow-up-right ms-1"></i>
+                  <% end %>
+                </dd>
+              <% end %>
+
+              <% if @response.trace.user_id.present? %>
+                <dt class="col-sm-2">User</dt>
+                <dd class="col-sm-10">
+                  <code><%= @response.trace.user_id %></code>
+                </dd>
+              <% end %>
+            </dl>
+
+            <div class="mt-3">
+              <%= link_to monitoring_trace_path(@response.trace), class: "btn btn-sm btn-outline-info" do %>
+                <i class="bi bi-diagram-2"></i> View Full Trace Timeline
+              <% end %>
+
+              <% if @response.trace.session_id.present? %>
+                <%= link_to monitoring_sessions_path(session_id: @response.trace.session_id),
+                            class: "btn btn-sm btn-outline-secondary ms-2" do %>
+                  <i class="bi bi-collection"></i> View Session
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Basic Info Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-info-circle"></i> Basic Information
+          </h5>
+        </div>
+        <div class="card-body">
+          <dl class="row">
+            <dt class="col-sm-3">Prompt</dt>
+            <dd class="col-sm-9">
+              <%= link_to monitoring_prompt_prompt_version_path(@response.prompt_version.prompt, @response.prompt_version) do %>
+                <%= @response.prompt_version.prompt.name %>
+                <small class="text-muted">v<%= @response.prompt_version.version_number %></small>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">Provider / Model</dt>
+            <dd class="col-sm-9">
+              <strong><%= @response.provider %></strong> / <%= @response.model %>
+            </dd>
+
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+              <% if @response.status == "success" %>
+                <span class="badge bg-success">Success</span>
+              <% elsif @response.status == "error" %>
+                <span class="badge bg-danger">Error</span>
+              <% else %>
+                <span class="badge bg-secondary"><%= @response.status %></span>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">Environment</dt>
+            <dd class="col-sm-9">
+              <% if @response.environment.present? %>
+                <span class="badge bg-info"><%= @response.environment %></span>
+              <% else %>
+                <span class="text-muted">-</span>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">User ID</dt>
+            <dd class="col-sm-9">
+              <%= @response.user_id.present? ? @response.user_id : "-" %>
+            </dd>
+
+            <dt class="col-sm-3">Session ID</dt>
+            <dd class="col-sm-9">
+              <% if @response.session_id.present? %>
+                <%= link_to monitoring_sessions_path(session_id: @response.session_id) do %>
+                  <%= truncate(@response.session_id, length: 50) %>
+                  <i class="bi bi-box-arrow-up-right ms-1"></i>
+                <% end %>
+              <% else %>
+                <span class="text-muted">-</span>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">Created At</dt>
+            <dd class="col-sm-9"><%= @response.created_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Performance Metrics Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-speedometer2"></i> Performance Metrics
+          </h5>
+        </div>
+        <div class="card-body">
+          <dl class="row">
+            <dt class="col-sm-3">Response Time</dt>
+            <dd class="col-sm-9">
+              <% if @response.response_time_ms.present? %>
+                <strong><%= @response.response_time_ms %>ms</strong>
+              <% else %>
+                <span class="text-muted">-</span>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">Tokens</dt>
+            <dd class="col-sm-9">
+              <% if @response.tokens_total.present? %>
+                <strong><%= @response.tokens_total %></strong> total
+                <br>
+                <small class="text-muted">
+                  <%= @response.tokens_prompt || 0 %> prompt / <%= @response.tokens_completion || 0 %> completion
+                </small>
+              <% else %>
+                <span class="text-muted">-</span>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">Cost</dt>
+            <dd class="col-sm-9">
+              <% if @response.cost_usd.present? %>
+                <strong class="text-success">$<%= @response.cost_usd.round(4) %></strong>
+              <% else %>
+                <span class="text-muted">-</span>
+              <% end %>
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Prompt & Response Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-chat-left-text"></i> Prompt & Response
+          </h5>
+        </div>
+        <div class="card-body">
+          <h6>Rendered Prompt</h6>
+          <% if @response.rendered_prompt.present? %>
+            <pre class="bg-light p-3 rounded" style="white-space: pre-wrap;"><%= @response.rendered_prompt %></pre>
+          <% else %>
+            <p class="text-muted">No prompt</p>
+          <% end %>
+
+          <h6 class="mt-4">Response</h6>
+          <% if @response.response_text.present? %>
+            <pre class="bg-light p-3 rounded" style="white-space: pre-wrap;"><%= @response.response_text %></pre>
+          <% else %>
+            <p class="text-muted">No response</p>
+          <% end %>
+
+          <% if @response.error_message.present? %>
+            <h6 class="mt-4 text-danger">Error</h6>
+            <div class="alert alert-danger">
+              <strong><%= @response.error_type %></strong>: <%= @response.error_message %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Evaluations Card -->
+      <% if @response.evaluations.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-clipboard-check"></i> Evaluations
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Evaluator</th>
+                    <th>Score</th>
+                    <th>Passed</th>
+                    <th>Feedback</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @response.evaluations.each do |evaluation| %>
+                    <tr>
+                      <td><%= evaluation.evaluator_key %></td>
+                      <td><strong><%= evaluation.score.round %></strong></td>
+                      <td>
+                        <% if evaluation.passed? %>
+                          <span class="badge bg-success">
+                            <i class="bi bi-check-circle-fill"></i> Passed
+                          </span>
+                        <% else %>
+                          <span class="badge bg-danger">
+                            <i class="bi bi-x-circle-fill"></i> Failed
+                          </span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <% if evaluation.feedback.present? %>
+                          <%= truncate(evaluation.feedback, length: 100) %>
+                        <% else %>
+                          <span class="text-muted">-</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <%= link_to "View", monitoring_evaluation_path(evaluation), class: "btn btn-sm btn-outline-primary" %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Human Evaluations Card -->
+      <% if @response.human_evaluations.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-person-check"></i> Human Evaluations
+            </h5>
+          </div>
+          <div class="card-body">
+            <%= render "prompt_tracker/shared/human_evaluations_cell", record: @response, context: 'monitoring' %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Variables Used Card -->
+      <% if @response.variables_used.present? && @response.variables_used.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-braces"></i> Variables Used
+            </h5>
+          </div>
+          <div class="card-body">
+            <pre class="bg-light p-3 rounded"><%= JSON.pretty_generate(@response.variables_used) %></pre>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Metadata Card -->
+      <% if @response.response_metadata.present? && @response.response_metadata.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-info-square"></i> Response Metadata
+            </h5>
+          </div>
+          <div class="card-body">
+            <pre class="bg-light p-3 rounded"><%= JSON.pretty_generate(@response.response_metadata) %></pre>
+          </div>
+        </div>
+      <% end %>
+
+    </div>
+  </div>
+</div>

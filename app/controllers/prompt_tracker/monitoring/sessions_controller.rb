@@ -7,34 +7,55 @@ module PromptTracker
       # GET /sessions
       # List all unique sessions with summary metrics
       def index
-        # Get unique session_ids with aggregated data
-        @sessions = Trace.where.not(session_id: nil)
-                         .group(:session_id)
-                         .select(
-                           "session_id",
-                           "COUNT(*) as trace_count",
-                           "MAX(created_at) as last_activity",
-                           "MIN(created_at) as first_activity",
-                           "SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count",
-                           "SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as error_count"
-                         )
-                         .order("last_activity DESC")
+        # Get unique session_ids
+        session_ids = Trace.where.not(session_id: nil)
+                           .distinct
+                           .pluck(:session_id)
+                           .compact
 
         # Filter by user_id if provided
         if params[:user_id].present?
-          @sessions = @sessions.where("user_id = ?", params[:user_id])
+          session_ids = Trace.where(session_id: session_ids, user_id: params[:user_id])
+                             .distinct
+                             .pluck(:session_id)
         end
 
         # Filter by date range
-        if params[:start_date].present?
-          @sessions = @sessions.where("created_at >= ?", params[:start_date])
-        end
-        if params[:end_date].present?
-          @sessions = @sessions.where("created_at <= ?", params[:end_date])
+        if params[:start_date].present? || params[:end_date].present?
+          query = Trace.where(session_id: session_ids)
+          query = query.where("created_at >= ?", params[:start_date]) if params[:start_date].present?
+          query = query.where("created_at <= ?", params[:end_date]) if params[:end_date].present?
+          session_ids = query.distinct.pluck(:session_id)
         end
 
+        # Load all traces for these sessions with nested data
+        all_traces = Trace.where(session_id: session_ids)
+                          .includes(
+                            spans: { llm_responses: :evaluations },
+                            llm_responses: [ :prompt_version, :evaluations ]
+                          )
+                          .order(created_at: :desc)
+
+        # Group traces by session_id and calculate metrics
+        @sessions = session_ids.map do |session_id|
+          session_traces = all_traces.select { |t| t.session_id == session_id }
+          {
+            session_id: session_id,
+            traces: session_traces,
+            trace_count: session_traces.count,
+            completed_count: session_traces.count { |t| t.status == "completed" },
+            error_count: session_traces.count { |t| t.status == "error" },
+            first_activity: session_traces.map(&:started_at).compact.min,
+            last_activity: session_traces.map { |t| t.ended_at || t.started_at }.compact.max
+          }
+        end
+
+        # Sort by last activity
+        @sessions.sort_by! { |s| s[:last_activity] || Time.at(0) }
+        @sessions.reverse!
+
         # Pagination
-        @sessions = @sessions.page(params[:page]).per(25)
+        @sessions = Kaminari.paginate_array(@sessions).page(params[:page]).per(25)
 
         # Get unique users for filter dropdown
         @users = Trace.where.not(user_id: nil).distinct.pluck(:user_id).compact.sort

@@ -8,7 +8,7 @@ module PromptTracker
       # List all tracked evaluations with filtering
       def index
         @evaluations = Evaluation.tracked
-                                 .includes(llm_response: { prompt_version: :prompt })
+                                 .includes(llm_response: [ :trace, :span, { prompt_version: :prompt } ])
                                  .order(created_at: :desc)
 
         # Filter by passed/failed
@@ -77,7 +77,7 @@ module PromptTracker
       # GET /monitoring/evaluations/:id
       # Show evaluation details (monitoring context - runtime calls)
       def show
-        @evaluation = Evaluation.tracked.includes(:human_evaluations, llm_response: { prompt_version: :prompt }).find(params[:id])
+        @evaluation = Evaluation.tracked.includes(:human_evaluations, llm_response: [ :trace, :span, { prompt_version: :prompt } ]).find(params[:id])
         @response = @evaluation.llm_response
         @version = @response.prompt_version
         @prompt = @version.prompt

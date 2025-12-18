@@ -138,10 +138,45 @@
           </li>
 
           <!-- Monitoring Section (Green) -->
-          <li class="nav-item">
-            <%= link_to monitoring_root_path, class: "nav-link #{'active' if controller_path.start_with?('prompt_tracker/monitoring')} pt-nav-monitoring" do %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle <%= 'active' if controller_path.start_with?('prompt_tracker/monitoring') %> pt-nav-monitoring"
+               href="#"
+               role="button"
+               data-bs-toggle="dropdown"
+               aria-expanded="false">
               <i class="bi bi-activity"></i> Monitoring
-            <% end %>
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <%= link_to monitoring_root_path, class: "dropdown-item #{'active' if controller_name == 'dashboard'}" do %>
+                  <i class="bi bi-speedometer2"></i> Dashboard
+                <% end %>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li class="dropdown-header">Call-Level Views</li>
+              <li>
+                <%= link_to monitoring_llm_responses_path, class: "dropdown-item #{'active' if controller_name == 'llm_responses'}" do %>
+                  <i class="bi bi-chat-dots"></i> Tracked Calls
+                <% end %>
+              </li>
+              <li>
+                <%= link_to monitoring_evaluations_path, class: "dropdown-item #{'active' if controller_name == 'evaluations'}" do %>
+                  <i class="bi bi-clipboard-check"></i> Evaluations
+                <% end %>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li class="dropdown-header">Execution-Level Views</li>
+              <li>
+                <%= link_to monitoring_sessions_path, class: "dropdown-item #{'active' if controller_name == 'sessions'}" do %>
+                  <i class="bi bi-collection"></i> Sessions
+                <% end %>
+              </li>
+              <li>
+                <%= link_to monitoring_traces_path, class: "dropdown-item #{'active' if controller_name == 'traces'}" do %>
+                  <i class="bi bi-diagram-2"></i> Traces
+                <% end %>
+              </li>
+            </ul>
           </li>
 
 

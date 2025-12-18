@@ -3,12 +3,12 @@
     <div class="timeline">
       <!-- Root-level spans -->
       <% root_spans.each do |span| %>
-        <%= render "span_item", span: span, level: 0 %>
+        <%= render "prompt_tracker/monitoring/traces/span_item", span: span, level: 0 %>
       <% end %>
 
       <!-- Orphan generations (not in any span) -->
       <% orphan_generations.each do |generation| %>
-        <%= render "generation_item", generation: generation, level: 0 %>
+        <%= render "prompt_tracker/monitoring/traces/generation_item", generation: generation, level: 0 %>
       <% end %>
     </div>
   <% else %>
@@ -106,7 +106,7 @@
   function toggleSpan(spanId) {
     const button = document.querySelector(`[data-target="${spanId}"]`);
     const children = document.getElementById(`${spanId}-children`);
-    
+
     if (children) {
       children.classList.toggle('collapsed');
       button.classList.toggle('collapsed');
@@ -131,4 +131,3 @@
     });
   }
 </script>
-

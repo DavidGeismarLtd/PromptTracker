@@ -112,6 +112,7 @@
               <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 100px;">Session ID</th>
               <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 150px;">Metadata</th>
               <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 100px;">Time</th>
+              <th style="text-align: left; padding: 0.75rem; color: #64748B; min-width: 120px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -195,6 +196,31 @@
                 <!-- Time -->
                 <td style="padding: 0.75rem; color: #64748B; font-size: 0.875rem; vertical-align: top; white-space: nowrap;">
                   <%= time_ago_in_words(evaluation.created_at) %> ago
+                </td>
+
+                <!-- Actions -->
+                <td style="padding: 0.75rem; vertical-align: top;">
+                  <div class="d-flex flex-column gap-1">
+                    <%= link_to monitoring_evaluation_path(evaluation), class: "btn btn-sm btn-outline-primary", style: "font-size: 0.75rem; padding: 0.25rem 0.5rem;" do %>
+                      <i class="bi bi-eye"></i> View
+                    <% end %>
+
+                    <%= link_to monitoring_llm_response_path(evaluation.llm_response), class: "btn btn-sm btn-outline-secondary", style: "font-size: 0.75rem; padding: 0.25rem 0.5rem;" do %>
+                      <i class="bi bi-chat-dots"></i> LLM Call
+                    <% end %>
+
+                    <% if evaluation.llm_response.trace_id.present? %>
+                      <%= link_to monitoring_trace_path(evaluation.llm_response.trace_id), class: "btn btn-sm btn-outline-info", style: "font-size: 0.75rem; padding: 0.25rem 0.5rem;", title: "View in execution trace" do %>
+                        <i class="bi bi-diagram-2"></i> Trace
+                      <% end %>
+                    <% end %>
+
+                    <% if evaluation.llm_response.session_id.present? %>
+                      <%= link_to monitoring_sessions_path(session_id: evaluation.llm_response.session_id), class: "btn btn-sm btn-outline-secondary", style: "font-size: 0.75rem; padding: 0.25rem 0.5rem;", title: "View all traces in this session" do %>
+                        <i class="bi bi-collection"></i> Session
+                      <% end %>
+                    <% end %>
+                  </div>
                 </td>
               </tr>
             <% end %>

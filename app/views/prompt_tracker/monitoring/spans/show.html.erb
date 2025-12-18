@@ -1,0 +1,260 @@
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item"><%= link_to "Traces", monitoring_traces_path %></li>
+  <li class="breadcrumb-item"><%= link_to @trace.name, monitoring_trace_path(@trace) %></li>
+  <li class="breadcrumb-item active">Span: <%= @span.name %></li>
+<% end %>
+
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="mb-4">
+        <i class="bi bi-box"></i> Span Detail: <%= @span.name %>
+      </h2>
+
+      <!-- Trace Context Card -->
+      <div class="card mb-4 border-info">
+        <div class="card-header bg-info bg-opacity-10">
+          <h5 class="mb-0">
+            <i class="bi bi-diagram-2"></i> Trace Context
+          </h5>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-2">Trace</dt>
+            <dd class="col-sm-10">
+              <%= link_to monitoring_trace_path(@trace), class: "fw-bold" do %>
+                <%= @trace.name %>
+              <% end %>
+              <span class="badge bg-<%= @trace.status == 'completed' ? 'success' : @trace.status == 'error' ? 'danger' : 'warning' %> ms-2">
+                <%= @trace.status %>
+              </span>
+            </dd>
+
+            <% if @span.parent_span.present? %>
+              <dt class="col-sm-2">Parent Span</dt>
+              <dd class="col-sm-10">
+                <%= link_to monitoring_span_path(@span.parent_span) do %>
+                  <%= @span.parent_span.name %>
+                <% end %>
+              </dd>
+            <% end %>
+
+            <% if @trace.session_id.present? %>
+              <dt class="col-sm-2">Session</dt>
+              <dd class="col-sm-10">
+                <%= link_to monitoring_sessions_path(session_id: @trace.session_id) do %>
+                  <%= truncate(@trace.session_id, length: 50) %>
+                  <i class="bi bi-box-arrow-up-right ms-1"></i>
+                <% end %>
+              </dd>
+            <% end %>
+          </dl>
+
+          <div class="mt-3">
+            <%= link_to monitoring_trace_path(@trace), class: "btn btn-sm btn-outline-info" do %>
+              <i class="bi bi-diagram-2"></i> View Full Trace Timeline
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Span Info Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-info-circle"></i> Span Information
+          </h5>
+        </div>
+        <div class="card-body">
+          <dl class="row">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9"><%= @span.name %></dd>
+
+            <dt class="col-sm-3">Type</dt>
+            <dd class="col-sm-9">
+              <% if @span.span_type.present? %>
+                <span class="badge bg-info"><%= @span.span_type %></span>
+              <% else %>
+                <span class="text-muted">-</span>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+              <% if @span.status == "completed" %>
+                <span class="badge bg-success">Completed</span>
+              <% elsif @span.status == "error" %>
+                <span class="badge bg-danger">Error</span>
+              <% else %>
+                <span class="badge bg-secondary"><%= @span.status %></span>
+              <% end %>
+            </dd>
+
+            <dt class="col-sm-3">Started At</dt>
+            <dd class="col-sm-9">
+              <%= @span.started_at.present? ? @span.started_at.strftime("%Y-%m-%d %H:%M:%S") : "-" %>
+            </dd>
+
+            <dt class="col-sm-3">Ended At</dt>
+            <dd class="col-sm-9">
+              <%= @span.ended_at.present? ? @span.ended_at.strftime("%Y-%m-%d %H:%M:%S") : "-" %>
+            </dd>
+
+            <dt class="col-sm-3">Duration</dt>
+            <dd class="col-sm-9">
+              <% if @span.duration_ms.present? %>
+                <strong><%= @span.duration_ms %>ms</strong>
+              <% else %>
+                <span class="text-muted">-</span>
+              <% end %>
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Metrics Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-speedometer2"></i> Metrics
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="text-muted small">Child Spans</div>
+              <div class="h4"><%= @total_child_spans %></div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-muted small">LLM Generations</div>
+              <div class="h4"><%= @total_generations %></div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-muted small">Total Tokens</div>
+              <div class="h4"><%= number_with_delimiter(@total_tokens) %></div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-muted small">Total Cost</div>
+              <div class="h4 text-success">$<%= @total_cost.round(4) %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Child Spans Card -->
+      <% if @span.child_spans.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-boxes"></i> Child Spans (<%= @span.child_spans.count %>)
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="list-group">
+              <% @span.child_spans.order(:started_at).each do |child_span| %>
+                <%= link_to monitoring_span_path(child_span), class: "list-group-item list-group-item-action" do %>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-1">
+                        <i class="bi bi-box"></i> <%= child_span.name %>
+                        <% if child_span.span_type.present? %>
+                          <span class="badge bg-info ms-2"><%= child_span.span_type %></span>
+                        <% end %>
+                      </h6>
+                      <small class="text-muted">
+                        <% if child_span.started_at.present? %>
+                          <%= child_span.started_at.strftime("%H:%M:%S") %>
+                        <% end %>
+                        <% if child_span.duration_ms.present? %>
+                          • <%= child_span.duration_ms %>ms
+                        <% end %>
+                      </small>
+                    </div>
+                    <div>
+                      <% if child_span.status == "completed" %>
+                        <span class="badge bg-success">✓</span>
+                      <% elsif child_span.status == "error" %>
+                        <span class="badge bg-danger">✗</span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- LLM Responses Card -->
+      <% if @span.llm_responses.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-cpu"></i> LLM Responses (<%= @span.llm_responses.count %>)
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="list-group">
+              <% @span.llm_responses.order(:created_at).each do |response| %>
+                <%= link_to monitoring_llm_response_path(response), class: "list-group-item list-group-item-action" do %>
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <h6 class="mb-1">
+                        <i class="bi bi-cpu"></i>
+                        <% if response.prompt_version.present? %>
+                          <%= response.prompt_version.prompt.name %>
+                          <small class="text-muted">v<%= response.prompt_version.version_number %></small>
+                        <% else %>
+                          LLM Response
+                        <% end %>
+                      </h6>
+                      <small class="text-muted">
+                        <%= response.provider %> / <%= response.model %>
+                        <% if response.response_time_ms.present? %>
+                          • <%= response.response_time_ms %>ms
+                        <% end %>
+                        <% if response.tokens_total.present? %>
+                          • <%= number_with_delimiter(response.tokens_total) %> tokens
+                        <% end %>
+                        <% if response.cost_usd.present? %>
+                          • $<%= response.cost_usd.round(4) %>
+                        <% end %>
+                      </small>
+                      <% if response.response_text.present? %>
+                        <div class="mt-2">
+                          <small class="text-muted"><%= truncate(response.response_text, length: 150) %></small>
+                        </div>
+                      <% end %>
+                    </div>
+                    <div class="ms-3">
+                      <% if response.status == "success" %>
+                        <span class="badge bg-success">✓</span>
+                      <% elsif response.status == "error" %>
+                        <span class="badge bg-danger">✗</span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Metadata Card -->
+      <% if @span.metadata.present? && @span.metadata.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-info-square"></i> Metadata
+            </h5>
+          </div>
+          <div class="card-body">
+            <pre class="bg-light p-3 rounded"><%= JSON.pretty_generate(@span.metadata) %></pre>
+          </div>
+        </div>
+      <% end %>
+
+    </div>
+  </div>
+</div>

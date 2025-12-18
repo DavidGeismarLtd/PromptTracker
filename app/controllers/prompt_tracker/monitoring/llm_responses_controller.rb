@@ -8,7 +8,7 @@ module PromptTracker
       # List all tracked LLM responses with filtering
       def index
         @responses = LlmResponse.tracked_calls
-                                .includes(:evaluations, :human_evaluations, prompt_version: :prompt)
+                                .includes(:trace, :span, :evaluations, :human_evaluations, prompt_version: :prompt)
                                 .order(created_at: :desc)
 
         # Filter by prompt
@@ -85,6 +85,13 @@ module PromptTracker
         @total_responses = @responses.total_count
         @successful_count = LlmResponse.tracked_calls.where(status: "success").count
         @failed_count = LlmResponse.tracked_calls.where(status: %w[error timeout]).count
+      end
+
+      # GET /monitoring/responses/:id
+      # Show LLM response detail with trace context
+      def show
+        @response = LlmResponse.includes(:trace, :span, :evaluations, :human_evaluations, prompt_version: :prompt)
+                               .find(params[:id])
       end
     end
   end

@@ -19,22 +19,22 @@
     <%= form_with url: monitoring_traces_path, method: :get, local: true, class: "row g-3" do |f| %>
       <div class="col-md-2">
         <%= f.label :status, "Status", class: "form-label" %>
-        <%= f.select :status, options_for_select(@statuses, params[:status]), 
-            { include_blank: "All Statuses" }, 
+        <%= f.select :status, options_for_select(@statuses, params[:status]),
+            { include_blank: "All Statuses" },
             class: "form-select" %>
       </div>
 
       <div class="col-md-2">
         <%= f.label :user_id, "User", class: "form-label" %>
-        <%= f.select :user_id, options_for_select(@users, params[:user_id]), 
-            { include_blank: "All Users" }, 
+        <%= f.select :user_id, options_for_select(@users, params[:user_id]),
+            { include_blank: "All Users" },
             class: "form-select" %>
       </div>
 
       <div class="col-md-3">
         <%= f.label :session_id, "Session", class: "form-label" %>
-        <%= f.select :session_id, options_for_select(@sessions.first(20), params[:session_id]), 
-            { include_blank: "All Sessions" }, 
+        <%= f.select :session_id, options_for_select(@sessions.first(20), params[:session_id]),
+            { include_blank: "All Sessions" },
             class: "form-select" %>
       </div>
 
@@ -72,49 +72,7 @@
           </thead>
           <tbody>
             <% @traces.each do |trace| %>
-              <tr>
-                <td><strong><%= trace.name %></strong></td>
-                <td>
-                  <% if trace.session_id.present? %>
-                    <%= link_to truncate(trace.session_id, length: 20), monitoring_session_path(trace.session_id), class: "text-decoration-none" %>
-                  <% else %>
-                    <span class="text-muted">-</span>
-                  <% end %>
-                </td>
-                <td>
-                  <% if trace.user_id.present? %>
-                    <span class="badge bg-secondary"><%= trace.user_id %></span>
-                  <% else %>
-                    <span class="text-muted">-</span>
-                  <% end %>
-                </td>
-                <td>
-                  <% if trace.status == 'completed' %>
-                    <span class="badge bg-success">✓ Completed</span>
-                  <% elsif trace.status == 'error' %>
-                    <span class="badge bg-danger">✗ Error</span>
-                  <% elsif trace.status == 'running' %>
-                    <span class="badge bg-warning">⟳ Running</span>
-                  <% else %>
-                    <span class="badge bg-secondary"><%= trace.status %></span>
-                  <% end %>
-                </td>
-                <td class="text-center">
-                  <span class="badge bg-info"><%= trace.spans.count %></span>
-                </td>
-                <td class="text-center">
-                  <span class="badge bg-primary"><%= trace.llm_responses.count %></span>
-                </td>
-                <td class="text-end"><%= format_duration(trace.duration_ms) %></td>
-                <td>
-                  <%= format_relative_time(trace.started_at) %>
-                  <br>
-                  <small class="text-muted"><%= format_timestamp(trace.started_at) %></small>
-                </td>
-                <td>
-                  <%= link_to "View", monitoring_trace_path(trace), class: "btn btn-sm btn-outline-primary" %>
-                </td>
-              </tr>
+              <%= render "trace_row", trace: trace %>
             <% end %>
           </tbody>
         </table>
@@ -135,4 +93,3 @@
     <% end %>
   </div>
 </div>
-

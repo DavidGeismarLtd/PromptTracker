@@ -1,0 +1,168 @@
+<%
+  session_id = session[:session_id]
+  traces = session[:traces]
+  session_dom_id = "session-#{session_id.parameterize}"
+  has_traces = traces.any?
+%>
+
+<tr class="session-row" data-session-id="<%= session_dom_id %>">
+  <td>
+    <% if has_traces %>
+      <button class="btn btn-sm btn-link p-0 me-1 toggle-session" data-target="<%= session_dom_id %>" onclick="toggleSession('<%= session_dom_id %>')" style="text-decoration: none;">
+        <i class="bi bi-chevron-right expand-icon"></i>
+      </button>
+    <% else %>
+      <span class="me-1" style="width: 20px; display: inline-block;"></span>
+    <% end %>
+    <strong><%= truncate(session_id, length: 40) %></strong>
+  </td>
+  <td class="text-center">
+    <span class="badge bg-info"><%= session[:trace_count] %></span>
+  </td>
+  <td class="text-center">
+    <span class="badge bg-success"><%= session[:completed_count] %></span>
+  </td>
+  <td class="text-center">
+    <% if session[:error_count] > 0 %>
+      <span class="badge bg-danger"><%= session[:error_count] %></span>
+    <% else %>
+      <span class="badge bg-secondary">0</span>
+    <% end %>
+  </td>
+  <td>
+    <%= format_relative_time(session[:first_activity]) %>
+    <br>
+    <small class="text-muted"><%= format_timestamp(session[:first_activity]) %></small>
+  </td>
+  <td>
+    <%= format_relative_time(session[:last_activity]) %>
+    <br>
+    <small class="text-muted"><%= format_timestamp(session[:last_activity]) %></small>
+  </td>
+  <td>
+    <%= link_to "View", monitoring_session_path(session_id), class: "btn btn-sm btn-outline-primary", target: "_blank" %>
+  </td>
+</tr>
+
+<!-- Expandable Traces Section -->
+<% if has_traces %>
+  <tr class="session-traces-row collapsed" id="<%= session_dom_id %>-traces">
+    <td colspan="7" style="padding: 0; background-color: #f8f9fa;">
+      <div class="traces-container-inline" style="padding: 20px; border-top: 2px solid #dee2e6;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">
+            <i class="bi bi-diagram-2"></i> Traces in Session
+            <span class="badge bg-secondary"><%= traces.count %></span>
+          </h6>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="expandAllInSession('<%= session_dom_id %>')">
+              <i class="bi bi-arrows-expand"></i> Expand All Traces
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllInSession('<%= session_dom_id %>')">
+              <i class="bi bi-arrows-collapse"></i> Collapse All Traces
+            </button>
+          </div>
+        </div>
+
+        <!-- Nested Traces Table -->
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>User</th>
+                <th>Status</th>
+                <th class="text-center">Spans</th>
+                <th class="text-center">LLM Calls</th>
+                <th class="text-end">Duration</th>
+                <th>Started</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% traces.sort_by(&:started_at).each do |trace| %>
+                <%= render "trace_row_nested", trace: trace, session_dom_id: session_dom_id %>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </td>
+  </tr>
+<% end %>
+
+<style>
+  .session-traces-row.collapsed {
+    display: none;
+  }
+
+  .toggle-session {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .toggle-session.expanded .expand-icon {
+    transform: rotate(90deg);
+  }
+
+  .traces-container-inline {
+    max-height: 800px;
+    overflow-y: auto;
+  }
+</style>
+
+<script>
+  // Only define these functions once
+  if (typeof window.toggleSession === 'undefined') {
+    window.toggleSession = function(sessionId) {
+      const button = document.querySelector(`[data-target="${sessionId}"]`);
+      const tracesRow = document.getElementById(`${sessionId}-traces`);
+
+      if (tracesRow) {
+        tracesRow.classList.toggle('collapsed');
+        button.classList.toggle('expanded');
+      }
+    };
+
+    window.expandAllInSession = function(sessionId) {
+      const tracesRow = document.getElementById(`${sessionId}-traces`);
+      if (tracesRow) {
+        // Expand all trace timelines
+        tracesRow.querySelectorAll('.timeline-row').forEach(el => {
+          el.classList.remove('collapsed');
+        });
+        tracesRow.querySelectorAll('.toggle-trace').forEach(el => {
+          el.classList.add('expanded');
+        });
+        // Expand all nested spans
+        tracesRow.querySelectorAll('.nested-timeline').forEach(el => {
+          el.classList.remove('collapsed');
+        });
+        tracesRow.querySelectorAll('.toggle-span').forEach(el => {
+          el.classList.remove('collapsed');
+        });
+      }
+    };
+
+    window.collapseAllInSession = function(sessionId) {
+      const tracesRow = document.getElementById(`${sessionId}-traces`);
+      if (tracesRow) {
+        // Collapse all trace timelines
+        tracesRow.querySelectorAll('.timeline-row').forEach(el => {
+          el.classList.add('collapsed');
+        });
+        tracesRow.querySelectorAll('.toggle-trace').forEach(el => {
+          el.classList.remove('expanded');
+        });
+        // Collapse all nested spans
+        tracesRow.querySelectorAll('.nested-timeline').forEach(el => {
+          el.classList.add('collapsed');
+        });
+        tracesRow.querySelectorAll('.toggle-span').forEach(el => {
+          el.classList.add('collapsed');
+        });
+      }
+    };
+  }
+</script>
+

@@ -1,0 +1,77 @@
+<%
+  trace_id = "trace-#{session_dom_id}-#{trace.id}"
+  has_timeline = trace.spans.any? || trace.llm_responses.any?
+  root_spans = trace.spans.select { |s| s.parent_span_id.nil? }.sort_by(&:started_at)
+  orphan_generations = trace.llm_responses.select { |r| r.span_id.nil? }.sort_by(&:created_at)
+%>
+
+<tr class="trace-row-nested" data-trace-id="<%= trace_id %>">
+  <td>
+    <% if has_timeline %>
+      <button class="btn btn-sm btn-link p-0 me-1 toggle-trace" data-target="<%= trace_id %>" onclick="toggleTrace('<%= trace_id %>')" style="text-decoration: none;">
+        <i class="bi bi-chevron-right expand-icon"></i>
+      </button>
+    <% else %>
+      <span class="me-1" style="width: 20px; display: inline-block;"></span>
+    <% end %>
+    <strong><%= trace.name %></strong>
+  </td>
+  <td>
+    <% if trace.user_id.present? %>
+      <span class="badge bg-secondary"><%= trace.user_id %></span>
+    <% else %>
+      <span class="text-muted">-</span>
+    <% end %>
+  </td>
+  <td>
+    <% if trace.status == 'completed' %>
+      <span class="badge bg-success">✓ Completed</span>
+    <% elsif trace.status == 'error' %>
+      <span class="badge bg-danger">✗ Error</span>
+    <% elsif trace.status == 'running' %>
+      <span class="badge bg-warning">⟳ Running</span>
+    <% else %>
+      <span class="badge bg-secondary"><%= trace.status %></span>
+    <% end %>
+  </td>
+  <td class="text-center">
+    <span class="badge bg-info"><%= trace.spans.count %></span>
+  </td>
+  <td class="text-center">
+    <span class="badge bg-primary"><%= trace.llm_responses.count %></span>
+  </td>
+  <td class="text-end"><%= format_duration(trace.duration_ms) %></td>
+  <td>
+    <%= format_relative_time(trace.started_at) %>
+    <br>
+    <small class="text-muted"><%= format_timestamp(trace.started_at) %></small>
+  </td>
+  <td>
+    <%= link_to "View", monitoring_trace_path(trace), class: "btn btn-sm btn-outline-primary", target: "_blank" %>
+  </td>
+</tr>
+
+<!-- Expandable Timeline Row -->
+<% if has_timeline %>
+  <tr class="timeline-row collapsed" id="<%= trace_id %>-timeline">
+    <td colspan="8" style="padding: 0; background-color: #ffffff;">
+      <div class="timeline-container-inline" style="padding: 15px 15px 15px 40px; border-left: 3px solid #0d6efd;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0" style="font-size: 0.9rem;">
+            <i class="bi bi-clock-history"></i> Execution Timeline
+          </h6>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary btn-sm" onclick="expandAllInTrace('<%= trace_id %>')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+              <i class="bi bi-arrows-expand"></i> Expand All
+            </button>
+            <button class="btn btn-sm btn-outline-secondary btn-sm" onclick="collapseAllInTrace('<%= trace_id %>')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+              <i class="bi bi-arrows-collapse"></i> Collapse All
+            </button>
+          </div>
+        </div>
+
+        <%= render "prompt_tracker/monitoring/traces/timeline", root_spans: root_spans, orphan_generations: orphan_generations %>
+      </div>
+    </td>
+  </tr>
+<% end %>

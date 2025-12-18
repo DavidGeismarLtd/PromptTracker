@@ -7,8 +7,10 @@ module PromptTracker
       # GET /traces
       # List all traces with filtering
       def index
-        @traces = Trace.includes(:spans, :llm_responses)
-                       .order(created_at: :desc)
+        @traces = Trace.includes(
+          spans: { llm_responses: :evaluations },
+          llm_responses: [ :prompt_version, :evaluations ]
+        ).order(created_at: :desc)
 
         # Filter by status
         @traces = @traces.where(status: params[:status]) if params[:status].present?
@@ -45,7 +47,7 @@ module PromptTracker
       # Show trace detail with timeline
       def show
         @trace = Trace.includes(
-          spans: [ :child_spans, :llm_responses ],
+          spans: { llm_responses: :evaluations },
           llm_responses: [ :prompt_version, :evaluations ]
         ).find(params[:id])
 

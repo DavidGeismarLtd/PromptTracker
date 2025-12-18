@@ -78,17 +78,16 @@
       <!-- Nested child spans -->
       <% if span.child_spans.any? %>
         <% span.child_spans.order(:started_at).each do |child_span| %>
-          <%= render "span_item", span: child_span, level: level + 1 %>
+          <%= render "prompt_tracker/monitoring/traces/span_item", span: child_span, level: level + 1 %>
         <% end %>
       <% end %>
 
       <!-- LLM generations in this span -->
       <% if span.llm_responses.any? %>
         <% span.llm_responses.order(:created_at).each do |generation| %>
-          <%= render "generation_item", generation: generation, level: level + 1 %>
+          <%= render "prompt_tracker/monitoring/traces/generation_item", generation: generation, level: level + 1 %>
         <% end %>
       <% end %>
     </div>
   <% end %>
 </div>
-

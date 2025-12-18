@@ -1,0 +1,143 @@
+<%
+  trace_id = "trace-#{trace.id}"
+  has_timeline = trace.spans.any? || trace.llm_responses.any?
+  root_spans = trace.spans.select { |s| s.parent_span_id.nil? }.sort_by(&:started_at)
+  orphan_generations = trace.llm_responses.select { |r| r.span_id.nil? }.sort_by(&:created_at)
+%>
+
+<tr class="trace-row" data-trace-id="<%= trace_id %>">
+  <td>
+    <% if has_timeline %>
+      <button class="btn btn-sm btn-link p-0 me-1 toggle-trace" data-target="<%= trace_id %>" onclick="toggleTrace('<%= trace_id %>')" style="text-decoration: none;">
+        <i class="bi bi-chevron-right expand-icon"></i>
+      </button>
+    <% else %>
+      <span class="me-1" style="width: 20px; display: inline-block;"></span>
+    <% end %>
+    <strong><%= trace.name %></strong>
+  </td>
+  <td>
+    <% if trace.session_id.present? %>
+      <%= link_to truncate(trace.session_id, length: 20), monitoring_session_path(trace.session_id), class: "text-decoration-none" %>
+    <% else %>
+      <span class="text-muted">-</span>
+    <% end %>
+  </td>
+  <td>
+    <% if trace.user_id.present? %>
+      <span class="badge bg-secondary"><%= trace.user_id %></span>
+    <% else %>
+      <span class="text-muted">-</span>
+    <% end %>
+  </td>
+  <td>
+    <% if trace.status == 'completed' %>
+      <span class="badge bg-success">✓ Completed</span>
+    <% elsif trace.status == 'error' %>
+      <span class="badge bg-danger">✗ Error</span>
+    <% elsif trace.status == 'running' %>
+      <span class="badge bg-warning">⟳ Running</span>
+    <% else %>
+      <span class="badge bg-secondary"><%= trace.status %></span>
+    <% end %>
+  </td>
+  <td class="text-center">
+    <span class="badge bg-info"><%= trace.spans.count %></span>
+  </td>
+  <td class="text-center">
+    <span class="badge bg-primary"><%= trace.llm_responses.count %></span>
+  </td>
+  <td class="text-end"><%= format_duration(trace.duration_ms) %></td>
+  <td>
+    <%= format_relative_time(trace.started_at) %>
+    <br>
+    <small class="text-muted"><%= format_timestamp(trace.started_at) %></small>
+  </td>
+  <td>
+    <%= link_to "View", monitoring_trace_path(trace), class: "btn btn-sm btn-outline-primary", target: "_blank" %>
+  </td>
+</tr>
+
+<!-- Expandable Timeline Row -->
+<% if has_timeline %>
+  <tr class="timeline-row collapsed" id="<%= trace_id %>-timeline">
+    <td colspan="9" style="padding: 0; background-color: #f8f9fa;">
+      <div class="timeline-container-inline" style="padding: 20px; border-top: 2px solid #dee2e6;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">
+            <i class="bi bi-clock-history"></i> Execution Timeline
+          </h6>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="expandAllInTrace('<%= trace_id %>')">
+              <i class="bi bi-arrows-expand"></i> Expand All
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllInTrace('<%= trace_id %>')">
+              <i class="bi bi-arrows-collapse"></i> Collapse All
+            </button>
+          </div>
+        </div>
+
+        <%= render "timeline", root_spans: root_spans, orphan_generations: orphan_generations %>
+      </div>
+    </td>
+  </tr>
+<% end %>
+
+<style>
+  .timeline-row.collapsed {
+    display: none;
+  }
+
+  .toggle-trace {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .toggle-trace.expanded .expand-icon {
+    transform: rotate(90deg);
+  }
+
+  .timeline-container-inline {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+</style>
+
+<script>
+  // Only define these functions once
+  if (typeof window.toggleTrace === 'undefined') {
+    window.toggleTrace = function(traceId) {
+      const button = document.querySelector(`[data-target="${traceId}"]`);
+      const timelineRow = document.getElementById(`${traceId}-timeline`);
+
+      if (timelineRow) {
+        timelineRow.classList.toggle('collapsed');
+        button.classList.toggle('expanded');
+      }
+    };
+
+    window.expandAllInTrace = function(traceId) {
+      const timelineRow = document.getElementById(`${traceId}-timeline`);
+      if (timelineRow) {
+        timelineRow.querySelectorAll('.nested-timeline').forEach(el => {
+          el.classList.remove('collapsed');
+        });
+        timelineRow.querySelectorAll('.toggle-span').forEach(el => {
+          el.classList.remove('collapsed');
+        });
+      }
+    };
+
+    window.collapseAllInTrace = function(traceId) {
+      const timelineRow = document.getElementById(`${traceId}-timeline`);
+      if (timelineRow) {
+        timelineRow.querySelectorAll('.nested-timeline').forEach(el => {
+          el.classList.add('collapsed');
+        });
+        timelineRow.querySelectorAll('.toggle-span').forEach(el => {
+          el.classList.add('collapsed');
+        });
+      }
+    };
+  }
+</script>

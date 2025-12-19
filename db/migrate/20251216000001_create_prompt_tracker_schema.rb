@@ -209,7 +209,6 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.bigint :prompt_version_id, null: false
       t.string :name, null: false
       t.text :description
-      t.jsonb :model_config, default: {}, null: false
       t.boolean :enabled, default: true, null: false
       t.jsonb :tags, default: [], null: false
       t.jsonb :metadata, default: {}, null: false

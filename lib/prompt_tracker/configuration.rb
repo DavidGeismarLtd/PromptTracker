@@ -16,14 +16,6 @@ module PromptTracker
     # @return [String] the prompts directory path
     attr_accessor :prompts_path
 
-    # Whether to automatically sync prompts from files in development.
-    # @return [Boolean] true to auto-sync in development
-    attr_accessor :auto_sync_in_development
-
-    # Whether to automatically sync prompts from files in production.
-    # @return [Boolean] true to auto-sync in production
-    attr_accessor :auto_sync_in_production
-
     # Basic authentication username for web UI access.
     # If nil, basic auth is disabled and URLs are public.
     # @return [String, nil] the username
@@ -34,28 +26,61 @@ module PromptTracker
     # @return [String, nil] the password
     attr_accessor :basic_auth_password
 
+    # Available models for each provider (shown in dropdowns).
+    # Users MUST define this in their initializer.
+    #
+    # @return [Hash] hash of provider => array of model hashes
+    # @example Define in initializer
+    #   PromptTracker.configure do |config|
+    #     config.available_models = {
+    #       openai: [
+    #         { id: "gpt-4o", name: "GPT-4o", category: "Latest" },
+    #         { id: "gpt-4", name: "GPT-4", category: "GPT-4" }
+    #       ],
+    #       anthropic: [
+    #         { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", category: "Claude 3.5" }
+    #       ]
+    #     }
+    #   end
+    attr_accessor :available_models
+
+    # Mapping of provider names to their API key environment variable names.
+    # Used to check if a provider is configured before showing it in the UI.
+    #
+    # @return [Hash] hash of provider => ENV variable name
+    # @example Define in initializer
+    #   PromptTracker.configure do |config|
+    #     config.provider_api_key_env_vars = {
+    #       openai: "OPENAI_API_KEY",
+    #       anthropic: "ANTHROPIC_API_KEY",
+    #       google: "GOOGLE_API_KEY",
+    #       custom_provider: "CUSTOM_PROVIDER_API_KEY"
+    #     }
+    #   end
+    attr_accessor :provider_api_key_env_vars
+
+    # Default model for AI-powered prompt generation in playground.
+    # @return [String] the model identifier
+    attr_accessor :prompt_generator_model
+
+    # Default model for dataset row generation.
+    # @return [String] the model identifier
+    attr_accessor :dataset_generator_model
+
+    # Default model for LLM judge evaluator.
+    # @return [String] the model identifier
+    attr_accessor :llm_judge_model
+
     # Initialize with default values.
     def initialize
       @prompts_path = default_prompts_path
-      @auto_sync_in_development = true
-      @auto_sync_in_production = false
       @basic_auth_username = nil
       @basic_auth_password = nil
-    end
-
-    # Check if auto-sync is enabled for the current environment.
-    #
-    # @return [Boolean] true if auto-sync is enabled
-    def auto_sync_enabled?
-      return false unless defined?(Rails) && Rails.respond_to?(:env)
-
-      if Rails.env.development?
-        auto_sync_in_development
-      elsif Rails.env.production?
-        auto_sync_in_production
-      else
-        false
-      end
+      @available_models = {}
+      @provider_api_key_env_vars = {}
+      @prompt_generator_model = nil
+      @dataset_generator_model = nil
+      @llm_judge_model = nil
     end
 
     # Check if basic authentication is enabled.

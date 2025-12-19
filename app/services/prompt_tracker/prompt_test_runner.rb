@@ -124,8 +124,8 @@ module PromptTracker
       renderer = TemplateRenderer.new(prompt_version.template)
       rendered_prompt = renderer.render(prompt_test.template_variables)
 
-      # Get model config from test
-      model_config = prompt_test.model_config.with_indifferent_access
+      # Get model config from version (tests use the version's model config)
+      model_config = prompt_version.model_config.with_indifferent_access
       provider = model_config[:provider] || "openai"
       model = model_config[:model] || "gpt-4"
 

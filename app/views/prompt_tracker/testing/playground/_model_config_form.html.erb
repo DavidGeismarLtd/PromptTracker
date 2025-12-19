@@ -7,34 +7,80 @@
     </h5>
   </div>
   <div class="card-body">
+    <%
+      # Get available providers (only those with API keys)
+      all_available_models = PromptTracker.configuration.available_models
+      available_providers_list = @available_providers
+      current_provider = @version&.model_config&.dig('provider') || available_providers_list.first.to_s
+
+      # Build JSON data for JavaScript to use when switching providers
+      models_by_provider = {}
+      available_providers_list.each do |provider_key|
+        models_by_provider[provider_key.to_s] = all_available_models[provider_key].map do |model|
+          {
+            id: model[:id],
+            name: model[:name] || model[:id],
+            category: model[:category]
+          }
+        end
+      end
+    %>
     <div class="mb-3">
       <label for="model-provider" class="form-label">Provider</label>
       <select
         id="model-provider"
         class="form-select"
         data-playground-target="modelProvider"
-        data-action="change->playground#onModelConfigChange"
+        data-action="change->playground#onProviderChange"
+        data-models="<%= models_by_provider.to_json %>"
       >
-        <option value="openai" <%= 'selected' if @version&.model_config&.dig('provider') == 'openai' || @version&.model_config&.dig('provider').nil? %>>OpenAI</option>
-        <option value="anthropic" <%= 'selected' if @version&.model_config&.dig('provider') == 'anthropic' %>>Anthropic</option>
-        <option value="google" <%= 'selected' if @version&.model_config&.dig('provider') == 'google' %>>Google</option>
+        <% available_providers_list.each do |provider_key| %>
+          <% provider_name = provider_key.to_s.titleize %>
+          <option value="<%= provider_key %>" <%= 'selected' if current_provider == provider_key.to_s %>>
+            <%= provider_name %>
+          </option>
+        <% end %>
       </select>
-      <div class="form-text">LLM provider to use for API calls</div>
+      <div class="form-text">LLM provider to use for API calls. Only providers with configured API keys are shown.</div>
     </div>
 
     <div class="mb-3">
       <label for="model-name" class="form-label">Model</label>
-      <input
-        type="text"
+      <%
+        provider = @version&.model_config&.dig('provider') || current_provider
+        current_model = @version&.model_config&.dig('model')
+        models = PromptTracker.configuration.available_models[provider.to_sym] || []
+        # If no current model, use first available model from the provider
+        current_model ||= models.first&.dig(:id)
+      %>
+      <select
         id="model-name"
-        class="form-control"
-        placeholder="e.g., gpt-4, claude-3-opus-20240229"
-        value="<%= @version&.model_config&.dig('model') || 'gpt-4' %>"
+        class="form-select"
         data-playground-target="modelName"
-        data-action="input->playground#onModelConfigChange"
+        data-action="change->playground#onModelConfigChange"
       >
+        <% if models.any? %>
+          <% models.group_by { |m| m[:category] }.each do |category, models_in_category| %>
+            <% if category.present? %>
+              <optgroup label="<%= category %>">
+            <% end %>
+
+            <% models_in_category.each do |model| %>
+              <option value="<%= model[:id] %>"
+                      <%= 'selected' if current_model == model[:id] %>>
+                <%= model[:name] || model[:id] %>
+              </option>
+            <% end %>
+
+            <% if category.present? %>
+              </optgroup>
+            <% end %>
+          <% end %>
+        <% end %>
+      </select>
+
       <div class="form-text">
-        Model name (e.g., gpt-4, gpt-3.5-turbo, claude-3-opus-20240229)
+        Select a model from the configured list
       </div>
     </div>
 
@@ -144,4 +190,3 @@
     </div>
   </div>
 </div>
-

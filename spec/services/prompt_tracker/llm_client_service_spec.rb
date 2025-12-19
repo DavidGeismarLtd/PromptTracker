@@ -9,7 +9,7 @@ module PromptTracker
       let(:prompt) { "What is the capital of France?" }
       let(:model) { "gpt-4" }
       let(:temperature) { 0.7 }
-      let(:provider) { "openai" }  # Provider is now ignored - RubyLLM auto-detects
+      let(:provider) { "openai" }
 
       let(:chat_double) { double("RubyLLM::Chat") }
       let(:chat_with_temp_double) { double("RubyLLM::Chat with temperature") }
@@ -35,6 +35,65 @@ module PromptTracker
         allow(chat_double).to receive(:with_temperature).and_return(chat_with_temp_double)
         allow(chat_with_temp_double).to receive(:ask).and_return(response_double)
         allow(chat_double).to receive(:ask).and_return(response_double)
+      end
+
+      context "when provider is openai_assistants" do
+        let(:provider) { "openai_assistants" }
+        let(:assistant_id) { "asst_abc123" }
+        let(:assistant_response) do
+          {
+            text: "The weather is sunny.",
+            usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+            model: assistant_id,
+            raw: { thread_id: "thread_123", run_id: "run_456" }
+          }
+        end
+
+        it "routes to OpenaiAssistantService" do
+          allow(OpenaiAssistantService).to receive(:call).and_return(assistant_response)
+
+          result = described_class.call(
+            provider: provider,
+            model: assistant_id,
+            prompt: prompt
+          )
+
+          expect(OpenaiAssistantService).to have_received(:call).with(
+            assistant_id: assistant_id,
+            prompt: prompt,
+            timeout: 60
+          )
+          expect(result).to eq(assistant_response)
+        end
+      end
+
+      context "when model starts with asst_" do
+        let(:assistant_id) { "asst_xyz789" }
+        let(:assistant_response) do
+          {
+            text: "Assistant response",
+            usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 },
+            model: assistant_id,
+            raw: { thread_id: "thread_abc", run_id: "run_def" }
+          }
+        end
+
+        it "routes to OpenaiAssistantService even with different provider" do
+          allow(OpenaiAssistantService).to receive(:call).and_return(assistant_response)
+
+          result = described_class.call(
+            provider: "openai",  # Different provider
+            model: assistant_id,  # But model starts with asst_
+            prompt: prompt
+          )
+
+          expect(OpenaiAssistantService).to have_received(:call).with(
+            assistant_id: assistant_id,
+            prompt: prompt,
+            timeout: 60
+          )
+          expect(result).to eq(assistant_response)
+        end
       end
 
       it "calls RubyLLM.chat with model only" do

@@ -9,7 +9,6 @@
 #  enabled            :boolean          default(TRUE), not null
 #  id                 :bigint           not null, primary key
 #  metadata           :jsonb            not null
-#  model_config       :jsonb            not null
 #  name               :string           not null
 #  prompt_version_id  :bigint           not null
 #  tags               :jsonb            not null
@@ -20,15 +19,14 @@ module PromptTracker
   #
   # A PromptTest defines:
   # - Evaluators to run (both binary and scored modes)
-  # - Model configuration for LLM calls
   # - Test runs are executed against datasets (DatasetRow provides variables)
+  # - Uses the prompt_version's model_config for LLM calls
   #
   # @example Create a test with evaluators
   #   test = PromptTest.create!(
   #     prompt_version: version,
   #     name: "greeting_premium_user",
-  #     description: "Test greeting for premium customers",
-  #     model_config: { provider: "openai", model: "gpt-4" }
+  #     description: "Test greeting for premium customers"
   #   )
   #
   #   # Add evaluator
@@ -61,7 +59,6 @@ module PromptTracker
     # Validations
     validates :name, presence: true
     validates :name, uniqueness: { scope: :prompt_version_id }
-    validates :model_config, presence: true
 
     # Store configs JSON temporarily for after_save callback
     attr_accessor :evaluator_configs_json

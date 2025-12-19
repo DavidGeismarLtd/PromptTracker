@@ -179,6 +179,56 @@ export default class extends Controller {
     }
   }
 
+  // Action: Provider change - update model dropdown
+  onProviderChange() {
+    if (!this.hasModelProviderTarget || !this.hasModelNameTarget) return
+
+    const provider = this.modelProviderTarget.value
+    const modelsData = JSON.parse(this.modelProviderTarget.dataset.models || '{}')
+    const models = modelsData[provider] || []
+
+    // Clear current options
+    this.modelNameTarget.innerHTML = ''
+
+    // Group models by category
+    const modelsByCategory = {}
+    models.forEach(model => {
+      const category = model.category || 'Other'
+      if (!modelsByCategory[category]) {
+        modelsByCategory[category] = []
+      }
+      modelsByCategory[category].push(model)
+    })
+
+    // Add options grouped by category
+    Object.entries(modelsByCategory).forEach(([category, categoryModels]) => {
+      if (category && category !== 'Other') {
+        const optgroup = document.createElement('optgroup')
+        optgroup.label = category
+        categoryModels.forEach(model => {
+          const option = document.createElement('option')
+          option.value = model.id
+          option.textContent = model.name
+          optgroup.appendChild(option)
+        })
+        this.modelNameTarget.appendChild(optgroup)
+      } else {
+        // Add models without category directly
+        categoryModels.forEach(model => {
+          const option = document.createElement('option')
+          option.value = model.id
+          option.textContent = model.name
+          this.modelNameTarget.appendChild(option)
+        })
+      }
+    })
+
+    // Select first model
+    if (this.modelNameTarget.options.length > 0) {
+      this.modelNameTarget.selectedIndex = 0
+    }
+  }
+
   // Action: Model config change
   onModelConfigChange() {
     // Update temperature badge

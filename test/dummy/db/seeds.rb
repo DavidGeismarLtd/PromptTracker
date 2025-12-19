@@ -181,7 +181,6 @@ puts "  Creating sample tests..."
 test_greeting_premium = support_greeting_v3.prompt_tests.create!(
   name: "Premium Customer Greeting",
   description: "Test greeting for premium customers with billing issues",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "premium", "billing" ],
   enabled: true
 )
@@ -203,7 +202,6 @@ test_greeting_premium.evaluator_configs.create!(
 test_greeting_technical = support_greeting_v3.prompt_tests.create!(
   name: "Technical Support Greeting",
   description: "Test greeting for technical support inquiries",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "technical" ],
   enabled: true
 )
@@ -223,7 +221,6 @@ test_greeting_technical.evaluator_configs.create!(
 test_greeting_account = support_greeting_v3.prompt_tests.create!(
   name: "Account Issue Greeting",
   description: "Test greeting for account-related questions",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "account" ],
   enabled: true
 )
@@ -243,7 +240,6 @@ test_greeting_account.evaluator_configs.create!(
 test_greeting_general = support_greeting_v3.prompt_tests.create!(
   name: "General Inquiry Greeting",
   description: "Test greeting for general customer inquiries",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "general" ],
   enabled: true
 )
@@ -264,7 +260,6 @@ test_greeting_general.evaluator_configs.create!(
 test_greeting_edge = support_greeting_v3.prompt_tests.create!(
   name: "Edge Case - Very Long Name",
   description: "Test greeting with unusually long customer name",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "edge-case" ],
   enabled: false
 )
@@ -285,7 +280,6 @@ puts "  Creating advanced tests with multiple evaluators..."
 test_comprehensive_quality = support_greeting_v3.prompt_tests.create!(
   name: "Comprehensive Quality Check",
   description: "Tests greeting quality with multiple evaluators including LLM judge, length, and keyword checks",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "comprehensive", "quality", "critical" ],
   enabled: true
 )
@@ -340,7 +334,6 @@ test_comprehensive_quality.evaluator_configs.create!(
 test_email_format = email_summary_v1.prompt_tests.create!(
   name: "Email Summary Format Validation",
   description: "Validates email summary format with complex regex patterns",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.3 },
   tags: [ "format", "validation", "email" ],
   enabled: true
 )
@@ -395,7 +388,6 @@ test_email_format.evaluator_configs.create!(
 test_code_review_quality = code_review_v1.prompt_tests.create!(
   name: "Code Review Quality Assessment",
   description: "Tests code review feedback quality with LLM judge and keyword validation",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.4 },
   tags: [ "code-review", "quality", "technical" ],
   enabled: true
 )
@@ -451,7 +443,6 @@ test_code_review_quality.evaluator_configs.create!(
 test_exact_match = support_greeting_v3.prompt_tests.create!(
   name: "Exact Output Validation",
   description: "Tests for exact expected output with additional quality checks",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.7 },
   tags: [ "exact-match", "critical", "smoke" ],
   enabled: true
 )
@@ -505,7 +496,6 @@ test_exact_match.evaluator_configs.create!(
 test_technical_patterns = code_review_v1.prompt_tests.create!(
   name: "Technical Content Pattern Validation",
   description: "Validates technical content with complex regex patterns for code snippets, technical terms, and formatting",
-  model_config: { "provider" => "openai", "model" => "gpt-4o", "temperature" => 0.4 },
   tags: [ "technical", "complex-patterns", "code-review" ],
   enabled: true
 )

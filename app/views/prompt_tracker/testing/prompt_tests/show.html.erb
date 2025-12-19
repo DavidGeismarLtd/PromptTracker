@@ -82,8 +82,8 @@
         <h5 class="mb-0">Test Configuration</h5>
       </div>
       <div class="card-body">
-        <h6>Model Configuration</h6>
-        <pre class="bg-light p-3 rounded"><code><%= JSON.pretty_generate(@test.model_config) %></code></pre>
+        <h6>Model Configuration <small class="text-muted">(from version)</small></h6>
+        <pre class="bg-light p-3 rounded"><code><%= JSON.pretty_generate(@version.model_config) %></code></pre>
 
         <% if @test.metadata.present? && @test.metadata.any? %>
           <h6 class="mt-3">Metadata</h6>

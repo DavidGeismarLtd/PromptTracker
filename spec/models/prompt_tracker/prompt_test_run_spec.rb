@@ -27,8 +27,7 @@ module PromptTracker
     let(:prompt_test) do
       version.prompt_tests.create!(
         name: "greeting_test",
-        description: "Test greeting functionality",
-        model_config: { "provider" => "openai", "model" => "gpt-4" }
+        description: "Test greeting functionality"
       )
     end
 

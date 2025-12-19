@@ -38,9 +38,7 @@ module PromptTracker
 
     # GET /prompts/:prompt_id/versions/:prompt_version_id/tests/new
     def new
-      @test = @version.prompt_tests.build(
-        model_config: { provider: "openai", model: "gpt-4" }
-      )
+      @test = @version.prompt_tests.build
     end
 
     # POST /prompts/:prompt_id/versions/:prompt_version_id/tests

@@ -9,7 +9,6 @@
 #  enabled            :boolean          default(TRUE), not null
 #  id                 :bigint           not null, primary key
 #  metadata           :jsonb            not null
-#  model_config       :jsonb            not null
 #  name               :string           not null
 #  prompt_version_id  :bigint           not null
 #  tags               :jsonb            not null
@@ -21,7 +20,6 @@ FactoryBot.define do
 
     sequence(:name) { |n| "test_#{n}" }
     description { "Test description" }
-    model_config { { provider: "openai", model: "gpt-4", temperature: 0.7 } }
     enabled { true }
     metadata { {} }
   end

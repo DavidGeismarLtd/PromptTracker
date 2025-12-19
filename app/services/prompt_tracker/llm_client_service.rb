@@ -16,6 +16,10 @@ module PromptTracker
   # - Ollama (local models)
   # - And many more...
   #
+  # Also supports OpenAI Assistants API:
+  # - When provider is "openai_assistants", routes to OpenaiAssistantService
+  # - Assistant IDs start with "asst_"
+  #
   # @example Call any LLM
   #   response = LlmClientService.call(
   #     provider: "openai",
@@ -43,8 +47,8 @@ module PromptTracker
 
     # Call an LLM API
     #
-    # @param provider [String] the LLM provider (ignored - RubyLLM auto-detects from model name)
-    # @param model [String] the model name
+    # @param provider [String] the LLM provider (used to detect OpenAI Assistants)
+    # @param model [String] the model name or assistant ID
     # @param prompt [String] the prompt text
     # @param temperature [Float] the temperature (0.0-2.0)
     # @param max_tokens [Integer] maximum tokens to generate
@@ -52,6 +56,16 @@ module PromptTracker
     # @return [Hash] response with :text, :usage, :model, :raw keys
     # @raise [ApiError] if API call fails
     def self.call(provider:, model:, prompt:, temperature: 0.7, max_tokens: nil, **options)
+      # Route to OpenAI Assistants API if provider is openai_assistants
+      if provider.to_s == "openai_assistants" || model.to_s.start_with?("asst_")
+        return OpenaiAssistantService.call(
+          assistant_id: model,
+          prompt: prompt,
+          timeout: options[:timeout] || 60
+        )
+      end
+
+      # Standard chat completion via RubyLLM
       new(model: model, prompt: prompt, temperature: temperature, max_tokens: max_tokens, **options).call
     end
 

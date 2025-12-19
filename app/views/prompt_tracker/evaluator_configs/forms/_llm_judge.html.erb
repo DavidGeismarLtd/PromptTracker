@@ -14,27 +14,33 @@
 <!-- Judge Model -->
 <div class="mb-3">
   <label class="form-label">Judge Model</label>
+  <%
+    # Get all available models from configuration
+    all_models = PromptTracker.configuration.available_models
+  %>
   <select name="<%= namespace %>[judge_model]" class="form-select" required>
-    <% if provider_api_key_present?("openai") %>
-      <optgroup label="OpenAI">
-        <option value="gpt-4o" <%= 'selected' if judge_model == 'gpt-4o' %>>GPT-4o</option>
-        <option value="gpt-4" <%= 'selected' if judge_model == 'gpt-4' %>>GPT-4</option>
-        <option value="gpt-4-turbo" <%= 'selected' if judge_model == 'gpt-4-turbo' %>>GPT-4 Turbo</option>
-        <option value="gpt-3.5-turbo" <%= 'selected' if judge_model == 'gpt-3.5-turbo' %>>GPT-3.5 Turbo</option>
-      </optgroup>
-    <% end %>
-    <% if provider_api_key_present?("anthropic") %>
-      <optgroup label="Anthropic">
-        <option value="claude-3-opus" <%= 'selected' if judge_model == 'claude-3-opus' %>>Claude 3 Opus</option>
-        <option value="claude-3-sonnet" <%= 'selected' if judge_model == 'claude-3-sonnet' %>>Claude 3 Sonnet</option>
-        <option value="claude-3-haiku" <%= 'selected' if judge_model == 'claude-3-haiku' %>>Claude 3 Haiku</option>
-      </optgroup>
-    <% end %>
-    <% if provider_api_key_present?("google") %>
-      <optgroup label="Google">
-        <option value="gemini-pro" <%= 'selected' if judge_model == 'gemini-pro' %>>Gemini Pro</option>
-        <option value="gemini-ultra" <%= 'selected' if judge_model == 'gemini-ultra' %>>Gemini Ultra</option>
-      </optgroup>
+    <% all_models.each do |provider_key, models| %>
+      <% provider_name = provider_key.to_s.titleize %>
+      <% # Only show provider if API key is configured %>
+      <% if provider_api_key_present?(provider_key.to_s) %>
+        <% # Group models by category %>
+        <% models.group_by { |m| m[:category] }.each do |category, models_in_category| %>
+          <% if category.present? %>
+            <optgroup label="<%= provider_name %> - <%= category %>">
+          <% else %>
+            <optgroup label="<%= provider_name %>">
+          <% end %>
+
+          <% models_in_category.each do |model| %>
+            <option value="<%= model[:id] %>"
+                    <%= 'selected' if judge_model == model[:id] %>>
+              <%= model[:name] || model[:id] %>
+            </option>
+          <% end %>
+
+          </optgroup>
+        <% end %>
+      <% end %>
     <% end %>
   </select>
   <small class="form-text text-muted">

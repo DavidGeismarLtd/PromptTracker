@@ -9,7 +9,6 @@
 #  enabled            :boolean          default(TRUE), not null
 #  id                 :bigint           not null, primary key
 #  metadata           :jsonb            not null
-#  model_config       :jsonb            not null
 #  name               :string           not null
 #  prompt_version_id  :bigint           not null
 #  tags               :jsonb            not null
@@ -24,8 +23,7 @@ module PromptTracker
     let(:test) do
       create(:prompt_test,
              prompt_version: version,
-             name: "test_greeting",
-             model_config: { provider: "openai", model: "gpt-4" })
+             name: "test_greeting")
     end
 
     describe "associations" do
@@ -35,7 +33,6 @@ module PromptTracker
 
     describe "validations" do
       it { should validate_presence_of(:name) }
-      it { should validate_presence_of(:model_config) }
     end
 
     describe "scopes" do

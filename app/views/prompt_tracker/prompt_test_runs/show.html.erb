@@ -186,8 +186,8 @@
         <pre class="bg-light p-3 rounded"><code><%= JSON.pretty_generate(@test.template_variables) %></code></pre>
       </div>
       <div class="col-md-6">
-        <h6>Model Configuration</h6>
-        <pre class="bg-light p-3 rounded"><code><%= JSON.pretty_generate(@test.model_config) %></code></pre>
+        <h6>Model Configuration <small class="text-muted">(from version)</small></h6>
+        <pre class="bg-light p-3 rounded"><code><%= JSON.pretty_generate(@version.model_config) %></code></pre>
       </div>
     </div>
 

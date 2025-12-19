@@ -30,6 +30,7 @@ module PromptTracker
         @variables = []
       end
       @sample_variables = build_sample_variables(@variables)
+      @available_providers = helpers.available_providers
     end
 
     # POST /prompts/:prompt_id/playground/preview

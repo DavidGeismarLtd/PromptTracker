@@ -1,0 +1,160 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+module PromptTracker
+  RSpec.describe OpenaiAssistantService do
+    let(:assistant_id) { "asst_abc123" }
+    let(:prompt) { "What's the weather in Berlin?" }
+    let(:thread_id) { "thread_xyz789" }
+    let(:run_id) { "run_123456" }
+    let(:mock_client) { instance_double(OpenAI::Client) }
+
+    before do
+      # Mock OpenAI client
+      allow(OpenAI::Client).to receive(:new).and_return(mock_client)
+      ENV['OPENAI_API_KEY'] = 'test-api-key'
+    end
+
+    after do
+      ENV.delete('OPENAI_API_KEY')
+    end
+
+    describe '.call' do
+      it 'creates thread, runs assistant, and returns response' do
+        # Mock thread creation
+        expect(mock_client).to receive(:threads).and_return(
+          double(create: { 'id' => thread_id })
+        )
+
+        # Mock message creation
+        expect(mock_client).to receive(:messages).and_return(
+          double(
+            create: { 'id' => 'msg_123' },
+            list: {
+              'data' => [
+                {
+                  'content' => [
+                    { 'text' => { 'value' => 'The weather in Berlin is sunny.' } }
+                  ]
+                }
+              ]
+            }
+          )
+        )
+
+        # Mock run creation
+        expect(mock_client).to receive(:runs).and_return(
+          double(
+            create: { 'id' => run_id },
+            retrieve: {
+              'id' => run_id,
+              'status' => 'completed',
+              'usage' => {
+                'prompt_tokens' => 10,
+                'completion_tokens' => 20,
+                'total_tokens' => 30
+              }
+            }
+          )
+        )
+
+        response = described_class.call(
+          assistant_id: assistant_id,
+          prompt: prompt
+        )
+
+        expect(response[:text]).to eq('The weather in Berlin is sunny.')
+        expect(response[:usage][:prompt_tokens]).to eq(10)
+        expect(response[:usage][:completion_tokens]).to eq(20)
+        expect(response[:usage][:total_tokens]).to eq(30)
+        expect(response[:model]).to eq(assistant_id)
+        expect(response[:raw][:thread_id]).to eq(thread_id)
+        expect(response[:raw][:run_id]).to eq(run_id)
+      end
+
+      it 'raises error when API key is missing' do
+        ENV.delete('OPENAI_API_KEY')
+
+        expect {
+          described_class.call(assistant_id: assistant_id, prompt: prompt)
+        }.to raise_error(OpenaiAssistantService::AssistantError, /OPENAI_API_KEY/)
+      end
+
+      it 'raises error when run fails' do
+        expect(mock_client).to receive(:threads).and_return(
+          double(create: { 'id' => thread_id })
+        )
+
+        expect(mock_client).to receive(:messages).and_return(
+          double(create: { 'id' => 'msg_123' })
+        )
+
+        expect(mock_client).to receive(:runs).and_return(
+          double(
+            create: { 'id' => run_id },
+            retrieve: {
+              'id' => run_id,
+              'status' => 'failed',
+              'last_error' => { 'message' => 'Something went wrong' }
+            }
+          )
+        )
+
+        expect {
+          described_class.call(assistant_id: assistant_id, prompt: prompt)
+        }.to raise_error(OpenaiAssistantService::AssistantError, /failed/)
+      end
+
+      it 'raises error when run times out' do
+        expect(mock_client).to receive(:threads).and_return(
+          double(create: { 'id' => thread_id })
+        )
+
+        expect(mock_client).to receive(:messages).and_return(
+          double(create: { 'id' => 'msg_123' })
+        )
+
+        # Mock run that never completes
+        expect(mock_client).to receive(:runs).and_return(
+          double(
+            create: { 'id' => run_id },
+            retrieve: {
+              'id' => run_id,
+              'status' => 'in_progress'
+            }
+          )
+        )
+
+        # Use very short timeout for test
+        expect {
+          described_class.call(assistant_id: assistant_id, prompt: prompt, timeout: 1)
+        }.to raise_error(OpenaiAssistantService::AssistantError, /timed out/)
+      end
+
+      it 'raises error when run requires action (tool calls)' do
+        expect(mock_client).to receive(:threads).and_return(
+          double(create: { 'id' => thread_id })
+        )
+
+        expect(mock_client).to receive(:messages).and_return(
+          double(create: { 'id' => 'msg_123' })
+        )
+
+        expect(mock_client).to receive(:runs).and_return(
+          double(
+            create: { 'id' => run_id },
+            retrieve: {
+              'id' => run_id,
+              'status' => 'requires_action'
+            }
+          )
+        )
+
+        expect {
+          described_class.call(assistant_id: assistant_id, prompt: prompt)
+        }.to raise_error(OpenaiAssistantService::AssistantError, /requires action/)
+      end
+    end
+  end
+end

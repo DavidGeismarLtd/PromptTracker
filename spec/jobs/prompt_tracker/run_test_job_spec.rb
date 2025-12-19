@@ -35,7 +35,7 @@ module PromptTracker
     let(:test) do
       create(:prompt_test,
              prompt_version: version,
-             model_config: { provider: "openai", model: "gpt-4" })
+            )
     end
     let(:test_run) do
       create(:prompt_test_run,

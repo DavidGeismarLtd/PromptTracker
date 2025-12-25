@@ -64,6 +64,7 @@ module PromptTracker
       attr_accessor :skip_fetch_from_openai
 
       # Callbacks
+      after_initialize :set_default_metadata, if: :new_record?
       after_create :fetch_from_openai, unless: :skip_fetch_from_openai
 
       # Scopes
@@ -164,6 +165,11 @@ module PromptTracker
       end
 
       private
+
+      # Set default metadata for new records
+      def set_default_metadata
+        self.metadata ||= {}
+      end
 
       # Callback to fetch from OpenAI after creation
       def fetch_from_openai

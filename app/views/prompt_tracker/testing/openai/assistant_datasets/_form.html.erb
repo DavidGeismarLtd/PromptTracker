@@ -42,14 +42,19 @@
         <i class="bi bi-info-circle"></i>
         <strong>Fixed Schema for Assistants:</strong> All assistant datasets use the same schema with two fields:
         <ul class="mb-0 mt-2">
-          <li><code>user_prompt</code> (string, required) - The initial user message</li>
+          <li><code>interlocutor_simulation_prompt</code> (string, required) - A simulation prompt describing the persona, scenario, and behavior of the simulated user. This will be used by an LLM to generate realistic conversational messages.</li>
           <li><code>max_turns</code> (integer, optional) - Maximum conversation turns (default: 3)</li>
         </ul>
       </div>
 
       <%= f.hidden_field :schema, value: [
-        { "name" => "user_prompt", "type" => "string", "required" => true },
-        { "name" => "max_turns", "type" => "integer", "required" => false }
+        {
+          "name" => "interlocutor_simulation_prompt",
+          "type" => "string",
+          "required" => true,
+          "description" => "A simulation prompt that describes the persona, scenario, and behavior of the simulated user/interlocutor. This prompt will be given to an LLM that will generate realistic conversational messages based on it throughout the conversation. DO NOT write actual user messages here - instead, describe WHO the user is, WHAT situation they're in, and HOW they should behave.\n\nGOOD EXAMPLES:\n• \"You are a 35-year-old patient experiencing severe tinnitus after attending a loud concert. You're worried about permanent hearing damage and want to know if you need immediate treatment. Be concerned but cooperative.\"\n• \"You are a parent of a 7-year-old child with recurring ear infections. You're frustrated with previous treatments and skeptical about antibiotics. Ask detailed questions and express your concerns about overmedication.\"\n• \"You are a musician who relies on your hearing for your career. You've noticed gradual hearing loss over the past year. You're anxious and need clear, actionable advice. Be direct and ask follow-up questions.\"\n\nBAD EXAMPLES (these are actual messages, not simulation prompts):\n• \"I have ringing in my ears after a concert. What should I do?\"\n• \"My child keeps getting ear infections.\"\n• \"Can you help me with my hearing loss?\""
+        },
+        { "name" => "max_turns", "type" => "integer", "required" => false, "description" => "Maximum number of conversation turns (default: 3)" }
       ].to_json %>
     </div>
   </div>
@@ -59,4 +64,3 @@
     <%= link_to "Cancel", dataset.persisted? ? testing_openai_assistant_dataset_path(assistant, dataset) : testing_openai_assistant_datasets_path(assistant), class: "btn btn-outline-secondary" %>
   </div>
 <% end %>
-

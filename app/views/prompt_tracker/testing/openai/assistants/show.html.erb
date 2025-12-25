@@ -33,14 +33,14 @@
         <% end %>
       </div>
       <div class="d-flex gap-2 align-items-start">
+        <%= link_to testing_openai_assistant_playground_path(@assistant), class: "btn btn-primary" do %>
+          <i class="bi bi-pencil-square"></i> Edit in Playground
+        <% end %>
         <%= link_to testing_openai_assistant_datasets_path(@assistant), class: "btn btn-outline-primary" do %>
           <i class="bi bi-database"></i> Datasets
         <% end %>
         <%= button_to sync_testing_openai_assistant_path(@assistant), method: :post, class: "btn btn-outline-secondary" do %>
           <i class="bi bi-arrow-repeat"></i> Sync from OpenAI
-        <% end %>
-        <%= link_to edit_testing_openai_assistant_path(@assistant), class: "btn btn-primary" do %>
-          <i class="bi bi-pencil-square"></i> Edit
         <% end %>
       </div>
     </div>

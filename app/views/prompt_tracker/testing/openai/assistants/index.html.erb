@@ -12,8 +12,8 @@
     <p class="text-muted">Manage and test OpenAI Assistants</p>
   </div>
   <div class="col-auto">
-    <%= link_to new_testing_openai_assistant_path, class: "btn btn-primary" do %>
-      <i class="bi bi-plus-circle"></i> Add Assistant
+    <%= link_to testing_openai_new_assistant_playground_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-circle"></i> Create Assistant
     <% end %>
   </div>
 </div>
@@ -87,7 +87,7 @@
                 </td>
                 <td>
                   <%= link_to "View", testing_openai_assistant_path(assistant), class: "btn btn-sm btn-outline-primary" %>
-                  <%= link_to "Edit", edit_testing_openai_assistant_path(assistant), class: "btn btn-sm btn-outline-secondary" %>
+                  <%= link_to "Edit", testing_openai_assistant_playground_path(assistant), class: "btn btn-sm btn-outline-secondary" %>
                 </td>
               </tr>
             <% end %>
@@ -103,7 +103,7 @@
       <div class="text-center py-5">
         <i class="bi bi-robot" style="font-size: 3rem; color: #ccc;"></i>
         <p class="text-muted mt-3">No assistants found.</p>
-        <%= link_to "Add your first assistant", new_testing_openai_assistant_path, class: "btn btn-primary" %>
+        <%= link_to "Create your first assistant", testing_openai_new_assistant_playground_path, class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>

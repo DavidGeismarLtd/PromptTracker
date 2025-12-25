@@ -23,7 +23,7 @@ module PromptTracker
   # and validates that its schema matches the testable's expected schema.
   #
   # For PromptVersions: schema matches variables_schema
-  # For Assistants: schema includes user_prompt, max_turns, etc.
+  # For Assistants: schema includes interlocutor_simulation_prompt, max_turns, etc.
   #
   # @example Create a dataset for a PromptVersion
   #   dataset = Dataset.create!(
@@ -39,14 +39,14 @@ module PromptTracker
   #     name: "headache_scenarios",
   #     description: "Different headache complaint scenarios",
   #     schema: [
-  #       { "name" => "user_prompt", "type" => "string", "required" => true },
+  #       { "name" => "interlocutor_simulation_prompt", "type" => "string", "required" => true },
   #       { "name" => "max_turns", "type" => "integer", "required" => false }
   #     ]
   #   )
   #
   # @example Add rows to dataset
   #   dataset.dataset_rows.create!(
-  #     row_data: { user_prompt: "I have a severe headache...", max_turns: 10 },
+  #     row_data: { interlocutor_simulation_prompt: "You are a patient with a severe headache...", max_turns: 10 },
   #     source: "manual"
   #   )
   #
@@ -106,7 +106,7 @@ module PromptTracker
       when Openai::Assistant
         # Assistants have a fixed schema for conversation scenarios
         [
-          { "name" => "user_prompt", "type" => "string", "required" => true },
+          { "name" => "interlocutor_simulation_prompt", "type" => "string", "required" => true },
           { "name" => "max_turns", "type" => "integer", "required" => false }
         ]
       else
@@ -115,7 +115,7 @@ module PromptTracker
 
       return false if expected_schema.blank?
 
-      # Schema is valid if it matches the expected schema
+      # Schema is valid if it matches the expected schema (excluding description field)
       normalize_schema(schema) == normalize_schema(expected_schema)
     end
 
@@ -137,7 +137,7 @@ module PromptTracker
         testable.variables_schema
       when Openai::Assistant
         [
-          { "name" => "user_prompt", "type" => "string", "required" => true },
+          { "name" => "interlocutor_simulation_prompt", "type" => "string", "required" => true },
           { "name" => "max_turns", "type" => "integer", "required" => false }
         ]
       else
@@ -162,12 +162,19 @@ module PromptTracker
       end
     end
 
-    # Normalize schema for comparison (sort by name)
+    # Normalize schema for comparison (sort by name, exclude description)
     def normalize_schema(schema_array)
       return [] if schema_array.blank?
       return [] unless schema_array.is_a?(Array)
 
-      schema_array.sort_by { |var| var["name"] }
+      # Extract only name, type, and required fields for comparison (ignore description)
+      schema_array.map do |var|
+        {
+          "name" => var["name"],
+          "type" => var["type"],
+          "required" => var["required"]
+        }
+      end.sort_by { |var| var["name"] }
     end
   end
 end

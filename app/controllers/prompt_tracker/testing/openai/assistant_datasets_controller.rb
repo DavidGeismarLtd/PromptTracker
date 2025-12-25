@@ -6,7 +6,7 @@ module PromptTracker
       # Controller for managing datasets for OpenAI Assistants in the Testing section
       #
       # Datasets for assistants contain conversation scenarios with:
-      # - user_prompt: The initial user message
+      # - interlocutor_simulation_prompt: A prompt that describes the persona, scenario, and behavior of the simulated user
       # - max_turns: Maximum conversation turns (optional)
       #
       class AssistantDatasetsController < ApplicationController
@@ -23,8 +23,13 @@ module PromptTracker
           @dataset = @assistant.datasets.build
           # Set default schema for assistants
           @dataset.schema = [
-            { "name" => "user_prompt", "type" => "string", "required" => true },
-            { "name" => "max_turns", "type" => "integer", "required" => false }
+            {
+              "name" => "interlocutor_simulation_prompt",
+              "type" => "string",
+              "required" => true,
+              "description" => "A simulation prompt that describes the persona, scenario, and behavior of the simulated user/interlocutor. This prompt will be given to an LLM that will generate realistic conversational messages based on it throughout the conversation. DO NOT write actual user messages here - instead, describe WHO the user is, WHAT situation they're in, and HOW they should behave.\n\nGOOD EXAMPLES:\n• \"You are a 35-year-old patient experiencing severe tinnitus after attending a loud concert. You're worried about permanent hearing damage and want to know if you need immediate treatment. Be concerned but cooperative.\"\n• \"You are a parent of a 7-year-old child with recurring ear infections. You're frustrated with previous treatments and skeptical about antibiotics. Ask detailed questions and express your concerns about overmedication.\"\n• \"You are a musician who relies on your hearing for your career. You've noticed gradual hearing loss over the past year. You're anxious and need clear, actionable advice. Be direct and ask follow-up questions.\"\n\nBAD EXAMPLES (these are actual messages, not simulation prompts):\n• \"I have ringing in my ears after a concert. What should I do?\"\n• \"My child keeps getting ear infections.\"\n• \"Can you help me with my hearing loss?\""
+            },
+            { "name" => "max_turns", "type" => "integer", "required" => false, "description" => "Maximum number of conversation turns (default: 3)" }
           ]
         end
 
@@ -41,8 +46,13 @@ module PromptTracker
           # Ensure schema is set for assistants
           if @dataset.schema.blank?
             @dataset.schema = [
-              { "name" => "user_prompt", "type" => "string", "required" => true },
-              { "name" => "max_turns", "type" => "integer", "required" => false }
+              {
+                "name" => "interlocutor_simulation_prompt",
+                "type" => "string",
+                "required" => true,
+                "description" => "A simulation prompt that describes the persona, scenario, and behavior of the simulated user/interlocutor. This prompt will be given to an LLM that will generate realistic conversational messages based on it throughout the conversation. DO NOT write actual user messages here - instead, describe WHO the user is, WHAT situation they're in, and HOW they should behave.\n\nGOOD EXAMPLES:\n• \"You are a 35-year-old patient experiencing severe tinnitus after attending a loud concert. You're worried about permanent hearing damage and want to know if you need immediate treatment. Be concerned but cooperative.\"\n• \"You are a parent of a 7-year-old child with recurring ear infections. You're frustrated with previous treatments and skeptical about antibiotics. Ask detailed questions and express your concerns about overmedication.\"\n• \"You are a musician who relies on your hearing for your career. You've noticed gradual hearing loss over the past year. You're anxious and need clear, actionable advice. Be direct and ask follow-up questions.\"\n\nBAD EXAMPLES (these are actual messages, not simulation prompts):\n• \"I have ringing in my ears after a concert. What should I do?\"\n• \"My child keeps getting ear infections.\"\n• \"Can you help me with my hearing loss?\""
+              },
+              { "name" => "max_turns", "type" => "integer", "required" => false, "description" => "Maximum number of conversation turns (default: 3)" }
             ]
           end
 

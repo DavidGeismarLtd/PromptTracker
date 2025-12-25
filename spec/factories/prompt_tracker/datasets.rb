@@ -24,7 +24,7 @@ FactoryBot.define do
           dataset.schema = dataset.testable.variables_schema if dataset.testable.variables_schema.present?
         elsif dataset.testable.is_a?(PromptTracker::Openai::Assistant)
           dataset.schema = [
-            { "name" => "user_prompt", "type" => "string", "required" => true },
+            { "name" => "interlocutor_simulation_prompt", "type" => "string", "required" => true },
             { "name" => "max_turns", "type" => "integer", "required" => false }
           ]
         end
@@ -41,7 +41,7 @@ FactoryBot.define do
       association :testable, factory: :openai_assistant
       after(:build) do |dataset|
         dataset.schema = [
-          { "name" => "user_prompt", "type" => "string", "required" => true },
+          { "name" => "interlocutor_simulation_prompt", "type" => "string", "required" => true },
           { "name" => "max_turns", "type" => "integer", "required" => false }
         ]
       end
@@ -56,15 +56,15 @@ FactoryBot.define do
     trait :with_assistant_rows do
       after(:create) do |dataset|
         create(:dataset_row, dataset: dataset, row_data: {
-          user_prompt: "I have a severe headache",
+          interlocutor_simulation_prompt: "You are a patient experiencing a severe headache. You're worried it might be a migraine. Be concerned and ask for advice.",
           max_turns: 3
         })
         create(:dataset_row, dataset: dataset, row_data: {
-          user_prompt: "I'm feeling anxious",
+          interlocutor_simulation_prompt: "You are a person feeling anxious about an upcoming medical procedure. You want reassurance and information. Be nervous but cooperative.",
           max_turns: 5
         })
         create(:dataset_row, dataset: dataset, row_data: {
-          user_prompt: "I can't sleep at night",
+          interlocutor_simulation_prompt: "You are a patient who can't sleep at night due to stress. You're looking for non-medication solutions. Be tired and seeking practical advice.",
           max_turns: 4
         })
       end

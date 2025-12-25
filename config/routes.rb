@@ -68,9 +68,21 @@ PromptTracker::Engine.routes.draw do
 
     # OpenAI Assistants
     namespace :openai do
-      resources :assistants, only: [ :index, :show, :new, :create, :edit, :update, :destroy ] do
+      # Standalone playground route for creating new assistants
+      get "assistants/playground/new", to: "assistant_playground#new", as: "new_assistant_playground"
+
+      resources :assistants, only: [ :index, :show, :destroy ] do
         member do
           post :sync # Sync assistant from OpenAI API
+        end
+
+        # Playground for editing existing assistants
+        resource :playground, only: [ :show ], controller: "assistant_playground" do
+          post :create_assistant    # Create new assistant via API
+          post :update_assistant    # Update existing assistant via API
+          post :send_message        # Send message in thread
+          post :create_thread       # Create new thread
+          get  :load_messages       # Load thread messages
         end
 
         # Tests nested under assistants

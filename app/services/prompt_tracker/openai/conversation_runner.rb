@@ -261,7 +261,7 @@ module PromptTracker
         text_blocks.map { |block| block.dig("text", "value") }.join("\n")
       end
 
-      # Generate the initial user message using LLM
+      # Generate initial user message using LLM based on the interlocutor simulation prompt
       #
       # @return [String] the first user message
       def generate_initial_user_message

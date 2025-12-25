@@ -5,7 +5,7 @@ module PromptTracker
     module Openai
       # Controller for managing OpenAI Assistants in the Testing section
       class AssistantsController < ApplicationController
-        before_action :set_assistant, only: [ :show, :edit, :update, :destroy, :sync ]
+        before_action :set_assistant, only: [ :show, :destroy, :sync ]
 
         # GET /testing/openai/assistants
         # List all assistants with search and filtering
@@ -59,41 +59,6 @@ module PromptTracker
           test_evaluations = Evaluation.joins(test_run: :test)
                                        .where(prompt_tracker_tests: { testable_type: "PromptTracker::Openai::Assistant", testable_id: @assistant.id })
           @avg_score = test_evaluations.any? ? test_evaluations.average(:score) : nil
-        end
-
-        # GET /testing/openai/assistants/new
-        # Form to create a new assistant
-        def new
-          @assistant = PromptTracker::Openai::Assistant.new
-        end
-
-        # POST /testing/openai/assistants
-        # Create a new assistant
-        def create
-          @assistant = PromptTracker::Openai::Assistant.new(assistant_params)
-
-          if @assistant.save
-            redirect_to testing_openai_assistant_path(@assistant),
-                        notice: "Assistant created successfully."
-          else
-            render :new, status: :unprocessable_entity
-          end
-        end
-
-        # GET /testing/openai/assistants/:id/edit
-        # Form to edit an assistant
-        def edit
-        end
-
-        # PATCH/PUT /testing/openai/assistants/:id
-        # Update an assistant
-        def update
-          if @assistant.update(assistant_params)
-            redirect_to testing_openai_assistant_path(@assistant),
-                        notice: "Assistant updated successfully."
-          else
-            render :edit, status: :unprocessable_entity
-          end
         end
 
         # DELETE /testing/openai/assistants/:id

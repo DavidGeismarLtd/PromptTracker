@@ -10,7 +10,7 @@ module PromptTracker
       let(:dataset) { create(:dataset, :for_assistant, testable: assistant) }
       let(:dataset_row) do
         create(:dataset_row, dataset: dataset, row_data: {
-          user_prompt: "I have a severe headache",
+          interlocutor_simulation_prompt: "You are a patient experiencing a severe headache. You're worried it might be a migraine. Be concerned and ask for advice.",
           max_turns: 3
         })
       end
@@ -111,14 +111,14 @@ module PromptTracker
           expect(test_run.error_message).to include("API Error")
         end
 
-        it "raises error if dataset_row has no user_prompt" do
+        it "raises error if dataset_row has no interlocutor_simulation_prompt" do
           # Create an invalid row by bypassing validation
           invalid_row = build(:dataset_row, dataset: dataset, row_data: { max_turns: 3 })
           invalid_row.save(validate: false)
 
           expect {
             runner.run!(dataset_row: invalid_row)
-          }.to raise_error(ArgumentError, /must have user_prompt/)
+          }.to raise_error(ArgumentError, /interlocutor_simulation_prompt/)
         end
       end
 

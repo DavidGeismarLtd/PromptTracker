@@ -83,11 +83,13 @@ module PromptTracker
           it "sets the correct schema for assistants" do
             post :create, params: valid_params
             dataset = Dataset.last
-            expected_schema = [
-              { "name" => "user_prompt", "type" => "string", "required" => true },
-              { "name" => "max_turns", "type" => "integer", "required" => false }
-            ]
-            expect(dataset.schema).to eq(expected_schema)
+            expect(dataset.schema.length).to eq(2)
+            expect(dataset.schema[0]["name"]).to eq("interlocutor_simulation_prompt")
+            expect(dataset.schema[0]["type"]).to eq("string")
+            expect(dataset.schema[0]["required"]).to eq(true)
+            expect(dataset.schema[1]["name"]).to eq("max_turns")
+            expect(dataset.schema[1]["type"]).to eq("integer")
+            expect(dataset.schema[1]["required"]).to eq(false)
           end
 
           it "redirects to dataset show page" do

@@ -19,30 +19,40 @@ module PromptTracker
           )
 
           if @row.save
-            redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset),
-                        notice: "Row added successfully."
+            respond_to do |format|
+              format.html { redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset), notice: "Row added successfully." }
+              format.turbo_stream { flash.now[:notice] = "Row added successfully." }
+            end
           else
-            redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset),
-                        alert: "Failed to add row: #{@row.errors.full_messages.join(', ')}"
+            respond_to do |format|
+              format.html { redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset), alert: "Failed to add row: #{@row.errors.full_messages.join(', ')}" }
+              format.turbo_stream { render turbo_stream: turbo_stream.update("generation-status", partial: "prompt_tracker/shared/alert", locals: { type: "danger", message: "Failed to add row: #{@row.errors.full_messages.join(', ')}" }) }
+            end
           end
         end
 
         # PATCH/PUT /testing/openai/assistants/:assistant_id/datasets/:dataset_id/rows/:id
         def update
           if @row.update(row_data: params[:row_data].to_unsafe_h)
-            redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset),
-                        notice: "Row updated successfully."
+            respond_to do |format|
+              format.html { redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset), notice: "Row updated successfully." }
+              format.turbo_stream { flash.now[:notice] = "Row updated successfully." }
+            end
           else
-            redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset),
-                        alert: "Failed to update row: #{@row.errors.full_messages.join(', ')}"
+            respond_to do |format|
+              format.html { redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset), alert: "Failed to update row: #{@row.errors.full_messages.join(', ')}" }
+              format.turbo_stream { render turbo_stream: turbo_stream.update("generation-status", partial: "prompt_tracker/shared/alert", locals: { type: "danger", message: "Failed to update row: #{@row.errors.full_messages.join(', ')}" }) }
+            end
           end
         end
 
         # DELETE /testing/openai/assistants/:assistant_id/datasets/:dataset_id/rows/:id
         def destroy
           @row.destroy
-          redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset),
-                      notice: "Row deleted successfully."
+          respond_to do |format|
+            format.html { redirect_to testing_openai_assistant_dataset_path(@assistant, @dataset), notice: "Row deleted successfully." }
+            format.turbo_stream { flash.now[:notice] = "Row deleted successfully." }
+          end
         end
 
         private

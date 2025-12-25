@@ -98,7 +98,7 @@ module PromptTracker
       elsif test_run.metadata.dig("custom_variables").present?
         # Custom mode: extract from metadata
         custom_vars = test_run.metadata["custom_variables"].with_indifferent_access
-        interlocutor_prompt = custom_vars[:user_prompt] || custom_vars["user_prompt"]
+        interlocutor_prompt = custom_vars[:interlocutor_simulation_prompt] || custom_vars["interlocutor_simulation_prompt"]
         max_turns = custom_vars[:max_turns] || custom_vars["max_turns"] || 3
       else
         raise ArgumentError, "Assistant test requires either dataset_row or custom_variables"

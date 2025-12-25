@@ -43,31 +43,31 @@ medical_dataset = PromptTracker::Dataset.create!(
 medical_dataset.dataset_rows.create!([
   {
     row_data: {
-      "user_prompt" => "I have a severe headache and sensitivity to light",
+      "interlocutor_simulation_prompt" => "You are a patient experiencing a severe headache with sensitivity to light. You're worried it might be a migraine or something more serious. Be concerned but cooperative, and answer questions about duration and severity.",
       "max_turns" => 3
     }
   },
   {
     row_data: {
-      "user_prompt" => "I've had a fever of 102°F for 2 days",
+      "interlocutor_simulation_prompt" => "You are a patient who has had a fever of 102°F for 2 days. You're feeling weak and concerned. You want to know if you should go to the emergency room or if you can wait to see your regular doctor.",
       "max_turns" => 4
     }
   },
   {
     row_data: {
-      "user_prompt" => "I have chest pain that comes and goes",
+      "interlocutor_simulation_prompt" => "You are a middle-aged patient experiencing chest pain that comes and goes. You're anxious about whether this could be heart-related. Be worried and ask direct questions about urgency.",
       "max_turns" => 2
     }
   },
   {
     row_data: {
-      "user_prompt" => "I've had a persistent cough for a week",
+      "interlocutor_simulation_prompt" => "You are a patient with a persistent cough that has lasted for a week. You're a non-smoker and wondering if it could be COVID or something else. Be curious and ask about home remedies.",
       "max_turns" => 4
     }
   },
   {
     row_data: {
-      "user_prompt" => "I have abdominal pain after eating",
+      "interlocutor_simulation_prompt" => "You are a patient experiencing abdominal pain after eating. You suspect it might be related to certain foods. Be detailed about your symptoms and ask for dietary advice.",
       "max_turns" => 3
     }
   }
@@ -138,31 +138,31 @@ support_dataset = PromptTracker::Dataset.create!(
 support_dataset.dataset_rows.create!([
   {
     row_data: {
-      "user_prompt" => "I can't log into my account",
+      "interlocutor_simulation_prompt" => "You are a frustrated customer who can't log into your account. You've tried resetting your password multiple times. Be impatient but willing to follow troubleshooting steps.",
       "max_turns" => 4
     }
   },
   {
     row_data: {
-      "user_prompt" => "I was charged twice for my subscription",
+      "interlocutor_simulation_prompt" => "You are an upset customer who was charged twice for your subscription. You want a refund immediately. Be firm but professional, and ask for confirmation of the refund.",
       "max_turns" => 3
     }
   },
   {
     row_data: {
-      "user_prompt" => "How do I export my data?",
+      "interlocutor_simulation_prompt" => "You are a customer who needs to export your data before switching to a competitor. Be polite but direct, and ask about data formats and privacy.",
       "max_turns" => 3
     }
   },
   {
     row_data: {
-      "user_prompt" => "The app keeps crashing when I try to upload files",
+      "interlocutor_simulation_prompt" => "You are a customer experiencing app crashes when uploading files. You're on a deadline and getting increasingly frustrated. Provide technical details when asked.",
       "max_turns" => 5
     }
   },
   {
     row_data: {
-      "user_prompt" => "I want to cancel my subscription",
+      "interlocutor_simulation_prompt" => "You are a customer who wants to cancel your subscription because you found a cheaper alternative. Be open to retention offers but firm about canceling if not satisfied.",
       "max_turns" => 4
     }
   }
@@ -233,31 +233,31 @@ tech_dataset = PromptTracker::Dataset.create!(
 tech_dataset.dataset_rows.create!([
   {
     row_data: {
-      "user_prompt" => "Our API is returning 500 errors intermittently",
+      "interlocutor_simulation_prompt" => "You are a backend developer reporting that your API is returning 500 errors intermittently. You've checked the logs but can't find a pattern. Be technical and provide details when asked about error rates, endpoints affected, and recent changes.",
       "max_turns" => 5
     }
   },
   {
     row_data: {
-      "user_prompt" => "The application is running very slowly since yesterday",
+      "interlocutor_simulation_prompt" => "You are a DevOps engineer noticing that the application has been running very slowly since yesterday. You suspect it might be database-related. Be methodical and willing to run diagnostic commands.",
       "max_turns" => 4
     }
   },
   {
     row_data: {
-      "user_prompt" => "I'm getting 'connection refused' when trying to connect to the database",
+      "interlocutor_simulation_prompt" => "You are a developer getting 'connection refused' errors when trying to connect to the database. You're working on a tight deadline and need a quick resolution. Be stressed but cooperative.",
       "max_turns" => 4
     }
   },
   {
     row_data: {
-      "user_prompt" => "Our deployment failed with a cryptic error message",
+      "interlocutor_simulation_prompt" => "You are a DevOps engineer whose deployment just failed with a cryptic error message. You've tried redeploying twice with the same result. Be frustrated and provide the error message when asked.",
       "max_turns" => 5
     }
   },
   {
     row_data: {
-      "user_prompt" => "Users are reporting authentication errors after login",
+      "interlocutor_simulation_prompt" => "You are a product manager reporting that users are experiencing authentication errors after login. This started after a recent deployment. Be concerned about user impact and ask about rollback options.",
       "max_turns" => 4
     }
   }

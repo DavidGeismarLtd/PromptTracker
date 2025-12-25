@@ -86,12 +86,32 @@ module PromptTracker
 
     # Broadcast prepend to dataset rows table
     def broadcast_prepend_to_dataset
+      partial_path, locals = row_partial_and_locals
+
       broadcast_prepend_to(
         "dataset_#{dataset_id}_rows",
         target: "dataset-rows",
-        partial: "prompt_tracker/testing/datasets/row",
-        locals: { row: self, index: dataset.dataset_rows.count, dataset: dataset }
+        partial: partial_path,
+        locals: locals
       )
+
+      # Update row count
+      broadcast_update_to(
+        "dataset_#{dataset_id}_rows",
+        target: "dataset-row-count",
+        html: dataset.dataset_rows.count.to_s
+      )
+
+      # Broadcast the edit modal for this new row (for assistant datasets)
+      if dataset.testable.is_a?(PromptTracker::Openai::Assistant)
+        assistant = dataset.testable
+        broadcast_append_to(
+          "dataset_#{dataset_id}_rows",
+          target: "edit-modals-container",
+          partial: "prompt_tracker/testing/openai/assistant_datasets/edit_row_modal",
+          locals: { dataset_row: self, assistant: assistant, dataset: dataset }
+        )
+      end
 
       # Remove empty state if this is the first row
       if dataset.dataset_rows.count == 1
@@ -104,11 +124,13 @@ module PromptTracker
 
     # Broadcast replace to dataset rows table
     def broadcast_replace_to_dataset
+      partial_path, locals = row_partial_and_locals
+
       broadcast_replace_to(
         "dataset_#{dataset_id}_rows",
         target: "dataset-row-#{id}",
-        partial: "prompt_tracker/testing/datasets/row",
-        locals: { row: self, index: dataset.dataset_rows.where("id <= ?", id).count, dataset: dataset }
+        partial: partial_path,
+        locals: locals
       )
     end
 
@@ -118,6 +140,41 @@ module PromptTracker
         "dataset_#{dataset_id}_rows",
         target: "dataset-row-#{id}"
       )
+
+      # Update row count
+      broadcast_update_to(
+        "dataset_#{dataset_id}_rows",
+        target: "dataset-row-count",
+        html: dataset.dataset_rows.count.to_s
+      )
+
+      # Remove the edit modal for this row (for assistant datasets)
+      if dataset.testable.is_a?(PromptTracker::Openai::Assistant)
+        broadcast_remove_to(
+          "dataset_#{dataset_id}_rows",
+          target: "editRowModal-#{id}"
+        )
+      end
+    end
+
+    # Get the correct partial path and locals based on testable type
+    def row_partial_and_locals
+      if dataset.testable.is_a?(PromptTracker::Openai::Assistant)
+        # For assistant datasets
+        assistant = dataset.testable
+        # Calculate index based on creation order
+        index = dataset.dataset_rows.where("id <= ?", id).count
+        [
+          "prompt_tracker/testing/openai/assistant_datasets/dataset_row",
+          { dataset_row: self, assistant: assistant, dataset: dataset, index: index }
+        ]
+      else
+        # For prompt version datasets
+        [
+          "prompt_tracker/testing/datasets/row",
+          { row: self, index: dataset.dataset_rows.where("id <= ?", id).count, dataset: dataset }
+        ]
+      end
     end
 
     # Validate that row_data is a hash

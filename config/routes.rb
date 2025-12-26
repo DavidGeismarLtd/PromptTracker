@@ -38,7 +38,7 @@ PromptTracker::Engine.routes.draw do
         end
 
         # Tests nested under prompt versions
-        resources :tests, only: [ :index, :new, :create, :show, :edit, :update, :destroy ] do
+        resources :tests, only: [:create,  :update, :destroy ] do
           collection do
             post :run_all
           end
@@ -86,7 +86,7 @@ PromptTracker::Engine.routes.draw do
         end
 
         # Tests nested under assistants
-        resources :tests, controller: "assistant_tests", only: [ :index, :new, :create, :show, :edit, :update, :destroy ] do
+        resources :tests, controller: "assistant_tests", only: [ :create, :show, :update, :destroy ] do
           collection do
             post :run_all
           end

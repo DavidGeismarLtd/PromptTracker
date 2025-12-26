@@ -71,7 +71,7 @@ module PromptTracker
         Rails.logger.info "✅ ConversationRunner: Got assistant response (turn 1)"
 
         # Continue conversation for remaining turns
-        (2..max_turns).each do |turn|
+        (2..max_turns.to_i).each do |turn|
           Rails.logger.info "🔄 ConversationRunner: Starting turn #{turn}..."
 
           # Generate next user message based on conversation history

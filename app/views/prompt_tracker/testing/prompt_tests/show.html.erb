@@ -18,7 +18,7 @@
     <p class="text-muted"><%= @test.description %></p>
   </div>
   <div class="col-auto d-flex gap-2">
-    <%= link_to edit_testing_prompt_prompt_version_prompt_test_path(@prompt, @version, @test), class: "btn btn-outline-secondary" do %>
+    <%= link_to edit_testing_prompt_prompt_version_test_path(@prompt, @version, @test), class: "btn btn-outline-secondary" do %>
       <i class="bi bi-pencil"></i> Edit
     <% end %>
     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#runTestModal-<%= @test.id %>">
@@ -27,7 +27,18 @@
   </div>
 </div>
 
-<%= render "prompt_tracker/testing/prompt_tests/run_test_modal", test: @test, prompt: @prompt, version: @version %>
+<%= render "prompt_tracker/testing/tests/run_test_modal",
+    testable: @version,
+    test: @test,
+    form_url: run_testing_prompt_prompt_version_test_path(@prompt, @version, @test),
+    modal_id: "runTestModal-#{@test.id}",
+    modal_title: "Run Test: #{@test.name}",
+    submit_button_text: "Run Test",
+    datasets_path: testing_prompt_prompt_version_datasets_path(@prompt, @version),
+    intro_text: "Choose how to run this test:",
+    dataset_mode_description: "Execute test for all rows in a dataset",
+    custom_mode_description: "Execute test once with manually entered values",
+    custom_variables_context: "Enter values for the prompt variables:" %>
 
 <!-- Test Stats -->
 <div class="row mb-4">
@@ -153,7 +164,7 @@
         <tbody id="recent_runs_tbody">
           <% if @recent_runs.any? %>
             <% @recent_runs.each do |run| %>
-              <%= render "test_run_row", run: run %>
+              <%= render "prompt_tracker/testing/test_runs/prompt_versions/row", run: run %>
             <% end %>
           <% else %>
             <tr id="no_runs_placeholder">
@@ -223,7 +234,7 @@
                  record: run,
                  form_url: testing_run_human_evaluations_path(run),
                  context: 'testing' %>
-      <%= render "prompt_tracker/testing/prompt_tests/all_human_evaluations_modal",
+      <%= render "prompt_tracker/testing/tests/shared/all_human_evaluations_modal",
                  run: run %>
     <% end %>
   </div>

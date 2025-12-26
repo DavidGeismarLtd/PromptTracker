@@ -17,11 +17,11 @@
   </div>
   <div class="col-auto">
     <% if @tests.enabled.any? %>
-      <%= button_to run_all_testing_prompt_prompt_version_prompt_tests_path(@prompt, @version), method: :post, class: "btn btn-success me-2", data: { confirm: "Run all #{@tests.enabled.count} enabled tests?" } do %>
+      <%= button_to run_all_testing_prompt_prompt_version_tests_path(@prompt, @version), method: :post, class: "btn btn-success me-2", data: { confirm: "Run all #{@tests.enabled.count} enabled tests?" } do %>
         <i class="bi bi-play-fill"></i> Run All Tests
       <% end %>
     <% end %>
-    <%= link_to new_testing_prompt_prompt_version_prompt_test_path(@prompt, @version), class: "btn btn-primary" do %>
+    <%= link_to new_testing_prompt_prompt_version_test_path(@prompt, @version), class: "btn btn-primary" do %>
       <i class="bi bi-plus-circle"></i> New Test
     <% end %>
   </div>
@@ -91,7 +91,7 @@
       <div class="text-center py-5">
         <i class="bi bi-check2-square" style="font-size: 4rem; color: #ccc;"></i>
         <p class="text-muted mt-3">No tests yet. Create your first test to get started!</p>
-        <%= link_to new_testing_prompt_prompt_version_prompt_test_path(@prompt, @version), class: "btn btn-primary" do %>
+        <%= link_to new_testing_prompt_prompt_version_test_path(@prompt, @version), class: "btn btn-primary" do %>
           <i class="bi bi-plus-circle"></i> Create First Test
         <% end %>
       </div>

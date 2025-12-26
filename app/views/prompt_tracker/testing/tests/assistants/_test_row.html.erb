@@ -7,4 +7,15 @@
   <%= render "prompt_tracker/testing/tests/assistants/cells/actions", test: test, assistant: assistant %>
 </tr>
 
-<%= render "prompt_tracker/testing/tests/assistants/run_test_modal", test: test, assistant: assistant %>
+<%= render "prompt_tracker/testing/tests/run_test_modal",
+    testable: assistant,
+    test: test,
+    form_url: run_testing_openai_assistant_test_path(assistant, test),
+    modal_id: "runTestModal-#{test.id}",
+    modal_title: "Run Test: #{test.name}",
+    submit_button_text: "Run Test",
+    datasets_path: testing_openai_assistant_datasets_path(assistant),
+    intro_text: "Choose how to run this test:",
+    dataset_mode_description: "Execute test for all rows in a dataset",
+    custom_mode_description: "Execute test once with manually entered values",
+    custom_variables_context: "Enter values for the test scenario:" %>

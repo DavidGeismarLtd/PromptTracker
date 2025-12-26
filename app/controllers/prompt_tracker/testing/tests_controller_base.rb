@@ -228,34 +228,29 @@ module PromptTracker
       # Run a single test with custom variables
       def run_with_custom_variables(test)
         custom_vars = params[:custom_variables] || {}
-        user_prompt = params[:user_prompt]
-        max_turns = params[:max_turns].present? ? params[:max_turns].to_i : 3
 
-        # For assistants, user_prompt is required
-        if @testable.is_a?(PromptTracker::Openai::Assistant) && user_prompt.blank?
-          redirect_to testable_path,
-                      alert: "Please provide a user prompt."
-          return
-        end
-
-        # Build metadata based on testable type
-        metadata = {
-          triggered_by: "manual",
-          user: "web_ui",
-          run_mode: "custom"
-        }
-
+        # For assistants, validate required variables
         if @testable.is_a?(PromptTracker::Openai::Assistant)
-          metadata[:custom_variables] = { user_prompt: user_prompt, max_turns: max_turns }
-        else
-          metadata[:custom_variables] = custom_vars
+          required_vars = @testable.variables_schema.select { |v| v["required"] }.map { |v| v["name"] }
+          missing_vars = required_vars.select { |var| custom_vars[var].blank? }
+
+          if missing_vars.any?
+            redirect_to testable_path,
+                        alert: "Please provide: #{missing_vars.map(&:humanize).join(', ')}"
+            return
+          end
         end
 
         # Create a test run with custom variables
         test_run = TestRun.create!(
           test: test,
           status: "running",
-          metadata: metadata
+          metadata: {
+            triggered_by: "manual",
+            user: "web_ui",
+            run_mode: "custom",
+            custom_variables: custom_vars
+          }
         )
 
         RunTestJob.perform_later(test_run.id, use_real_llm: use_real_llm?)
@@ -300,37 +295,32 @@ module PromptTracker
       # Run all tests with custom variables
       def run_all_with_custom_variables(tests)
         custom_vars = params[:custom_variables] || {}
-        user_prompt = params[:user_prompt]
-        max_turns = params[:max_turns].present? ? params[:max_turns].to_i : 3
 
-        # For assistants, user_prompt is required
-        if @testable.is_a?(PromptTracker::Openai::Assistant) && user_prompt.blank?
-          redirect_to testable_path,
-                      alert: "Please provide a user prompt."
-          return
+        # For assistants, validate required variables
+        if @testable.is_a?(PromptTracker::Openai::Assistant)
+          required_vars = @testable.variables_schema.select { |v| v["required"] }.map { |v| v["name"] }
+          missing_vars = required_vars.select { |var| custom_vars[var].blank? }
+
+          if missing_vars.any?
+            redirect_to testable_path,
+                        alert: "Please provide: #{missing_vars.map(&:humanize).join(', ')}"
+            return
+          end
         end
 
         total_runs = 0
 
         # Create test runs for each test
         tests.each do |test|
-          # Build metadata based on testable type
-          metadata = {
-            triggered_by: "run_all",
-            user: "web_ui",
-            run_mode: "custom"
-          }
-
-          if @testable.is_a?(PromptTracker::Openai::Assistant)
-            metadata[:custom_variables] = { user_prompt: user_prompt, max_turns: max_turns }
-          else
-            metadata[:custom_variables] = custom_vars
-          end
-
           test_run = TestRun.create!(
             test: test,
             status: "running",
-            metadata: metadata
+            metadata: {
+              triggered_by: "run_all",
+              user: "web_ui",
+              run_mode: "custom",
+              custom_variables: custom_vars
+            }
           )
 
           RunTestJob.perform_later(test_run.id, use_real_llm: use_real_llm?)

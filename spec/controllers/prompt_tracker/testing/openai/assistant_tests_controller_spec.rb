@@ -219,8 +219,10 @@ module PromptTracker
                   assistant_id: assistant.id,
                   id: test.id,
                   run_mode: "custom",
-                  user_prompt: "Test prompt",
-                  max_turns: 5
+                  custom_variables: {
+                    interlocutor_simulation_prompt: "You are a patient with a headache",
+                    max_turns: "5"
+                  }
                 }
               }.to change(TestRun, :count).by(1)
             end
@@ -230,21 +232,24 @@ module PromptTracker
                 assistant_id: assistant.id,
                 id: test.id,
                 run_mode: "custom",
-                user_prompt: "Test prompt",
-                max_turns: 5
+                custom_variables: {
+                  interlocutor_simulation_prompt: "You are a patient with a headache",
+                  max_turns: "5"
+                }
               }
               run = TestRun.last
-              expect(run.metadata["custom_variables"]["user_prompt"]).to eq("Test prompt")
-              expect(run.metadata["custom_variables"]["max_turns"]).to eq(5)
+              expect(run.metadata["custom_variables"]["interlocutor_simulation_prompt"]).to eq("You are a patient with a headache")
+              expect(run.metadata["custom_variables"]["max_turns"]).to eq("5")
             end
 
-            it "shows error when user_prompt is missing" do
+            it "shows error when required variables are missing" do
               post :run, params: {
                 assistant_id: assistant.id,
                 id: test.id,
-                run_mode: "custom"
+                run_mode: "custom",
+                custom_variables: {}
               }
-              expect(flash[:alert]).to eq("Please provide a user prompt.")
+              expect(flash[:alert]).to eq("Please provide: Interlocutor simulation prompt")
             end
           end
         end

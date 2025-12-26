@@ -1,8 +1,9 @@
 <!-- Evaluation Modals with z-index fix -->
 <div data-controller="modal-fix">
-  <% test.test_runs.includes(llm_response: :evaluations).order(created_at: :desc).limit(5).each do |run| %>
-    <% if run.llm_response&.evaluations&.any? %>
-      <% run.llm_response.evaluations.each do |evaluation| %>
+  <% test.test_runs.includes(:evaluations, llm_response: :evaluations).order(created_at: :desc).limit(5).each do |run| %>
+    <% evaluations = run.evaluations.presence || run.llm_response&.evaluations || [] %>
+    <% if evaluations.any? %>
+      <% evaluations.each do |evaluation| %>
         <% template_name = evaluation.evaluator_key.to_s %>
         <% template_path = "prompt_tracker/evaluations/evaluators/#{template_name}" %>
 
@@ -47,4 +48,3 @@
     <% end %>
   <% end %>
 </div>
-

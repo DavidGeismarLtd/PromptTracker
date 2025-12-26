@@ -5,14 +5,13 @@
       <div class="modal-header">
         <h5 class="modal-title" id="edit-test-modal-label-<%= test.id %>">
           <i class="bi bi-pencil"></i> Edit Test: <%= test.name %>
-          <span class="badge bg-primary">v<%= version.version_number %></span>
+          <%= badge_html %>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <%= render "prompt_tracker/testing/tests/prompt_versions/form", prompt: prompt, version: version, test: test, in_modal: true %>
+        <%= form_partial_path ? render(form_partial_path, **form_locals) : "" %>
       </div>
     </div>
   </div>
 </div>
-

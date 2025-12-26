@@ -38,7 +38,7 @@ PromptTracker::Engine.routes.draw do
         end
 
         # Tests nested under prompt versions
-        resources :prompt_tests, only: [ :index, :new, :create, :show, :edit, :update, :destroy ], path: "tests" do
+        resources :tests, only: [ :index, :new, :create, :show, :edit, :update, :destroy ] do
           collection do
             post :run_all
           end

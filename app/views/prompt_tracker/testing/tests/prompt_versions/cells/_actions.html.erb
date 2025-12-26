@@ -1,5 +1,5 @@
 <td data-column="actions">
-  <%= link_to "View", testing_prompt_prompt_version_prompt_test_path(prompt, version, test), class: "btn btn-sm btn-outline-primary me-1" %>
+  <%= link_to "View", testing_prompt_prompt_version_test_path(prompt, version, test), class: "btn btn-sm btn-outline-primary me-1" %>
   <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#edit-test-modal-<%= test.id %>">
     Edit
   </button>
@@ -7,4 +7,3 @@
     Run
   </button>
 </td>
-

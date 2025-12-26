@@ -233,7 +233,10 @@
   <%= render "prompt_tracker/testing/tests/assistants/tests_card", tests: @tests, assistant: @assistant %>
 </div>
 
-<%= render "prompt_tracker/testing/tests/assistants/new_test_modal", assistant: @assistant %>
+<%= render "prompt_tracker/testing/tests/shared/new_test_modal",
+           badge_html: content_tag(:span, class: "badge bg-info") { content_tag(:i, "", class: "bi bi-robot") + " #{@assistant.name}" },
+           form_partial_path: "prompt_tracker/testing/tests/assistants/form",
+           form_locals: { assistant: @assistant, test: PromptTracker::Test.new(testable: @assistant, enabled: true), in_modal: true } %>
 
 <%= render "prompt_tracker/testing/tests/assistants/run_all_tests_modal", tests: @tests, assistant: @assistant %>
 
@@ -243,7 +246,11 @@
     <% @tests.each do |test| %>
       <%= render "prompt_tracker/testing/tests/shared/evaluation_modals", test: test %>
       <%= render "prompt_tracker/testing/tests/shared/evaluator_config_modals", test: test %>
-      <%= render "prompt_tracker/testing/tests/assistants/edit_modal", test: test, assistant: @assistant %>
+      <%= render "prompt_tracker/testing/tests/shared/edit_modal",
+                 test: test,
+                 badge_html: content_tag(:span, class: "badge bg-info") { content_tag(:i, "", class: "bi bi-robot") + " #{@assistant.name}" },
+                 form_partial_path: "prompt_tracker/testing/tests/assistants/form",
+                 form_locals: { assistant: @assistant, test: test, in_modal: true } %>
     <% end %>
   <% end %>
 </div>

@@ -15,7 +15,7 @@
   <div id="load-more-runs-<%= @test.id %>">
     <% if @next_offset < @total_runs_count %>
       <div class="text-center mt-3">
-        <%= link_to load_more_runs_testing_prompt_prompt_version_prompt_test_path(@prompt, @version, @test, offset: @next_offset, limit: 5),
+        <%= link_to load_more_runs_testing_prompt_prompt_version_test_path(@prompt, @version, @test, offset: @next_offset, limit: 5),
                     class: "btn btn-sm btn-outline-primary",
                     data: { turbo_stream: true } do %>
           <i class="bi bi-arrow-down-circle"></i> Load 5 More Runs

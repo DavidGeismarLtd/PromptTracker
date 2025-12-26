@@ -5,17 +5,13 @@
       <div class="modal-header">
         <h5 class="modal-title" id="new-test-modal-label">
           <i class="bi bi-plus-circle"></i> Create New Test
-          <span class="badge bg-info"><i class="bi bi-robot"></i> <%= assistant.name %></span>
+          <%= badge_html %>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <%= render "prompt_tracker/testing/tests/assistants/form", 
-                   assistant: assistant, 
-                   test: PromptTracker::Test.new(testable: assistant, enabled: true), 
-                   in_modal: true %>
+        <%= form_partial_path ? render(form_partial_path, **form_locals) : "" %>
       </div>
     </div>
   </div>
 </div>
-

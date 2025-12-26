@@ -1,0 +1,345 @@
+# frozen_string_literal: true
+
+module PromptTracker
+  module Testing
+    # Base controller for managing tests across different testable types
+    #
+    # This controller contains all shared logic for CRUD operations on tests.
+    # Subclasses only need to implement:
+    # - `set_testable` to set @testable (and any related instance variables)
+    # - `testable_path` to return the path to the testable's show page
+    # - `test_path` to return the path to a specific test's show page
+    #
+    # Supported testable types:
+    # - PromptTracker::PromptVersion
+    # - PromptTracker::Openai::Assistant
+    #
+    class TestsControllerBase < ApplicationController
+      before_action :set_testable
+      before_action :set_test, only: [ :show, :edit, :update, :destroy, :run, :load_more_runs ]
+
+      # GET /tests
+      def index
+        @tests = @testable.tests.order(created_at: :desc)
+      end
+
+      # POST /tests/run_all
+      def run_all
+        enabled_tests = @testable.tests.enabled
+
+        if enabled_tests.empty?
+          redirect_to testable_path,
+                      alert: "No enabled tests to run."
+          return
+        end
+
+        run_mode = params[:run_mode] || "dataset"
+
+        if run_mode == "dataset"
+          run_all_with_dataset(enabled_tests)
+        else
+          run_all_with_custom_variables(enabled_tests)
+        end
+      end
+
+      # GET /tests/:id
+      def show
+        @recent_runs = @test.recent_runs(10)
+      end
+
+      # GET /tests/new
+      def new
+        @test = @testable.tests.build
+      end
+
+      # POST /tests
+      def create
+        @test = @testable.tests.build(test_params)
+
+        if @test.save
+          respond_to do |format|
+            format.html do
+              redirect_to test_path(@test),
+                          notice: "Test created successfully."
+            end
+            format.turbo_stream do
+              redirect_to testable_path,
+                          notice: "Test created successfully.",
+                          status: :see_other
+            end
+          end
+        else
+          render :new, status: :unprocessable_entity
+        end
+      end
+
+      # GET /tests/:id/edit
+      def edit
+      end
+
+      # PATCH/PUT /tests/:id
+      def update
+        if @test.update(test_params)
+          respond_to do |format|
+            format.html do
+              redirect_to test_path(@test),
+                          notice: "Test updated successfully."
+            end
+            format.turbo_stream do
+              redirect_to testable_path,
+                          notice: "Test updated successfully.",
+                          status: :see_other
+            end
+          end
+        else
+          render :edit, status: :unprocessable_entity
+        end
+      end
+
+      # DELETE /tests/:id
+      def destroy
+        @test.destroy
+        redirect_to tests_index_path,
+                    notice: "Test deleted successfully."
+      end
+
+      # POST /tests/:id/run
+      def run
+        run_mode = params[:run_mode] || "dataset"
+
+        if run_mode == "dataset"
+          run_with_dataset(@test)
+        else
+          run_with_custom_variables(@test)
+        end
+      end
+
+      # GET /tests/:id/load_more_runs
+      # Load additional test runs for progressive loading
+      def load_more_runs
+        offset = params[:offset].present? ? params[:offset].to_i : 5
+        limit = params[:limit].present? ? params[:limit].to_i : 5
+
+        @additional_runs = @test.test_runs
+                                .includes(:evaluations)
+                                .order(created_at: :desc)
+                                .offset(offset)
+                                .limit(limit)
+
+        @total_runs_count = @test.test_runs.count
+        @next_offset = offset + limit
+
+        respond_to do |format|
+          format.turbo_stream
+        end
+      end
+
+      private
+
+      # Override view lookup to use shared tests views
+      # This makes both TestsController and AssistantTestsController
+      # look for views in app/views/prompt_tracker/testing/tests/
+      def _prefixes
+        @_prefixes ||= super + [ "prompt_tracker/testing/tests" ]
+      end
+
+      # Abstract method to be implemented by subclasses
+      # Must set @testable instance variable
+      def set_testable
+        raise NotImplementedError, "Subclasses must implement #set_testable"
+      end
+
+      # Abstract method to be implemented by subclasses
+      # Returns the path to the testable's show page (for redirects)
+      def testable_path
+        raise NotImplementedError, "Subclasses must implement #testable_path"
+      end
+
+      # Abstract method to be implemented by subclasses
+      # Returns the path to a specific test's show page
+      # @param test [Test] the test to get the path for
+      def test_path(test)
+        raise NotImplementedError, "Subclasses must implement #test_path"
+      end
+
+      # Abstract method to be implemented by subclasses
+      # Returns the path to the tests index page
+      def tests_index_path
+        raise NotImplementedError, "Subclasses must implement #tests_index_path"
+      end
+
+      def set_test
+        @test = @testable.tests.find(params[:id])
+      end
+
+      def test_params
+        permitted = params.require(:test).permit(
+          :name,
+          :description,
+          :enabled,
+          :metadata,
+          :evaluator_configs
+        )
+
+        # Parse JSON strings to hashes/arrays
+        [ :metadata, :evaluator_configs ].each do |key|
+          if permitted[key].is_a?(String)
+            permitted[key] = JSON.parse(permitted[key])
+          end
+        end
+
+        permitted
+      end
+
+      # Check if real LLM API calls should be used
+      def use_real_llm?
+        ENV["PROMPT_TRACKER_USE_REAL_LLM"] == "true"
+      end
+
+      # Run a single test with a dataset
+      def run_with_dataset(test)
+        dataset_id = params[:dataset_id]
+
+        unless dataset_id.present?
+          redirect_to testable_path,
+                      alert: "Please select a dataset."
+          return
+        end
+
+        dataset = @testable.datasets.find(dataset_id)
+
+        # Create test runs for each dataset row
+        dataset.dataset_rows.each do |row|
+          test_run = TestRun.create!(
+            test: test,
+            dataset: dataset,
+            dataset_row: row,
+            status: "running",
+            metadata: { triggered_by: "manual", user: "web_ui", run_mode: "dataset" }
+          )
+
+          RunTestJob.perform_later(test_run.id, use_real_llm: use_real_llm?)
+        end
+
+        redirect_to testable_path,
+                    notice: "Test queued with #{dataset.dataset_rows.count} scenario(s)."
+      end
+
+      # Run a single test with custom variables
+      def run_with_custom_variables(test)
+        custom_vars = params[:custom_variables] || {}
+        user_prompt = params[:user_prompt]
+        max_turns = params[:max_turns].present? ? params[:max_turns].to_i : 3
+
+        # For assistants, user_prompt is required
+        if @testable.is_a?(PromptTracker::Openai::Assistant) && user_prompt.blank?
+          redirect_to testable_path,
+                      alert: "Please provide a user prompt."
+          return
+        end
+
+        # Build metadata based on testable type
+        metadata = {
+          triggered_by: "manual",
+          user: "web_ui",
+          run_mode: "custom"
+        }
+
+        if @testable.is_a?(PromptTracker::Openai::Assistant)
+          metadata[:custom_variables] = { user_prompt: user_prompt, max_turns: max_turns }
+        else
+          metadata[:custom_variables] = custom_vars
+        end
+
+        # Create a test run with custom variables
+        test_run = TestRun.create!(
+          test: test,
+          status: "running",
+          metadata: metadata
+        )
+
+        RunTestJob.perform_later(test_run.id, use_real_llm: use_real_llm?)
+
+        redirect_to testable_path,
+                    notice: "Test queued with custom scenario."
+      end
+
+      # Run all tests with a dataset
+      def run_all_with_dataset(tests)
+        dataset_id = params[:dataset_id]
+
+        unless dataset_id.present?
+          redirect_to testable_path,
+                      alert: "Please select a dataset."
+          return
+        end
+
+        dataset = @testable.datasets.find(dataset_id)
+        total_runs = 0
+
+        # Create test runs for each test × each dataset row
+        tests.each do |test|
+          dataset.dataset_rows.each do |row|
+            test_run = TestRun.create!(
+              test: test,
+              dataset: dataset,
+              dataset_row: row,
+              status: "running",
+              metadata: { triggered_by: "run_all", user: "web_ui", run_mode: "dataset" }
+            )
+
+            RunTestJob.perform_later(test_run.id, use_real_llm: use_real_llm?)
+            total_runs += 1
+          end
+        end
+
+        redirect_to testable_path,
+                    notice: "Queued #{total_runs} test run(s) across #{tests.count} test(s)."
+      end
+
+      # Run all tests with custom variables
+      def run_all_with_custom_variables(tests)
+        custom_vars = params[:custom_variables] || {}
+        user_prompt = params[:user_prompt]
+        max_turns = params[:max_turns].present? ? params[:max_turns].to_i : 3
+
+        # For assistants, user_prompt is required
+        if @testable.is_a?(PromptTracker::Openai::Assistant) && user_prompt.blank?
+          redirect_to testable_path,
+                      alert: "Please provide a user prompt."
+          return
+        end
+
+        total_runs = 0
+
+        # Create test runs for each test
+        tests.each do |test|
+          # Build metadata based on testable type
+          metadata = {
+            triggered_by: "run_all",
+            user: "web_ui",
+            run_mode: "custom"
+          }
+
+          if @testable.is_a?(PromptTracker::Openai::Assistant)
+            metadata[:custom_variables] = { user_prompt: user_prompt, max_turns: max_turns }
+          else
+            metadata[:custom_variables] = custom_vars
+          end
+
+          test_run = TestRun.create!(
+            test: test,
+            status: "running",
+            metadata: metadata
+          )
+
+          RunTestJob.perform_later(test_run.id, use_real_llm: use_real_llm?)
+          total_runs += 1
+        end
+
+        redirect_to testable_path,
+                    notice: "Queued #{total_runs} test run(s) with custom scenario."
+      end
+    end
+  end
+end

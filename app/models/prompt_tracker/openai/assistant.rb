@@ -178,6 +178,42 @@ module PromptTracker
         ]
       end
 
+      # Returns the column headers for the tests table
+      #
+      # Defines which columns to display in the tests table for this testable type.
+      # Assistants don't have a "Template" column like PromptVersions do.
+      #
+      # @return [Array<Hash>] array of column definitions
+      def test_table_headers
+        [
+          { key: "name", label: "Test Name", width: "30%" },
+          { key: "evaluator_configs", label: "Evaluator Configs", width: "25%" },
+          { key: "status", label: "Last Status", width: "10%" },
+          { key: "last_run", label: "Last Run", width: "12%" },
+          { key: "total_runs", label: "Total Runs", width: "10%", align: "end" },
+          { key: "actions", label: "Actions", width: "13%" }
+        ]
+      end
+
+      # Returns the column headers for the test runs table
+      #
+      # Defines which columns to display in the test runs accordion for this testable type.
+      # Assistants show conversation data instead of rendered prompts.
+      #
+      # @return [Array<Hash>] array of column definitions
+      def test_run_table_headers
+        [
+          { key: "run_status", label: "Status", width: "10%" },
+          { key: "run_time", label: "Run Time", width: "12%" },
+          { key: "response_time", label: "Response Time", width: "10%" },
+          { key: "run_cost", label: "Cost", width: "8%" },
+          { key: "conversation", label: "Conversation", width: "30%" },
+          { key: "run_evaluations", label: "Evaluations", width: "10%" },
+          { key: "human_evaluations", label: "Human Evaluations", width: "10%" },
+          { key: "actions", label: "Actions", width: "5%" }
+        ]
+      end
+
       private
 
       # Set default metadata for new records

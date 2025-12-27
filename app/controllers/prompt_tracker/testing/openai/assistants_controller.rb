@@ -7,6 +7,9 @@ module PromptTracker
       class AssistantsController < ApplicationController
         before_action :set_assistant, only: [ :show, :destroy, :sync ]
 
+        # Make path helpers available to views
+        helper_method :load_more_runs_path, :run_test_path, :datasets_path
+
         # GET /testing/openai/assistants
         # List all assistants with search and filtering
         def index
@@ -85,6 +88,21 @@ module PromptTracker
 
         def assistant_params
           params.require(:openai_assistant).permit(:assistant_id, :name, :description, :category)
+        end
+
+        # Helper method for generating load_more_runs path
+        def load_more_runs_path(test, offset:, limit:)
+          load_more_runs_testing_openai_assistant_test_path(@assistant, test, offset: offset, limit: limit)
+        end
+
+        # Helper method for generating run_test path
+        def run_test_path(test)
+          run_testing_openai_assistant_test_path(@assistant, test)
+        end
+
+        # Helper method for generating datasets path
+        def datasets_path
+          testing_openai_assistant_datasets_path(@assistant)
         end
       end
     end

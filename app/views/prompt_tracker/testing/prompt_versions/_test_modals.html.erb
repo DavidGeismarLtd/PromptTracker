@@ -1,10 +1,8 @@
 <div id="test-modals">
-  <!-- Evaluation Modals (outside table structure) -->
   <% if tests.any? %>
     <% tests.each do |test| %>
-      <%= render "prompt_tracker/testing/tests/shared/evaluation_modals", test: test %>
-      <%= render "prompt_tracker/testing/tests/shared/evaluator_config_modals", test: test %>
-      <%= render "prompt_tracker/testing/tests/shared/edit_modal",
+      <%= render "prompt_tracker/testing/tests/evaluator_config_modals", test: test %>
+      <%= render "prompt_tracker/testing/tests/edit_modal",
                  test: test,
                  badge_html: content_tag(:span, "v#{version.version_number}", class: "badge bg-primary"),
                  form_partial_path: "prompt_tracker/testing/tests/prompt_versions/form",

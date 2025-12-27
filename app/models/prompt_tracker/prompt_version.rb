@@ -257,6 +257,44 @@ module PromptTracker
       )
     end
 
+    # Returns the column headers for the tests table
+    #
+    # Defines which columns to display in the tests table for this testable type.
+    # PromptVersions include a "Template" column to show the user_prompt preview.
+    #
+    # @return [Array<Hash>] array of column definitions
+    def test_table_headers
+      [
+        { key: "name", label: "Test Name", width: "25%" },
+        { key: "template", label: "Template", width: "20%" },
+        { key: "evaluator_configs", label: "Evaluator Configs", width: "20%" },
+        { key: "status", label: "Last Status", width: "8%" },
+        { key: "last_run", label: "Last Run", width: "10%" },
+        { key: "total_runs", label: "Total Runs", width: "8%", align: "end" },
+        { key: "actions", label: "Actions", width: "9%" }
+      ]
+    end
+
+    # Returns the column headers for the test runs table
+    #
+    # Defines which columns to display in the test runs accordion for this testable type.
+    # PromptVersions show rendered prompt and response instead of conversation data.
+    #
+    # @return [Array<Hash>] array of column definitions
+    def test_run_table_headers
+      [
+        { key: "run_status", label: "Status", width: "10%" },
+        { key: "run_time", label: "Run Time", width: "12%" },
+        { key: "response_time", label: "Response Time", width: "10%" },
+        { key: "run_cost", label: "Cost", width: "8%" },
+        { key: "rendered_prompt", label: "Rendered Prompt", width: "20%" },
+        { key: "run_response", label: "Response", width: "20%" },
+        { key: "run_evaluations", label: "Evaluations", width: "10%" },
+        { key: "human_evaluations", label: "Human Evaluations", width: "10%" },
+        { key: "actions", label: "Actions", width: "5%" }
+      ]
+    end
+
     private
 
     # Sets the next version number based on existing versions

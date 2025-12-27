@@ -6,4 +6,4 @@
 <% form_url = test.new_record? ? testing_prompt_prompt_version_tests_path(prompt, version) : testing_prompt_prompt_version_test_path(prompt, version, test) %>
 <% cancel_url = test.new_record? ? testing_prompt_prompt_version_tests_path(prompt, version) : testing_prompt_prompt_version_test_path(prompt, version, test) %>
 
-<%= render "prompt_tracker/testing/tests/shared/form", test: test, in_modal: in_modal, form_url: form_url, cancel_url: cancel_url %>
+<%= render "prompt_tracker/testing/tests/form", test: test, in_modal: in_modal, form_url: form_url, cancel_url: cancel_url %>

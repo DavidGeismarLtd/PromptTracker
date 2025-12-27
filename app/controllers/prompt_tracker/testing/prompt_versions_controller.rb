@@ -7,6 +7,9 @@ module PromptTracker
     before_action :set_prompt
     before_action :set_version, only: [ :show, :compare, :activate ]
 
+    # Make path helpers available to views
+    helper_method :load_more_runs_path, :run_test_path, :datasets_path
+
     # GET /prompts/:prompt_id/versions/:id
     # Show version details with tests
     def show
@@ -93,6 +96,21 @@ module PromptTracker
         total_cost: test_responses.sum(:cost_usd) || 0,
         avg_score: test_evaluations.any? ? test_evaluations.average(:score) : 0
       }
+    end
+
+    # Helper method for generating load_more_runs path
+    def load_more_runs_path(test, offset:, limit:)
+      load_more_runs_testing_prompt_prompt_version_test_path(@prompt, @version, test, offset: offset, limit: limit)
+    end
+
+    # Helper method for generating run_test path
+    def run_test_path(test)
+      run_testing_prompt_prompt_version_test_path(@prompt, @version, test)
+    end
+
+    # Helper method for generating datasets path
+    def datasets_path
+      testing_prompt_prompt_version_datasets_path(@prompt, @version)
     end
     end
   end

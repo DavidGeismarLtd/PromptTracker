@@ -18,6 +18,9 @@ module PromptTracker
       before_action :set_testable
       before_action :set_test, only: [ :show, :edit, :update, :destroy, :run, :load_more_runs ]
 
+      # Make path helpers available to views
+      helper_method :load_more_runs_path, :test_path, :run_test_path, :datasets_path
+
       # GET /tests
       def index
         @tests = @testable.tests.order(created_at: :desc)
@@ -166,6 +169,28 @@ module PromptTracker
       # Returns the path to the tests index page
       def tests_index_path
         raise NotImplementedError, "Subclasses must implement #tests_index_path"
+      end
+
+      # Abstract method to be implemented by subclasses
+      # Returns the path to load more runs for a specific test
+      # @param test [Test] the test to get the path for
+      # @param offset [Integer] the offset for pagination
+      # @param limit [Integer] the limit for pagination
+      def load_more_runs_path(test, offset:, limit:)
+        raise NotImplementedError, "Subclasses must implement #load_more_runs_path"
+      end
+
+      # Abstract method to be implemented by subclasses
+      # Returns the path to run a specific test
+      # @param test [Test] the test to get the path for
+      def run_test_path(test)
+        raise NotImplementedError, "Subclasses must implement #run_test_path"
+      end
+
+      # Abstract method to be implemented by subclasses
+      # Returns the path to the datasets index page
+      def datasets_path
+        raise NotImplementedError, "Subclasses must implement #datasets_path"
       end
 
       def set_test

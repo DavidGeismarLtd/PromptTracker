@@ -30,6 +30,21 @@ module PromptTracker
       def tests_index_path
         testing_prompt_prompt_version_tests_path(@prompt, @version)
       end
+
+      # Returns the path to load more runs for a specific test
+      def load_more_runs_path(test, offset:, limit:)
+        load_more_runs_testing_prompt_prompt_version_test_path(@prompt, @version, test, offset: offset, limit: limit)
+      end
+
+      # Returns the path to run a specific test
+      def run_test_path(test)
+        run_testing_prompt_prompt_version_test_path(@prompt, @version, test)
+      end
+
+      # Returns the path to the datasets index page
+      def datasets_path
+        testing_prompt_prompt_version_datasets_path(@prompt, @version)
+      end
     end
   end
 end

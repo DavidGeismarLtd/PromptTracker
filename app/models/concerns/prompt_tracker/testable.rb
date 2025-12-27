@@ -83,5 +83,13 @@ module PromptTracker
     #
     #    @example Assistant
     #      "Medical Support Assistant"
+    #
+    # Note: Test row partials are automatically resolved by convention from the class name.
+    # The view layer derives the partial path as:
+    #   "prompt_tracker/testing/tests/#{class_name.gsub('PromptTracker::', '').underscore.gsub('/', '_').pluralize}/test_row"
+    #
+    # Examples:
+    #   PromptTracker::PromptVersion -> prompt_tracker/testing/tests/prompt_versions/test_row
+    #   PromptTracker::Openai::Assistant -> prompt_tracker/testing/tests/openai_assistants/test_row
   end
 end

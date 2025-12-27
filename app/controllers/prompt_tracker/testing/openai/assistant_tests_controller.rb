@@ -30,6 +30,21 @@ module PromptTracker
         def tests_index_path
           testing_openai_assistant_tests_path(@assistant)
         end
+
+        # Returns the path to load more runs for a specific test
+        def load_more_runs_path(test, offset:, limit:)
+          load_more_runs_testing_openai_assistant_test_path(@assistant, test, offset: offset, limit: limit)
+        end
+
+        # Returns the path to run a specific test
+        def run_test_path(test)
+          run_testing_openai_assistant_test_path(@assistant, test)
+        end
+
+        # Returns the path to the datasets index page
+        def datasets_path
+          testing_openai_assistant_datasets_path(@assistant)
+        end
       end
     end
   end

@@ -120,11 +120,11 @@
   <% end %>
 </div>
 
-<%= render "prompt_tracker/testing/tests/prompt_versions/tests_card", tests: @tests, prompt: @prompt, version: @version %>
+<%= render "prompt_tracker/testing/tests/tests_card", tests: @tests, testable_param: @version %>
 
 <%= render "test_modals", tests: @tests, prompt: @prompt, version: @version %>
 
-<%= render "prompt_tracker/testing/tests/shared/new_test_modal",
+<%= render "prompt_tracker/testing/tests/new_test_modal",
            badge_html: content_tag(:span, "v#{@version.version_number}", class: "badge bg-primary"),
            form_partial_path: "prompt_tracker/testing/tests/prompt_versions/form",
            form_locals: { prompt: @prompt, version: @version, test: PromptTracker::Test.new(testable: @version, enabled: true), in_modal: true } %>

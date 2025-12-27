@@ -1,7 +1,5 @@
 <td data-column="name">
-  <strong>
-    <%= link_to test.name, testing_openai_assistant_test_path(assistant, test), class: "text-decoration-none" %>
-  </strong>
+  <strong><%= test.name %></strong>
   <% unless test.enabled? %>
     <span class="badge bg-secondary ms-2">Disabled</span>
   <% end %>

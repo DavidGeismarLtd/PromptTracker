@@ -33,6 +33,10 @@
 
 <%# Append modals for the new runs %>
 <%= turbo_stream.append "test-runs-modals-#{@test.id}" do %>
+  <%# Evaluation modals %>
+  <%= render "prompt_tracker/testing/tests/evaluation_modals_for_runs", runs: @additional_runs %>
+
+  <%# Human evaluation modals %>
   <% @additional_runs.each do |run| %>
     <%= render "prompt_tracker/shared/human_evaluation_modal",
                record: run,

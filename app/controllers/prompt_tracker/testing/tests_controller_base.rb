@@ -124,7 +124,7 @@ module PromptTracker
         limit = params[:limit].present? ? params[:limit].to_i : 5
 
         @additional_runs = @test.test_runs
-                                .includes(:evaluations)
+                                .includes(:evaluations, :human_evaluations, llm_response: :evaluations)
                                 .order(created_at: :desc)
                                 .offset(offset)
                                 .limit(limit)

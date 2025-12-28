@@ -3,7 +3,7 @@
 require "rails_helper"
 
 module PromptTracker
-  RSpec.describe PromptTestRun, type: :model do
+  RSpec.describe TestRun, type: :model do
     # Setup
     let(:prompt) do
       Prompt.create!(
@@ -25,7 +25,7 @@ module PromptTracker
     end
 
     let(:prompt_test) do
-      version.prompt_tests.create!(
+      version.tests.create!(
         name: "greeting_test",
         description: "Test greeting functionality"
       )
@@ -47,8 +47,7 @@ module PromptTracker
 
     let(:valid_attributes) do
       {
-        prompt_test: prompt_test,
-        prompt_version: version,
+        test: prompt_test,
         llm_response: llm_response,
         status: "passed",
         passed: true,
@@ -66,23 +65,23 @@ module PromptTracker
 
     describe "validations" do
       it "is valid with valid attributes" do
-        test_run = PromptTestRun.new(valid_attributes)
+        test_run = TestRun.new(valid_attributes)
         expect(test_run).to be_valid
       end
 
       it "requires status" do
-        test_run = PromptTestRun.new(valid_attributes.merge(status: nil))
+        test_run = TestRun.new(valid_attributes.merge(status: nil))
         expect(test_run).not_to be_valid
         expect(test_run.errors[:status]).to include("can't be blank")
       end
 
       it "validates status inclusion" do
         %w[pending running passed failed error skipped].each do |status|
-          test_run = PromptTestRun.new(valid_attributes.merge(status: status))
+          test_run = TestRun.new(valid_attributes.merge(status: status))
           expect(test_run).to be_valid, "Status '#{status}' should be valid"
         end
 
-        test_run = PromptTestRun.new(valid_attributes.merge(status: "invalid"))
+        test_run = TestRun.new(valid_attributes.merge(status: "invalid"))
         expect(test_run).not_to be_valid
         expect(test_run.errors[:status]).to include("is not included in the list")
       end
@@ -91,29 +90,29 @@ module PromptTracker
     # Association Tests
 
     describe "associations" do
-      it "belongs to prompt_test" do
-        test_run = PromptTestRun.create!(valid_attributes)
-        expect(test_run.prompt_test).to eq(prompt_test)
+      it "belongs to test" do
+        test_run = TestRun.create!(valid_attributes)
+        expect(test_run.test).to eq(prompt_test)
       end
 
       it "belongs to prompt_version" do
-        test_run = PromptTestRun.create!(valid_attributes)
+        test_run = TestRun.create!(valid_attributes)
         expect(test_run.prompt_version).to eq(version)
       end
 
       it "belongs to llm_response (optional)" do
-        test_run = PromptTestRun.create!(valid_attributes)
+        test_run = TestRun.create!(valid_attributes)
         expect(test_run.llm_response).to eq(llm_response)
       end
 
       it "allows nil llm_response" do
-        test_run = PromptTestRun.new(valid_attributes.merge(llm_response: nil))
+        test_run = TestRun.new(valid_attributes.merge(llm_response: nil))
         expect(test_run).to be_valid
       end
 
       it "touches prompt_test on create" do
         expect do
-          PromptTestRun.create!(valid_attributes)
+          TestRun.create!(valid_attributes)
         end.to change { prompt_test.reload.updated_at }
       end
     end
@@ -122,11 +121,11 @@ module PromptTracker
 
     describe "scopes" do
       let!(:passed_run) do
-        PromptTestRun.create!(valid_attributes.merge(status: "passed", passed: true))
+        TestRun.create!(valid_attributes.merge(status: "passed", passed: true))
       end
 
       let!(:failed_run) do
-        PromptTestRun.create!(valid_attributes.merge(
+        TestRun.create!(valid_attributes.merge(
           status: "failed",
           passed: false,
           failed_evaluators: 1,
@@ -135,15 +134,15 @@ module PromptTracker
       end
 
       let!(:pending_run) do
-        PromptTestRun.create!(valid_attributes.merge(status: "pending", passed: nil))
+        TestRun.create!(valid_attributes.merge(status: "pending", passed: nil))
       end
 
       let!(:running_run) do
-        PromptTestRun.create!(valid_attributes.merge(status: "running", passed: nil))
+        TestRun.create!(valid_attributes.merge(status: "running", passed: nil))
       end
 
       let!(:error_run) do
-        PromptTestRun.create!(valid_attributes.merge(
+        TestRun.create!(valid_attributes.merge(
           status: "error",
           passed: false,
           error_message: "Test execution failed"
@@ -152,35 +151,35 @@ module PromptTracker
 
       describe ".passed" do
         it "returns only passed runs" do
-          expect(PromptTestRun.passed).to include(passed_run)
-          expect(PromptTestRun.passed).not_to include(failed_run)
+          expect(TestRun.passed).to include(passed_run)
+          expect(TestRun.passed).not_to include(failed_run)
         end
       end
 
       describe ".failed" do
         it "returns only failed runs" do
-          expect(PromptTestRun.failed).to include(failed_run)
-          expect(PromptTestRun.failed).not_to include(passed_run)
+          expect(TestRun.failed).to include(failed_run)
+          expect(TestRun.failed).not_to include(passed_run)
         end
       end
 
       describe ".pending" do
         it "returns only pending runs" do
-          expect(PromptTestRun.pending).to include(pending_run)
-          expect(PromptTestRun.pending).not_to include(passed_run)
+          expect(TestRun.pending).to include(pending_run)
+          expect(TestRun.pending).not_to include(passed_run)
         end
       end
 
       describe ".running" do
         it "returns only running runs" do
-          expect(PromptTestRun.running).to include(running_run)
-          expect(PromptTestRun.running).not_to include(passed_run)
+          expect(TestRun.running).to include(running_run)
+          expect(TestRun.running).not_to include(passed_run)
         end
       end
 
       describe ".completed" do
         it "returns completed runs (passed, failed, error)" do
-          completed = PromptTestRun.completed
+          completed = TestRun.completed
           expect(completed).to include(passed_run)
           expect(completed).to include(failed_run)
           expect(completed).to include(error_run)
@@ -191,7 +190,7 @@ module PromptTracker
 
       describe ".recent" do
         it "orders by created_at descending" do
-          recent = PromptTestRun.recent
+          recent = TestRun.recent
           expect(recent.first.created_at).to be >= recent.last.created_at
         end
       end
@@ -201,7 +200,7 @@ module PromptTracker
 
     describe "status helpers" do
       it "#pending? returns true when status is pending" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(status: "pending"))
+        test_run = TestRun.create!(valid_attributes.merge(status: "pending"))
         expect(test_run.pending?).to be true
 
         test_run.update!(status: "passed")
@@ -209,7 +208,7 @@ module PromptTracker
       end
 
       it "#running? returns true when status is running" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(status: "running"))
+        test_run = TestRun.create!(valid_attributes.merge(status: "running"))
         expect(test_run.running?).to be true
 
         test_run.update!(status: "passed")
@@ -218,18 +217,18 @@ module PromptTracker
 
       it "#completed? returns true for passed, failed, error, skipped" do
         %w[passed failed error skipped].each do |status|
-          test_run = PromptTestRun.create!(valid_attributes.merge(status: status))
+          test_run = TestRun.create!(valid_attributes.merge(status: status))
           expect(test_run.completed?).to be(true), "Status '#{status}' should be completed"
         end
 
         %w[pending running].each do |status|
-          test_run = PromptTestRun.create!(valid_attributes.merge(status: status))
+          test_run = TestRun.create!(valid_attributes.merge(status: status))
           expect(test_run.completed?).to be(false), "Status '#{status}' should not be completed"
         end
       end
 
       it "#error? returns true when status is error" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(status: "error"))
+        test_run = TestRun.create!(valid_attributes.merge(status: "error"))
         expect(test_run.error?).to be true
 
         test_run.update!(status: "passed")
@@ -237,7 +236,7 @@ module PromptTracker
       end
 
       it "#skipped? returns true when status is skipped" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(status: "skipped"))
+        test_run = TestRun.create!(valid_attributes.merge(status: "skipped"))
         expect(test_run.skipped?).to be true
 
         test_run.update!(status: "passed")
@@ -249,7 +248,7 @@ module PromptTracker
 
     describe "#evaluator_pass_rate" do
       it "returns percentage of passed evaluators" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(
+        test_run = TestRun.create!(valid_attributes.merge(
           passed_evaluators: 3,
           failed_evaluators: 1,
           total_evaluators: 4
@@ -259,7 +258,7 @@ module PromptTracker
       end
 
       it "returns 0 when total_evaluators is zero" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(
+        test_run = TestRun.create!(valid_attributes.merge(
           passed_evaluators: 0,
           failed_evaluators: 0,
           total_evaluators: 0
@@ -269,7 +268,7 @@ module PromptTracker
       end
 
       it "rounds to 2 decimal places" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(
+        test_run = TestRun.create!(valid_attributes.merge(
           passed_evaluators: 2,
           failed_evaluators: 1,
           total_evaluators: 3
@@ -283,12 +282,12 @@ module PromptTracker
 
     describe "#failed_evaluations" do
       it "returns only failed evaluations" do
-        test_run = PromptTestRun.create!(valid_attributes)
+        test_run = TestRun.create!(valid_attributes)
 
         # Create evaluations
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "length", score: 4.5, passed: true)
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "keyword", score: 2.0, passed: false)
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "format", score: 1.5, passed: false)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "length", score: 4.5, passed: true)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "keyword", score: 2.0, passed: false)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "format", score: 1.5, passed: false)
 
         failed = test_run.failed_evaluations
         expect(failed.count).to eq(2)
@@ -296,26 +295,26 @@ module PromptTracker
       end
 
       it "returns empty relation when all evaluators passed" do
-        test_run = PromptTestRun.create!(valid_attributes)
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "length", score: 4.5, passed: true)
+        test_run = TestRun.create!(valid_attributes)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "length", score: 4.5, passed: true)
 
         expect(test_run.failed_evaluations.count).to eq(0)
       end
 
       it "handles no evaluations" do
-        test_run = PromptTestRun.create!(valid_attributes)
+        test_run = TestRun.create!(valid_attributes)
         expect(test_run.failed_evaluations.count).to eq(0)
       end
     end
 
     describe "#passed_evaluations" do
       it "returns only passed evaluations" do
-        test_run = PromptTestRun.create!(valid_attributes)
+        test_run = TestRun.create!(valid_attributes)
 
         # Create evaluations
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "length", score: 4.5, passed: true)
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "keyword", score: 5.0, passed: true)
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "format", score: 1.5, passed: false)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "length", score: 4.5, passed: true)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "keyword", score: 5.0, passed: true)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "format", score: 1.5, passed: false)
 
         passed = test_run.passed_evaluations
         expect(passed.count).to eq(2)
@@ -323,21 +322,21 @@ module PromptTracker
       end
 
       it "returns empty relation when all evaluators failed" do
-        test_run = PromptTestRun.create!(valid_attributes)
-        create(:evaluation, llm_response: llm_response, prompt_test_run: test_run, evaluator_id: "length", score: 1.5, passed: false)
+        test_run = TestRun.create!(valid_attributes)
+        create(:evaluation, llm_response: llm_response, test_run: test_run, evaluator_id: "length", score: 1.5, passed: false)
 
         expect(test_run.passed_evaluations.count).to eq(0)
       end
 
       it "handles no evaluations" do
-        test_run = PromptTestRun.create!(valid_attributes)
+        test_run = TestRun.create!(valid_attributes)
         expect(test_run.passed_evaluations.count).to eq(0)
       end
     end
 
     describe "#all_evaluators_passed?" do
       it "returns true when all evaluators passed" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(
+        test_run = TestRun.create!(valid_attributes.merge(
           passed_evaluators: 3,
           failed_evaluators: 0,
           total_evaluators: 3
@@ -347,7 +346,7 @@ module PromptTracker
       end
 
       it "returns false when some evaluators failed" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(
+        test_run = TestRun.create!(valid_attributes.merge(
           passed_evaluators: 2,
           failed_evaluators: 1,
           total_evaluators: 3
@@ -357,7 +356,7 @@ module PromptTracker
       end
 
       it "returns false when no evaluators ran" do
-        test_run = PromptTestRun.create!(valid_attributes.merge(
+        test_run = TestRun.create!(valid_attributes.merge(
           passed_evaluators: 0,
           failed_evaluators: 0,
           total_evaluators: 0
@@ -374,12 +373,12 @@ module PromptTracker
         # We're just testing that the callback is defined and doesn't raise errors
         # Full Turbo Streams testing would require more complex setup
         expect do
-          PromptTestRun.create!(valid_attributes)
+          TestRun.create!(valid_attributes)
         end.not_to raise_error
       end
 
       it "broadcasts changes after update" do
-        test_run = PromptTestRun.create!(valid_attributes)
+        test_run = TestRun.create!(valid_attributes)
 
         expect do
           test_run.update!(status: "failed", passed: false)

@@ -38,7 +38,7 @@ PromptTracker::Engine.routes.draw do
         end
 
         # Tests nested under prompt versions
-        resources :tests, only: [:create,  :update, :destroy ] do
+        resources :tests, only: [ :create, :update, :destroy ] do
           collection do
             post :run_all
           end
@@ -61,7 +61,7 @@ PromptTracker::Engine.routes.draw do
     end
 
     # Test runs (for viewing results)
-    resources :runs, controller: "prompt_test_runs", only: [ :index, :show ] do
+    resources :runs, controller: "test_runs" do
       # Human evaluations nested under test runs
       resources :human_evaluations, only: [ :create ]
     end
@@ -175,7 +175,4 @@ PromptTracker::Engine.routes.draw do
       get :config_form
     end
   end
-
-  # Test runs (legacy, redirects to /testing/runs)
-  resources :prompt_test_runs, only: [ :index, :show ], path: "test-runs"
 end

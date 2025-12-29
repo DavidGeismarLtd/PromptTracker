@@ -12,13 +12,13 @@ module PromptTracker
     # - .metadata: Class method providing evaluator metadata
     #
     # @example Creating a conversation-based evaluator
-    #   class MyConversationEvaluator < BaseOpenaiAssistantEvaluator
+    #   class MyConversationEvaluator < BaseOpenAiAssistantEvaluator
     #     def evaluate_score
     #       assistant_messages.length > 2 ? 100 : 50
     #     end
     #   end
     #
-    class BaseOpenaiAssistantEvaluator < BaseEvaluator
+    class BaseOpenAiAssistantEvaluator < BaseEvaluator
       attr_reader :conversation_data
 
       # Returns compatible testable classes

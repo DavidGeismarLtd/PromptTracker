@@ -90,7 +90,7 @@ module PromptTracker
     scope :recent, -> { order(created_at: :desc) }
 
     # broadcast change only if status changes
-    after_update_commit :broadcast_changes, if: :status_changed?
+    after_update_commit :broadcast_status_change, if: :saved_change_to_status?
 
     # Status helpers
     def pending?
@@ -158,87 +158,24 @@ module PromptTracker
 
     private
 
-    def broadcast_changes
-      # Reload test to get fresh associations
-      test_obj = test.reload
-
-      # Broadcast updates to the testable's show page (PromptVersion or Assistant)
-      broadcast_to_testable_show_page
-
-      # Broadcast updates specific to PromptVersion (if applicable)
-      broadcast_to_prompt_version_modals if prompt_version_test?
-    end
-
-    # Broadcasts updates to the testable's show page
-    # This works for both PromptVersion and Assistant (and any future testable types)
-    def broadcast_to_testable_show_page
-      test_obj = test
-      testable = test_obj.testable
+    def broadcast_status_change
+      testable = test.testable
       stream_name = testable.testable_stream_name
 
       # Update the accordion content (test runs table)
-      broadcast_replace(
-        stream: stream_name,
-        target: "test-runs-content-#{test_obj.id}",
-        partial: "prompt_tracker/testing/tests/test_runs_accordion_content",
-        locals: { test: test_obj }
+      broadcast_replace_to(
+        stream_name,
+        target: "test_run_#{id}",
+        partial: testable.test_run_row_partial,
+        locals: { run: self }
       )
 
       # Update the test row in the tests table (status, last run, run count)
-      broadcast_replace(
-        stream: stream_name,
-        target: "test_row_#{test_obj.id}",
+      broadcast_replace_to(
+        stream_name,
+        target: "test_row_#{test.id}",
         partial: testable.test_row_partial,
-        locals: testable.test_row_locals(test_obj)
-      )
-    end
-
-    # Broadcasts updates to PromptVersion-specific modals
-    # This is only needed for PromptVersion because it has a special test_modals partial
-    def broadcast_to_prompt_version_modals
-      version = prompt_version
-      prompt = version.prompt
-      all_tests = version.tests.includes(:test_runs).order(created_at: :desc)
-
-      broadcast_replace(
-        stream: testable.testable_stream_name,
-        target: "test-modals",
-        partial: "prompt_tracker/testing/prompt_versions/test_modals",
-        locals: { tests: all_tests, prompt: prompt, version: version }
-      )
-    end
-
-    # Helper method to broadcast with proper rendering context (includes helpers)
-    def broadcast_prepend(stream:, target:, partial:, locals:)
-      html = ApplicationController.render(
-        partial: partial,
-        locals: locals
-      )
-      Turbo::StreamsChannel.broadcast_prepend_to(
-        stream,
-        target: target,
-        html: html
-      )
-    end
-
-    # Helper method to broadcast with proper rendering context (includes helpers)
-    def broadcast_replace(stream:, target:, partial:, locals:)
-      html = ApplicationController.render(
-        partial: partial,
-        locals: locals
-      )
-      Turbo::StreamsChannel.broadcast_replace_to(
-        stream,
-        target: target,
-        html: html
-      )
-    end
-
-    # Helper method to broadcast remove action
-    def broadcast_remove(stream:, target:)
-      Turbo::StreamsChannel.broadcast_remove_to(
-        stream,
-        target: target
+        locals: testable.test_row_locals(test)
       )
     end
   end

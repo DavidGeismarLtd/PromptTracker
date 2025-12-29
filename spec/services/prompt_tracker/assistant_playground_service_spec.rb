@@ -4,6 +4,13 @@ require "rails_helper"
 
 module PromptTracker
   RSpec.describe AssistantPlaygroundService do
+    # Mock the API key to avoid initialization errors
+    before do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("OPENAI_API_KEY").and_return("test-api-key")
+      allow(ENV).to receive(:[]).with("OPENAI_LOUNA_API_KEY").and_return(nil)
+    end
+
     let(:service) { described_class.new }
 
     describe "#create_assistant" do
@@ -30,7 +37,7 @@ module PromptTracker
           "tool_resources" => {}
         }
 
-        allow(mock_assistants).to receive(:create).and_return(api_response)
+        allow(mock_assistants).to receive(:create).with(parameters: anything).and_return(api_response)
 
         # Call service
         result = service.create_assistant(
@@ -90,7 +97,7 @@ module PromptTracker
           "tool_resources" => {}
         }
 
-        allow(mock_assistants).to receive(:update).and_return(api_response)
+        allow(mock_assistants).to receive(:modify).with(id: "asst_existing", parameters: anything).and_return(api_response)
 
         # Call service
         result = service.update_assistant(

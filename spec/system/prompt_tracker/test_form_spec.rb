@@ -2,13 +2,16 @@
 
 require "rails_helper"
 
-RSpec.describe "PromptTest Form", type: :system, js: true do
+RSpec.describe "Test Form", type: :system, js: true do
   let(:prompt) { create(:prompt) }
   let(:version) { create(:prompt_version, prompt: prompt, status: "active") }
 
   describe "evaluator configuration with JavaScript" do
     before do
-      visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}/tests/new"
+      visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+      click_button "New Test"
+      # Wait for modal to appear
+      expect(page).to have_css("#new-test-modal", visible: true)
     end
 
     context "on page load" do

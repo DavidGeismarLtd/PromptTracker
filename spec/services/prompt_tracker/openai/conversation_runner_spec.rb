@@ -6,13 +6,13 @@ module PromptTracker
   module Openai
     RSpec.describe ConversationRunner, type: :service do
       let(:assistant_id) { "asst_test123" }
-      let(:initial_message) { "I have a severe headache" }
+      let(:interlocutor_simulation_prompt) { "You are a patient with a severe headache. Respond naturally to the doctor's questions." }
       let(:max_turns) { 3 }
 
       let(:runner) do
         described_class.new(
           assistant_id: assistant_id,
-          initial_message: initial_message,
+          interlocutor_simulation_prompt: interlocutor_simulation_prompt,
           max_turns: max_turns
         )
       end
@@ -20,7 +20,7 @@ module PromptTracker
       describe "#initialize" do
         it "sets instance variables" do
           expect(runner.assistant_id).to eq(assistant_id)
-          expect(runner.initial_message).to eq(initial_message)
+          expect(runner.interlocutor_simulation_prompt).to eq(interlocutor_simulation_prompt)
           expect(runner.max_turns).to eq(max_turns)
           expect(runner.thread_id).to be_nil
           expect(runner.messages).to eq([])
@@ -29,7 +29,7 @@ module PromptTracker
         it "defaults max_turns to 5" do
           runner = described_class.new(
             assistant_id: assistant_id,
-            initial_message: initial_message
+            interlocutor_simulation_prompt: interlocutor_simulation_prompt
           )
           expect(runner.max_turns).to eq(5)
         end
@@ -54,11 +54,16 @@ module PromptTracker
 
           allow(OpenAI::Client).to receive(:new).and_return(mock_client)
           allow(mock_client).to receive(:threads).and_return(mock_threads)
-          allow(mock_threads).to receive(:messages).and_return(mock_messages)
-          allow(mock_threads).to receive(:runs).and_return(mock_runs)
+          allow(mock_client).to receive(:messages).and_return(mock_messages)
+          allow(mock_client).to receive(:runs).and_return(mock_runs)
         end
 
         it "creates a thread and runs a conversation" do
+          # Mock LLM service for generating user messages
+          allow(PromptTracker::LlmClientService).to receive(:call).and_return(
+            { text: "I have a severe headache" }
+          )
+
           # Mock thread creation
           allow(mock_threads).to receive(:create).and_return({ "id" => "thread_123" })
 
@@ -93,22 +98,29 @@ module PromptTracker
           expect(result[:thread_id]).to eq("thread_123")
           expect(result[:messages].length).to eq(2) # 1 user + 1 assistant
           expect(result[:messages][0][:role]).to eq("user")
-          expect(result[:messages][0][:content]).to eq(initial_message)
+          expect(result[:messages][0][:content]).to eq("I have a severe headache")
           expect(result[:messages][1][:role]).to eq("assistant")
           expect(result[:messages][1][:content]).to include("describe the pain")
         end
 
         it "handles errors gracefully" do
+          # Mock LLM service
+          allow(PromptTracker::LlmClientService).to receive(:call).and_return(
+            { text: "I have a severe headache" }
+          )
+
           allow(mock_threads).to receive(:create).and_raise(StandardError.new("API Error"))
 
-          result = runner.run!
-
-          expect(result[:status]).to eq("error")
-          expect(result[:error]).to include("API Error")
+          expect { runner.run! }.to raise_error(StandardError, "API Error")
         end
 
         it "stops after max_turns" do
-          # For this test, we'll mock a single turn since generate_next_user_message returns nil
+          # Mock LLM service to return initial message, then [END] to end conversation
+          allow(PromptTracker::LlmClientService).to receive(:call).and_return(
+            { text: "I have a severe headache" },
+            { text: "[END]" } # Return [END] to end conversation
+          )
+
           allow(mock_threads).to receive(:create).and_return({ "id" => "thread_123" })
           allow(mock_messages).to receive(:create).and_return({ "id" => "msg_1" })
           allow(mock_runs).to receive(:create).and_return({ "id" => "run_1", "status" => "queued" })

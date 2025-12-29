@@ -5,7 +5,8 @@ require "rails_helper"
 module PromptTracker
   RSpec.describe SyncOpenaiAssistantsService do
     let(:service) { described_class.new }
-    let(:mock_client) { instance_double(OpenAI::Client) }
+    let(:mock_client) { double("OpenAI::Client") }
+    let(:mock_assistants) { double("assistants") }
 
     let(:mock_assistants_response) do
       {
@@ -41,9 +42,15 @@ module PromptTracker
     end
 
     before do
+      # Mock the API key
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("OPENAI_API_KEY").and_return("test-api-key")
+      allow(ENV).to receive(:[]).with("OPENAI_LOUNA_API_KEY").and_return(nil)
+
+      # Mock the OpenAI client
       allow(OpenAI::Client).to receive(:new).and_return(mock_client)
-      allow(mock_client).to receive(:assistants).and_return(mock_client)
-      allow(mock_client).to receive(:list).and_return(mock_assistants_response)
+      allow(mock_client).to receive(:assistants).and_return(mock_assistants)
+      allow(mock_assistants).to receive(:list).and_return(mock_assistants_response)
     end
 
     describe ".call" do
@@ -78,12 +85,12 @@ module PromptTracker
 
       context "when assistants already exist" do
         before do
-          PromptTracker::Openai::Assistant.create!(
-            assistant_id: "asst_123",
-            name: "Old Name",
-            description: "Old description",
-            metadata: {}
-          )
+          # Use factory which already skips the fetch_from_openai callback
+          create(:openai_assistant,
+                 assistant_id: "asst_123",
+                 name: "Old Name",
+                 description: "Old description",
+                 metadata: {})
         end
 
         it "updates existing assistants" do
@@ -123,7 +130,7 @@ module PromptTracker
 
       context "when API call fails" do
         before do
-          allow(mock_client).to receive(:list).and_raise(StandardError, "API error")
+          allow(mock_assistants).to receive(:list).and_raise(StandardError, "API error")
         end
 
         it "raises SyncError" do

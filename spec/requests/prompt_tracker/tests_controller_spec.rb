@@ -14,8 +14,8 @@ RSpec.describe "PromptTracker::TestsController", type: :request do
     end
 
     it "lists all tests for the version" do
-      test1 = create(:prompt_test, testable: version, name: "Test 1")
-      test2 = create(:prompt_test, testable: version, name: "Test 2")
+      test1 = create(:test, testable: version, name: "Test 1")
+      test2 = create(:test, testable: version, name: "Test 2")
 
       get "/prompt_tracker/testing/versions/#{version.id}/tests"
 
@@ -33,12 +33,6 @@ RSpec.describe "PromptTracker::TestsController", type: :request do
   end
 
   describe "POST /versions/:version_id/tests/:id/run" do
-    before do
-      # Stub broadcast methods to prevent Turbo Stream rendering issues in tests
-      allow_any_instance_of(PromptTracker::TestRun).to receive(:broadcast_creation)
-      allow_any_instance_of(PromptTracker::TestRun).to receive(:broadcast_update)
-    end
-
     it "starts a single test in the background" do
       expect {
         post "/prompt_tracker/testing/versions/#{version.id}/tests/#{test.id}/run",

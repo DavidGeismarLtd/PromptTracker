@@ -4,7 +4,7 @@ require "rails_helper"
 
 module PromptTracker
   module Testing
-    RSpec.describe PromptTestsController, type: :controller do
+    RSpec.describe TestsController, type: :controller do
       routes { PromptTracker::Engine.routes }
 
       let(:prompt) { create(:prompt) }

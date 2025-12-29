@@ -45,14 +45,20 @@ module PromptTracker
           end
 
           context "with sorting" do
-            let!(:assistant_a) { create(:openai_assistant, name: "Alpha Bot") }
-            let!(:assistant_z) { create(:openai_assistant, name: "Zulu Bot") }
+            let!(:assistant_z) { create(:openai_assistant, name: "Zulu Bot", created_at: 2.days.ago) }
+            let!(:assistant_a) { create(:openai_assistant, name: "Alpha Bot", created_at: 1.day.ago) }
 
-            it "sorts by name" do
+            it "sorts by name ascending" do
               get :index, params: { sort: "name" }
               assistants = assigns(:assistants).to_a
-              expect(assistants.first.name).to eq("Alpha Bot")
-              expect(assistants.last.name).to eq("Zulu Bot")
+              expect(assistants.map(&:name)).to eq([ "Alpha Bot", "Zulu Bot" ])
+            end
+
+            it "defaults to created_at descending without sort param" do
+              get :index
+              assistants = assigns(:assistants).to_a
+              # Most recently created first
+              expect(assistants.map(&:name)).to eq([ "Alpha Bot", "Zulu Bot" ])
             end
           end
         end
@@ -82,8 +88,8 @@ module PromptTracker
 
           it "calculates metrics correctly" do
             test = create(:test, testable: assistant)
-            create(:test_run, test: test, testable: assistant, status: "passed")
-            create(:test_run, test: test, testable: assistant, status: "failed")
+            create(:test_run, test: test, status: "passed", passed: true)
+            create(:test_run, test: test, status: "failed", passed: false)
 
             get :show, params: { id: assistant.id }
 
@@ -93,106 +99,8 @@ module PromptTracker
           end
         end
 
-        describe "GET #new" do
-          it "returns success" do
-            get :new
-            expect(response).to be_successful
-          end
-
-          it "assigns new @assistant" do
-            get :new
-            expect(assigns(:assistant)).to be_a_new(PromptTracker::Openai::Assistant)
-          end
-        end
-
-        describe "POST #create" do
-          let(:valid_params) do
-            {
-              openai_assistant: {
-                assistant_id: "asst_test_123",
-                name: "Test Assistant",
-                description: "A test assistant",
-                category: "testing"
-              }
-            }
-          end
-
-          it "creates a new assistant" do
-            expect {
-              post :create, params: valid_params
-            }.to change(PromptTracker::Openai::Assistant, :count).by(1)
-          end
-
-          it "redirects to assistant show page" do
-            post :create, params: valid_params
-            expect(response).to redirect_to(testing_openai_assistant_path(PromptTracker::Openai::Assistant.last))
-          end
-
-          it "sets flash notice" do
-            post :create, params: valid_params
-            expect(flash[:notice]).to eq("Assistant created successfully.")
-          end
-
-          context "with invalid params" do
-            it "renders new template" do
-              post :create, params: {
-                openai_assistant: { name: "" }
-              }
-              expect(response).to have_http_status(:unprocessable_entity)
-            end
-          end
-        end
-
-        describe "GET #edit" do
-          it "returns success" do
-            get :edit, params: { id: assistant.id }
-            expect(response).to be_successful
-          end
-
-          it "assigns @assistant" do
-            get :edit, params: { id: assistant.id }
-            expect(assigns(:assistant)).to eq(assistant)
-          end
-        end
-
-        describe "PATCH #update" do
-          let(:update_params) do
-            {
-              id: assistant.id,
-              openai_assistant: {
-                name: "Updated Name",
-                description: "Updated description"
-              }
-            }
-          end
-
-          it "updates the assistant" do
-            patch :update, params: update_params
-            assistant.reload
-            expect(assistant.name).to eq("Updated Name")
-            expect(assistant.description).to eq("Updated description")
-          end
-
-          it "redirects to assistant show page" do
-            patch :update, params: update_params
-            expect(response).to redirect_to(testing_openai_assistant_path(assistant))
-          end
-
-          it "sets flash notice" do
-            patch :update, params: update_params
-            expect(flash[:notice]).to eq("Assistant updated successfully.")
-          end
-
-          context "with invalid params" do
-            it "renders edit template" do
-              patch :update, params: {
-                id: assistant.id,
-                openai_assistant: { name: "" }
-              }
-              expect(response).to have_http_status(:unprocessable_entity)
-            end
-          end
-        end
+        # NOTE: Assistants are created/updated through the playground, not through standard CRUD forms
+        # So we don't test new, create, edit, update actions here
 
         describe "DELETE #destroy" do
           it "destroys the assistant" do
@@ -214,22 +122,23 @@ module PromptTracker
         end
 
         describe "POST #sync" do
-          it "calls fetch_from_openai on the assistant" do
-            allow_any_instance_of(PromptTracker::Openai::Assistant).to receive(:fetch_from_openai).and_return(true)
+          it "calls fetch_from_openai! on the assistant" do
+            allow_any_instance_of(PromptTracker::Openai::Assistant).to receive(:fetch_from_openai!).and_return(true)
             post :sync, params: { id: assistant.id }
             expect(response).to redirect_to(testing_openai_assistant_path(assistant))
           end
 
           it "sets success notice when sync succeeds" do
-            allow_any_instance_of(PromptTracker::Openai::Assistant).to receive(:fetch_from_openai).and_return(true)
+            allow_any_instance_of(PromptTracker::Openai::Assistant).to receive(:fetch_from_openai!).and_return(true)
             post :sync, params: { id: assistant.id }
             expect(flash[:notice]).to eq("Assistant synced successfully from OpenAI.")
           end
 
           it "sets error alert when sync fails" do
-            allow_any_instance_of(PromptTracker::Openai::Assistant).to receive(:fetch_from_openai).and_return(false)
-            post :sync, params: { id: assistant.id }
-            expect(flash[:alert]).to eq("Failed to sync assistant from OpenAI. Please check the assistant_id.")
+            allow_any_instance_of(PromptTracker::Openai::Assistant).to receive(:fetch_from_openai!).and_raise(StandardError.new("API Error"))
+            expect {
+              post :sync, params: { id: assistant.id }
+            }.to raise_error(StandardError)
           end
         end
       end

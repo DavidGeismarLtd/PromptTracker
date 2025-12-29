@@ -63,8 +63,8 @@ RSpec.describe PromptTracker::RunEvaluatorsJob, type: :job do
 
     context "when evaluators fail" do
       let(:test) do
-        test = create(:prompt_test,
-                      prompt_version: version)
+        test = create(:test,
+                      testable: version)
         create(:evaluator_config,
                configurable: test,
                evaluator_key: "keyword",

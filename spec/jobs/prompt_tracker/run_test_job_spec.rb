@@ -9,8 +9,7 @@ module PromptTracker
       allow_any_instance_of(DatasetRow).to receive(:broadcast_prepend_to_dataset)
       allow_any_instance_of(DatasetRow).to receive(:broadcast_replace_to_dataset)
       allow_any_instance_of(DatasetRow).to receive(:broadcast_remove_to_dataset)
-      allow_any_instance_of(TestRun).to receive(:broadcast_creation)
-      allow_any_instance_of(TestRun).to receive(:broadcast_changes)
+      allow_any_instance_of(TestRun).to receive(:broadcast_status_change)
     end
 
     let(:prompt) { create(:prompt, name: "test_prompt") }

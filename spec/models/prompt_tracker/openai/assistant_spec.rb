@@ -74,7 +74,6 @@ module PromptTracker
 
         it "fetches assistant details from OpenAI API and stores in metadata" do
           # Mock OpenAI client response
-          mock_client = double("OpenAI::Client")
           mock_response = {
             "id" => "asst_test123",
             "name" => "Updated Assistant Name",
@@ -86,11 +85,12 @@ module PromptTracker
           }
 
           # Mock the OpenAI::Client constant
+          response = mock_response # Capture in local variable for closure
           stub_const("OpenAI::Client", Class.new do
-            def initialize(access_token:); end
-            def assistants
+            define_method(:initialize) { |access_token:| }
+            define_method(:assistants) do
               @assistants ||= Object.new.tap do |obj|
-                obj.define_singleton_method(:retrieve) { |id:| mock_response }
+                obj.define_singleton_method(:retrieve) { |id:| response }
               end
             end
           end)

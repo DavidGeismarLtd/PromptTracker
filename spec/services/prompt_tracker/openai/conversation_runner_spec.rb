@@ -60,8 +60,10 @@ module PromptTracker
 
         it "creates a thread and runs a conversation" do
           # Mock LLM service for generating user messages
+          # First call generates initial message, second call returns [END] to stop conversation
           allow(PromptTracker::LlmClientService).to receive(:call).and_return(
-            { text: "I have a severe headache" }
+            { text: "I have a severe headache" },
+            { text: "[END]" }
           )
 
           # Mock thread creation
@@ -76,7 +78,7 @@ module PromptTracker
           # Mock run completion
           allow(mock_runs).to receive(:retrieve).and_return({ "id" => "run_1", "status" => "completed" })
 
-          # Mock assistant message retrieval
+          # Mock assistant message retrieval - only return the latest assistant message
           allow(mock_messages).to receive(:list).and_return({
             "data" => [
               {

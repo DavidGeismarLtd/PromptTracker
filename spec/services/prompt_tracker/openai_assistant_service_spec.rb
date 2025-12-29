@@ -23,12 +23,12 @@ module PromptTracker
     describe '.call' do
       it 'creates thread, runs assistant, and returns response' do
         # Mock thread creation
-        expect(mock_client).to receive(:threads).and_return(
+        allow(mock_client).to receive(:threads).and_return(
           double(create: { 'id' => thread_id })
         )
 
         # Mock message creation
-        expect(mock_client).to receive(:messages).and_return(
+        allow(mock_client).to receive(:messages).and_return(
           double(
             create: { 'id' => 'msg_123' },
             list: {
@@ -44,7 +44,7 @@ module PromptTracker
         )
 
         # Mock run creation
-        expect(mock_client).to receive(:runs).and_return(
+        allow(mock_client).to receive(:runs).and_return(
           double(
             create: { 'id' => run_id },
             retrieve: {
@@ -82,15 +82,15 @@ module PromptTracker
       end
 
       it 'raises error when run fails' do
-        expect(mock_client).to receive(:threads).and_return(
+        allow(mock_client).to receive(:threads).and_return(
           double(create: { 'id' => thread_id })
         )
 
-        expect(mock_client).to receive(:messages).and_return(
+        allow(mock_client).to receive(:messages).and_return(
           double(create: { 'id' => 'msg_123' })
         )
 
-        expect(mock_client).to receive(:runs).and_return(
+        allow(mock_client).to receive(:runs).and_return(
           double(
             create: { 'id' => run_id },
             retrieve: {
@@ -107,16 +107,16 @@ module PromptTracker
       end
 
       it 'raises error when run times out' do
-        expect(mock_client).to receive(:threads).and_return(
+        allow(mock_client).to receive(:threads).and_return(
           double(create: { 'id' => thread_id })
         )
 
-        expect(mock_client).to receive(:messages).and_return(
+        allow(mock_client).to receive(:messages).and_return(
           double(create: { 'id' => 'msg_123' })
         )
 
         # Mock run that never completes
-        expect(mock_client).to receive(:runs).and_return(
+        allow(mock_client).to receive(:runs).and_return(
           double(
             create: { 'id' => run_id },
             retrieve: {
@@ -133,15 +133,15 @@ module PromptTracker
       end
 
       it 'raises error when run requires action (tool calls)' do
-        expect(mock_client).to receive(:threads).and_return(
+        allow(mock_client).to receive(:threads).and_return(
           double(create: { 'id' => thread_id })
         )
 
-        expect(mock_client).to receive(:messages).and_return(
+        allow(mock_client).to receive(:messages).and_return(
           double(create: { 'id' => 'msg_123' })
         )
 
-        expect(mock_client).to receive(:runs).and_return(
+        allow(mock_client).to receive(:runs).and_return(
           double(
             create: { 'id' => run_id },
             retrieve: {

@@ -17,7 +17,7 @@
 require "rails_helper"
 
 module PromptTracker
-  RSpec.describe PromptTest, type: :model do
+  RSpec.describe Test, type: :model do
     let(:prompt) { create(:prompt) }
     let(:version) { create(:prompt_version, prompt: prompt) }
     let(:test) do

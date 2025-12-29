@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "PromptTracker::PromptTestsController", type: :request do
+RSpec.describe "PromptTracker::TestsController", type: :request do
   let(:prompt) { create(:prompt) }
   let(:version) { create(:prompt_version, prompt: prompt, status: "active") }
   let(:test) { create(:prompt_test, testable: version) }

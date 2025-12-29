@@ -46,16 +46,10 @@
     <!-- Modals for test runs -->
     <div id="test-runs-modals-<%= test.id %>">
       <!-- Evaluation Modals (for both assistants and prompt versions) -->
-      <%= render "prompt_tracker/testing/tests/evaluation_modals", test: test %>
+      <%# render "prompt_tracker/testing/tests/evaluation_modals", test: test %>
 
       <!-- Human Evaluation Modals -->
       <% latest_runs.each do |run| %>
-        <%= render "prompt_tracker/shared/human_evaluation_modal",
-                   record: run,
-                   form_url: testing_run_human_evaluations_path(run),
-                   context: 'testing' %>
-        <%= render "prompt_tracker/testing/tests/all_human_evaluations_modal",
-                   run: run %>
       <% end %>
     </div>
   </div>

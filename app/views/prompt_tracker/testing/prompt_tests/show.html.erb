@@ -230,7 +230,7 @@
 
     <!-- Human Evaluation Modals -->
     <% @recent_runs.each do |run| %>
-      <%= render "prompt_tracker/shared/human_evaluation_modal",
+      <%= render "prompt_tracker/shared/human_evaluation_modal_form",
                  record: run,
                  form_url: testing_run_human_evaluations_path(run),
                  context: 'testing' %>

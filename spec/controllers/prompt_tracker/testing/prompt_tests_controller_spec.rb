@@ -52,7 +52,7 @@ module PromptTracker
           expect(additional_runs.count).to eq(5)
 
           # Verify they are the correct runs (ordered by created_at desc)
-          all_runs = test.prompt_test_runs.order(created_at: :desc)
+          all_runs = test.test_runs.order(created_at: :desc)
           expect(additional_runs.map(&:id)).to eq(all_runs[5..9].map(&:id))
         end
 

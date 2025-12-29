@@ -28,19 +28,3 @@
     <% end %>
   </div>
 <% end %>
-
-<%# Append modals for the new runs %>
-<%= turbo_stream.append "test-runs-modals-#{@test.id}" do %>
-  <%# Evaluation modals %>
-  <%= render "prompt_tracker/testing/tests/evaluation_modals_for_runs", runs: @additional_runs %>
-
-  <%# Human evaluation modals %>
-  <% @additional_runs.each do |run| %>
-    <%= render "prompt_tracker/shared/human_evaluation_modal",
-               record: run,
-               form_url: testing_run_human_evaluations_path(run),
-               context: 'testing' %>
-    <%= render "prompt_tracker/testing/tests/all_human_evaluations_modal",
-               run: run %>
-  <% end %>
-<% end %>

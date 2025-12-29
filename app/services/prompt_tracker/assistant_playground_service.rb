@@ -46,12 +46,15 @@ module PromptTracker
       )
 
       # Save to database
-      assistant = PromptTracker::Openai::Assistant.create!(
+      # Skip fetch_from_openai callback since we already have the data from the create response
+      assistant = PromptTracker::Openai::Assistant.new(
         assistant_id: response["id"],
         name: response["name"],
         description: response["description"],
         metadata: build_metadata_from_response(response)
       )
+      assistant.skip_fetch_from_openai = true
+      assistant.save!
 
       { success: true, assistant: assistant, api_response: response }
     rescue => e

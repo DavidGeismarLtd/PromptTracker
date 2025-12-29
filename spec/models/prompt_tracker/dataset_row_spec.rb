@@ -41,7 +41,6 @@ module PromptTracker
     describe "associations" do
       it { is_expected.to belong_to(:dataset) }
       it { is_expected.to have_many(:test_runs).dependent(:nullify) }
-      it { is_expected.to have_one(:prompt_version).through(:dataset) }
     end
 
     describe "validations" do

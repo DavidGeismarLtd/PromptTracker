@@ -48,6 +48,7 @@ module PromptTracker
 
         Evaluation.create!(
           llm_response: config[:llm_response],
+          test_run: config[:test_run],
           evaluator_type: self.class.name,
           evaluator_config_id: config[:evaluator_config_id],
           score: score,

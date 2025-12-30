@@ -43,6 +43,9 @@ RSpec.configure do |config|
   config.include Rails::Controller::Testing::TemplateAssertions, type: :controller
   config.include Rails::Controller::Testing::Integration, type: :controller
 
+  # Include ActiveJob test helpers
+  config.include ActiveJob::TestHelper
+
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
     Rails.root.join("../../test/fixtures")
@@ -75,4 +78,12 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  # Perform enqueued jobs inline for request specs
+  # This makes background jobs execute immediately during tests
+  config.around(:each, type: :request) do |example|
+    perform_enqueued_jobs do
+      example.run
+    end
+  end
 end

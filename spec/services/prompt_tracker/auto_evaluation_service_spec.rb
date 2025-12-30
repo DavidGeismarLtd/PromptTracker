@@ -58,18 +58,17 @@ RSpec.describe PromptTracker::AutoEvaluationService do
       end
     end
 
-    context "when evaluation fails" do
-      let!(:config) { create(:evaluator_config, configurable: version) }
+    context "when evaluator config is async" do
+      let!(:async_config) { create(:evaluator_config, :async, prompt: prompt) }
 
-      it "logs error and continues with other evaluators" do
-        allow_any_instance_of(PromptTracker::EvaluatorConfig).to receive(:build_evaluator).and_raise(StandardError, "Test error")
-        allow(Rails.logger).to receive(:error)
+      it "schedules a background job instead of running immediately" do
+        expect(PromptTracker::EvaluationJob).to receive(:perform_later).with(
+          llm_response.id,
+          async_config.id,
+          check_dependency: false
+        )
 
-        expect {
-          described_class.evaluate(llm_response)
-        }.not_to raise_error
-
-        expect(Rails.logger).to have_received(:error).with(/Auto-evaluation failed/).at_least(:once)
+        described_class.evaluate(llm_response)
       end
     end
   end

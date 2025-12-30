@@ -185,4 +185,9 @@ PromptTracker::Engine.routes.draw do
       get :config_form
     end
   end
+
+  # Tracing routes
+  resources :sessions, only: [ :index, :show ]
+  resources :traces, only: [ :index, :show ]
+  resources :spans, only: [ :show ]
 end

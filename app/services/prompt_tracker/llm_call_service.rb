@@ -73,20 +73,33 @@ module PromptTracker
     class VersionNotFoundError < StandardError; end
     class NoBlockGivenError < StandardError; end
 
+<<<<<<< HEAD
     attr_reader :prompt_slug, :version_number, :variables, :provider, :model,
                 :user_id, :session_id, :environment, :metadata, :ab_test, :ab_variant
+=======
+    attr_reader :prompt_name, :version_number, :variables, :provider, :model,
+                :user_id, :session_id, :environment, :metadata, :ab_test, :ab_variant,
+                :trace, :span
+>>>>>>> 9f13033 (WIP)
 
     # Track an LLM call
     #
     # @param prompt_slug [String] slug of the prompt to use
     # @param variables [Hash] variables to render in the template
+<<<<<<< HEAD
     # @param provider [String, nil] LLM provider (e.g., "openai", "anthropic") - defaults to version's model_config
     # @param model [String, nil] model name (e.g., "gpt-4", "claude-3-opus") - defaults to version's model_config
+=======
+    # @param provider [String, nil] LLM provider (e.g., "openai", "anthropic") - defaults to prompt version's model_config
+    # @param model [String, nil] model name (e.g., "gpt-4", "claude-3-opus") - defaults to prompt version's model_config
+>>>>>>> 9f13033 (WIP)
     # @param version [Integer, nil] specific version number (defaults to active version)
     # @param user_id [String, nil] user identifier for context
     # @param session_id [String, nil] session identifier for context
     # @param environment [String, nil] environment (defaults to Rails.env)
     # @param metadata [Hash, nil] additional metadata to store
+    # @param trace [Trace, nil] trace to link this LLM call to
+    # @param span [Span, nil] span to link this LLM call to
     # @yield [rendered_prompt] block that executes the LLM call
     # @yieldparam rendered_prompt [String] the rendered prompt template
     # @yieldreturn [String, Hash] LLM response - String (just text) or Hash with :text, :tokens_prompt, :tokens_completion, :metadata
@@ -94,10 +107,16 @@ module PromptTracker
     # @raise [PromptNotFoundError] if prompt not found
     # @raise [VersionNotFoundError] if version not found
     # @raise [NoBlockGivenError] if no block provided
+<<<<<<< HEAD
     # @raise [ArgumentError] if provider/model not specified and not in version's model_config
     # @raise [LlmResponseContract::InvalidResponseError] if block returns invalid response format
     def self.track(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
                    user_id: nil, session_id: nil, environment: nil, metadata: nil, &block)
+=======
+    def self.track(prompt_name:, variables: {}, provider: nil, model: nil, version: nil,
+                   user_id: nil, session_id: nil, environment: nil, metadata: nil,
+                   trace: nil, span: nil, &block)
+>>>>>>> 9f13033 (WIP)
       new(
         prompt_slug: prompt_slug,
         variables: variables,
@@ -107,7 +126,9 @@ module PromptTracker
         user_id: user_id,
         session_id: session_id,
         environment: environment,
-        metadata: metadata
+        metadata: metadata,
+        trace: trace,
+        span: span
       ).track(&block)
     end
 
@@ -115,26 +136,29 @@ module PromptTracker
     #
     # @param prompt_slug [String] slug of the prompt
     # @param variables [Hash] variables for template rendering
-    # @param provider [String, nil] LLM provider (optional - will use version's model_config)
-    # @param model [String, nil] model name (optional - will use version's model_config)
+    # @param provider [String, nil] LLM provider (defaults to prompt version's model_config)
+    # @param model [String, nil] model name (defaults to prompt version's model_config)
     # @param version [Integer, nil] specific version number
     # @param user_id [String, nil] user identifier
     # @param session_id [String, nil] session identifier
     # @param environment [String, nil] environment
     # @param metadata [Hash, nil] additional metadata
-    def initialize(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
-                   user_id: nil, session_id: nil, environment: nil, metadata: nil)
-      @prompt_slug = prompt_slug
+    # @param trace [Trace, nil] trace to link this LLM call to
+    # @param span [Span, nil] span to link this LLM call to
+    def initialize(prompt_name:, variables: {}, provider: nil, model: nil, version: nil,
+                   user_id: nil, session_id: nil, environment: nil, metadata: nil,
+                   trace: nil, span: nil)
+      @prompt_name = prompt_name
       @version_number = version
       @variables = variables || {}
-      @provider_override = provider  # Store as override, will resolve later
-      @model_override = model        # Store as override, will resolve later
-      @provider = nil                # Will be set in resolve_provider_and_model
-      @model = nil                   # Will be set in resolve_provider_and_model
+      @provided_provider = provider
+      @provided_model = model
       @user_id = user_id
       @session_id = session_id
       @environment = environment || default_environment
       @metadata = metadata || {}
+      @trace = trace
+      @span = span
       @ab_test = nil
       @ab_variant = nil
     end
@@ -155,10 +179,10 @@ module PromptTracker
       prompt = find_prompt
       prompt_version = find_version(prompt)
 
-      # Step 2: Resolve provider and model (from override or model_config)
+      # Step 1.5: Resolve provider and model from version's model_config if not provided
       resolve_provider_and_model(prompt_version)
 
-      # Step 3: Render template
+      # Step 2: Render template
       rendered_prompt = render_template(prompt_version)
 
       # Step 4: Create pending LlmResponse record
@@ -245,6 +269,14 @@ module PromptTracker
       version
     end
 
+    # Resolve provider and model from prompt version's model_config if not provided
+    #
+    # @param prompt_version [PromptVersion] the version
+    def resolve_provider_and_model(prompt_version)
+      @provider = @provided_provider || prompt_version.model_config&.dig("provider")
+      @model = @provided_model || prompt_version.model_config&.dig("model")
+    end
+
     # Render the template with variables
     #
     # @param prompt_version [PromptVersion] the version
@@ -270,7 +302,9 @@ module PromptTracker
         environment: environment,
         context: metadata,
         ab_test: ab_test,
-        ab_variant: ab_variant
+        ab_variant: ab_variant,
+        trace: trace,
+        span: span
       )
     end
 

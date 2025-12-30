@@ -8,36 +8,23 @@ PromptTracker::Engine.routes.draw do
     get "/", to: "dashboard#index", as: :root
     post "sync_openai_assistants", to: "dashboard#sync_openai_assistants", as: :sync_openai_assistants_root
 
-  resources :prompts, only: [ :index, :show ] do
-    member do
-      get :analytics
-    end
-
-    # Playground for editing existing prompts
+    # Standalone playground (not tied to a specific prompt)
     resource :playground, only: [ :show ], controller: "playground" do
       post :preview, on: :member
       post :save, on: :member
       post :generate, on: :member
     end
 
-    resources :prompt_versions, only: [ :show ], path: "versions" do
-      member do
-        get :compare
-        post :activate
-      end
-
-      # Playground for specific version
+    # Prompt versions (for testing)
+    resources :prompts, only: [ :index, :show ] do
+      # Playground for editing existing prompts
       resource :playground, only: [ :show ], controller: "playground" do
         post :preview, on: :member
         post :save, on: :member
         post :generate, on: :member
       end
 
-      # Tests nested under prompt versions
-      resources :prompt_tests, only: [ :index, :new, :create, :show, :edit, :update, :destroy ], path: "tests" do
-        collection do
-          post :run_all
-        end
+      resources :prompt_versions, only: [ :show ], path: "versions" do
         member do
           get :compare
           post :activate
@@ -130,20 +117,6 @@ PromptTracker::Engine.routes.draw do
         end
       end
     end
-
-    # A/B tests nested under prompts for creation
-    resources :ab_tests, only: [ :new, :create ], path: "ab-tests"
-
-    # Evaluator configs nested under prompts
-    resources :evaluator_configs, only: [ :index, :show, :create, :update, :destroy ], path: "evaluators"
-  end
-
-  resources :llm_responses, only: [ :index, :show ], path: "responses"
-
-  resources :evaluations, only: [ :index, :show, :create ] do
-    collection do
-      get :form_template
-    end
   end
 
   # ========================================
@@ -170,8 +143,26 @@ PromptTracker::Engine.routes.draw do
     end
   end
 
-  # A/B tests at top level for management
-  resources :ab_tests, only: [ :index, :show, :edit, :update, :destroy ], path: "ab-tests" do
+  # Documentation
+  namespace :docs do
+    get :tracking
+  end
+
+  # Prompts (for monitoring - evaluator configs)
+  resources :prompts, only: [] do
+    # Evaluator configs nested under prompts (for monitoring)
+    resources :evaluator_configs, only: [ :index, :show, :create, :update, :destroy ], path: "evaluators" do
+      collection do
+        post :copy_from_tests
+      end
+    end
+
+    # A/B tests nested under prompts (for creating new tests)
+    resources :ab_tests, only: [ :new, :create ], path: "ab-tests"
+  end
+
+  # A/B Tests (for managing tests)
+  resources :ab_tests, path: "ab-tests" do
     member do
       post :start
       post :pause
@@ -182,6 +173,18 @@ PromptTracker::Engine.routes.draw do
     end
   end
 
+  # Evaluations (used by both monitoring and test sections)
+  resources :evaluations, only: [ :index, :show ] do
+    # Human evaluations nested under evaluations
+    resources :human_evaluations, only: [ :create ]
+  end
+
+  # Evaluator config forms (not nested, for AJAX loading)
+  resources :evaluator_configs, only: [] do
+    collection do
+      get :config_form
+    end
+  end
 
   # Tracing routes
   resources :sessions, only: [ :index, :show ]

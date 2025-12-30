@@ -6,6 +6,8 @@ puts "  Cleaning up existing data..."
 PromptTracker::Evaluation.delete_all
 PromptTracker::TestRun.delete_all  # Delete test runs before LLM responses
 PromptTracker::Test.delete_all
+PromptTracker::Span.delete_all  # Delete spans before traces and LLM responses
+PromptTracker::Trace.delete_all  # Delete traces before LLM responses
 PromptTracker::LlmResponse.delete_all
 PromptTracker::AbTest.delete_all
 PromptTracker::EvaluatorConfig.delete_all

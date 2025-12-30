@@ -20,7 +20,7 @@
       <div class="card-body">
         <%= render "form",
                    dataset: @dataset,
-                   url: datasets_index_path(@testable),
+                   url: testable_datasets_path(@testable),
                    method: :post,
                    submit_text: "Create Dataset",
                    cancel_path: datasets_index_path(@testable) %>

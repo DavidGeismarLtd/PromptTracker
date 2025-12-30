@@ -1,138 +1,105 @@
+# frozen_string_literal: true
+
 module PromptTracker
+  # Helper methods for datasets views
+  #
+  # This helper uses shallow routing for datasets:
+  # - Dataset-specific paths (show, edit, destroy, rows) use /testing/datasets/:id
+  # - Testable-specific paths (index, new) delegate to the testable model
+  #
+  # This eliminates case/when statements and makes adding new testable types easy.
+  #
   module DatasetsHelper
-    # Generate path for a dataset based on its testable type
+    # ========================================
+    # DATASET PATHS (shallow routes - no case/when needed!)
+    # ========================================
+
+    # Generate path for a dataset (show, edit, or destroy)
     # @param dataset [PromptTracker::Dataset] The dataset
-    # @param action [Symbol] The action (:show, :edit, :destroy)
+    # @param action [Symbol] The action (:show, :edit, :destroy) - defaults to :show
     # @return [String] The path to the dataset
     def dataset_path(dataset, action: :show)
-      testable = dataset.testable
-
-      case testable
-      when PromptTracker::PromptVersion
-        prompt = testable.prompt
-        case action
-        when :show
-          testing_prompt_prompt_version_dataset_path(prompt, testable, dataset)
-        when :edit
-          edit_testing_prompt_prompt_version_dataset_path(prompt, testable, dataset)
-        when :destroy
-          testing_prompt_prompt_version_dataset_path(prompt, testable, dataset)
-        else
-          raise ArgumentError, "Unknown action: #{action}"
-        end
-      when PromptTracker::Openai::Assistant
-        case action
-        when :show
-          testing_openai_assistant_dataset_path(testable, dataset)
-        when :edit
-          edit_testing_openai_assistant_dataset_path(testable, dataset)
-        when :destroy
-          testing_openai_assistant_dataset_path(testable, dataset)
-        else
-          raise ArgumentError, "Unknown action: #{action}"
-        end
+      case action
+      when :show, :destroy
+        testing_dataset_path(dataset)
+      when :edit
+        edit_testing_dataset_path(dataset)
       else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
+        testing_dataset_path(dataset)
       end
     end
 
-    # Generate index path for datasets based on testable type
-    # @param testable [PromptTracker::PromptVersion, PromptTracker::Openai::Assistant] The testable
-    # @return [String] The path to the datasets index
-    def datasets_index_path(testable)
-      case testable
-      when PromptTracker::PromptVersion
-        testing_prompt_prompt_version_datasets_path(testable.prompt, testable)
-      when PromptTracker::Openai::Assistant
-        testing_openai_assistant_datasets_path(testable)
-      else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
-      end
-    end
-
-    # Generate new dataset path based on testable type
-    # @param testable [PromptTracker::PromptVersion, PromptTracker::Openai::Assistant] The testable
-    # @return [String] The path to create a new dataset
-    def new_dataset_path(testable)
-      case testable
-      when PromptTracker::PromptVersion
-        new_testing_prompt_prompt_version_dataset_path(testable.prompt, testable)
-      when PromptTracker::Openai::Assistant
-        new_testing_openai_assistant_dataset_path(testable)
-      else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
-      end
-    end
-
-    # Generate path for a dataset row based on the dataset's testable type
+    # Generate path for a dataset row
     # @param dataset [PromptTracker::Dataset] The dataset
     # @param row [PromptTracker::DatasetRow] The row
-    # @param action [Symbol] The action (:destroy, :update)
     # @return [String] The path to the dataset row
-    def dataset_row_path(dataset, row, action: :destroy)
-      testable = dataset.testable
-
-      case testable
-      when PromptTracker::PromptVersion
-        prompt = testable.prompt
-        testing_prompt_prompt_version_dataset_dataset_row_path(prompt, testable, dataset, row)
-      when PromptTracker::Openai::Assistant
-        testing_openai_assistant_dataset_dataset_row_path(testable, dataset, row)
-      else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
-      end
+    def dataset_row_path(dataset, row)
+      testing_dataset_dataset_row_path(dataset, row)
     end
 
     # Generate path for creating dataset rows
     # @param dataset [PromptTracker::Dataset] The dataset
     # @return [String] The path to create dataset rows
     def dataset_rows_path(dataset)
-      testable = dataset.testable
-
-      case testable
-      when PromptTracker::PromptVersion
-        prompt = testable.prompt
-        testing_prompt_prompt_version_dataset_dataset_rows_path(prompt, testable, dataset)
-      when PromptTracker::Openai::Assistant
-        testing_openai_assistant_dataset_dataset_rows_path(testable, dataset)
-      else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
-      end
+      testing_dataset_dataset_rows_path(dataset)
     end
 
     # Generate path for batch destroying dataset rows
     # @param dataset [PromptTracker::Dataset] The dataset
     # @return [String] The path to batch destroy dataset rows
     def batch_destroy_dataset_rows_path(dataset)
-      testable = dataset.testable
+      batch_destroy_testing_dataset_dataset_rows_path(dataset)
+    end
 
-      case testable
-      when PromptTracker::PromptVersion
-        prompt = testable.prompt
-        batch_destroy_testing_prompt_prompt_version_dataset_dataset_rows_path(prompt, testable, dataset)
-      when PromptTracker::Openai::Assistant
-        batch_destroy_testing_openai_assistant_dataset_dataset_rows_path(testable, dataset)
-      else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
-      end
+    # Generate path for generate_rows action
+    # @param dataset [PromptTracker::Dataset] The dataset
+    # @return [String] The path to generate rows
+    def generate_rows_dataset_path(dataset)
+      generate_rows_testing_dataset_path(dataset)
+    end
+
+    # ========================================
+    # TESTABLE PATHS (delegate to model - polymorphic)
+    # ========================================
+
+    # Generate index path for datasets based on testable type
+    # Delegates to the testable model's routing method
+    # @param testable [Object] The testable (PromptVersion, Assistant, etc.)
+    # @return [String] The path to the datasets index
+    def datasets_index_path(testable)
+      testable.datasets_index_path
+    end
+
+    # Generate new dataset path based on testable type
+    # Delegates to the testable model's routing method
+    # @param testable [Object] The testable (PromptVersion, Assistant, etc.)
+    # @return [String] The path to create a new dataset
+    def new_dataset_path(testable)
+      testable.new_dataset_path
     end
 
     # Generate path to the testable's show page
-    # @param testable [PromptTracker::PromptVersion, PromptTracker::Openai::Assistant] The testable
+    # Delegates to the testable model's routing method
+    # @param testable [Object] The testable (PromptVersion, Assistant, etc.)
     # @return [String] The path to the testable
     def testable_show_path(testable)
-      case testable
-      when PromptTracker::PromptVersion
-        testing_prompt_prompt_version_path(testable.prompt, testable)
-      when PromptTracker::Openai::Assistant
-        testing_openai_assistant_path(testable)
-      else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
-      end
+      testable.show_path
     end
 
+    # Generate path to create datasets for a testable (POST target)
+    # Delegates to the testable model's routing method
+    # @param testable [Object] The testable (PromptVersion, Assistant, etc.)
+    # @return [String] The path to create datasets
+    def testable_datasets_path(testable)
+      testable.datasets_path
+    end
+
+    # ========================================
+    # DISPLAY HELPERS (still need case/when for now, but could move to models)
+    # ========================================
+
     # Get display name for a testable
-    # @param testable [PromptTracker::PromptVersion, PromptTracker::Openai::Assistant] The testable
+    # @param testable [Object] The testable
     # @return [String] The display name
     def testable_name(testable)
       case testable
@@ -141,38 +108,19 @@ module PromptTracker
       when PromptTracker::Openai::Assistant
         testable.name
       else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
+        testable.respond_to?(:display_name) ? testable.display_name : testable.name
       end
     end
 
     # Generate badge HTML for a testable (e.g., version number)
-    # @param testable [PromptTracker::PromptVersion, PromptTracker::Openai::Assistant] The testable
+    # @param testable [Object] The testable
     # @return [String] HTML badge or empty string
     def testable_badge(testable)
       case testable
       when PromptTracker::PromptVersion
         content_tag(:span, "v#{testable.version_number}", class: "badge bg-primary")
-      when PromptTracker::Openai::Assistant
-        "" # Assistants don't have version badges
       else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
-      end
-    end
-
-    # Generate path for generate_rows action
-    # @param dataset [PromptTracker::Dataset] The dataset
-    # @return [String] The path to generate rows
-    def generate_rows_dataset_path(dataset)
-      testable = dataset.testable
-
-      case testable
-      when PromptTracker::PromptVersion
-        prompt = testable.prompt
-        generate_rows_testing_prompt_prompt_version_dataset_path(prompt, testable, dataset)
-      when PromptTracker::Openai::Assistant
-        generate_rows_testing_openai_assistant_dataset_path(testable, dataset)
-      else
-        raise ArgumentError, "Unknown testable type: #{testable.class}"
+        "" # Other testables don't have version badges by default
       end
     end
   end

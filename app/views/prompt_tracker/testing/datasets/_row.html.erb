@@ -1,18 +1,8 @@
 <% dataset ||= @dataset # Support both local and instance variable %>
 <%
-  # Handle both PromptVersion and Assistant datasets
-  if dataset.testable.is_a?(PromptTracker::PromptVersion)
-    prompt_version = dataset.testable
-    prompt = prompt_version.prompt
-    # Use engine routes explicitly for background job context compatibility
-    delete_path = PromptTracker::Engine.routes.url_helpers.testing_prompt_prompt_version_dataset_dataset_row_path(prompt, prompt_version, dataset, row)
-    update_path = PromptTracker::Engine.routes.url_helpers.testing_prompt_prompt_version_dataset_dataset_row_path(prompt, prompt_version, dataset, row)
-  elsif dataset.testable.is_a?(PromptTracker::Openai::Assistant)
-    assistant = dataset.testable
-    # Use engine routes explicitly for background job context compatibility
-    delete_path = PromptTracker::Engine.routes.url_helpers.testing_openai_assistant_dataset_dataset_row_path(assistant, dataset, row)
-    update_path = PromptTracker::Engine.routes.url_helpers.testing_openai_assistant_dataset_dataset_row_path(assistant, dataset, row)
-  end
+  # Shallow routes - no need to check testable type!
+  # Use engine routes explicitly for background job context compatibility
+  row_path = PromptTracker::Engine.routes.url_helpers.testing_dataset_dataset_row_path(dataset, row)
 %>
 <tr id="dataset-row-<%= row.id %>">
   <td>
@@ -50,67 +40,63 @@
       <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editRowModal-<%= row.id %>" title="Edit">
         <i class="bi bi-pencil"></i>
       </button>
-      <% if delete_path.present? %>
-        <%= button_to delete_path,
-                      method: :delete,
-                      class: "btn btn-outline-danger btn-sm",
-                      data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete this row?" },
-                      form: { data: { turbo_frame: "_top" } } do %>
-          <i class="bi bi-trash"></i>
-        <% end %>
+      <%= button_to row_path,
+                    method: :delete,
+                    class: "btn btn-outline-danger btn-sm",
+                    data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete this row?" },
+                    form: { data: { turbo_frame: "_top" } } do %>
+        <i class="bi bi-trash"></i>
       <% end %>
     </div>
   </td>
 </tr>
 
 <!-- Edit Row Modal -->
-<% if update_path.present? %>
-  <div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-controller="modal-fix" data-modal-fix-target="modal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Edit Row #<%= index %></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <%= form_with(model: row,
-                      url: update_path,
-                      method: :patch) do |f| %>
-        <div class="modal-body">
-          <%= f.hidden_field :source, value: row.source %>
+<div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-controller="modal-fix" data-modal-fix-target="modal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Row #<%= index %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <%= form_with(model: row,
+                    url: row_path,
+                    method: :patch) do |f| %>
+      <div class="modal-body">
+        <%= f.hidden_field :source, value: row.source %>
 
-          <% dataset.schema.each do |var_schema| %>
-            <div class="mb-3">
-              <%= label_tag "dataset_row[row_data][#{var_schema['name']}]", var_schema['name'], class: "form-label" %>
-              <% if var_schema['required'] %>
-                <span class="text-danger">*</span>
-              <% end %>
+        <% dataset.schema.each do |var_schema| %>
+          <div class="mb-3">
+            <%= label_tag "dataset_row[row_data][#{var_schema['name']}]", var_schema['name'], class: "form-label" %>
+            <% if var_schema['required'] %>
+              <span class="text-danger">*</span>
+            <% end %>
 
-              <% case var_schema['type'] %>
-              <% when 'text' %>
-                <%= text_area_tag "dataset_row[row_data][#{var_schema['name']}]",
-                                  row.get_variable(var_schema['name']),
-                                  class: "form-control",
-                                  rows: 3,
-                                  required: var_schema['required'] %>
-              <% else %>
-                <%= text_field_tag "dataset_row[row_data][#{var_schema['name']}]",
-                                   row.get_variable(var_schema['name']),
-                                   class: "form-control",
-                                   required: var_schema['required'] %>
-              <% end %>
+            <% case var_schema['type'] %>
+            <% when 'text' %>
+              <%= text_area_tag "dataset_row[row_data][#{var_schema['name']}]",
+                                row.get_variable(var_schema['name']),
+                                class: "form-control",
+                                rows: 3,
+                                required: var_schema['required'] %>
+            <% else %>
+              <%= text_field_tag "dataset_row[row_data][#{var_schema['name']}]",
+                                 row.get_variable(var_schema['name']),
+                                 class: "form-control",
+                                 required: var_schema['required'] %>
+            <% end %>
 
-              <% if var_schema['description'].present? %>
-                <div class="form-text"><%= var_schema['description'] %></div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <%= f.submit "Update Row", class: "btn btn-primary" %>
+            <% if var_schema['description'].present? %>
+              <div class="form-text"><%= var_schema['description'] %></div>
+            <% end %>
           </div>
         <% end %>
       </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <%= f.submit "Update Row", class: "btn btn-primary" %>
+        </div>
+      <% end %>
     </div>
   </div>
-<% end %>
+</div>

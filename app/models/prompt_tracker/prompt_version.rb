@@ -303,6 +303,34 @@ module PromptTracker
       { test: test, version: self }
     end
 
+    # ========================================
+    # ROUTING METHODS (implements Testable interface)
+    # ========================================
+
+    # Returns the path to this prompt version's show page
+    # @return [String] the path
+    def show_path
+      routes.testing_prompt_prompt_version_path(prompt, self)
+    end
+
+    # Returns the path to the datasets index for this prompt version
+    # @return [String] the path
+    def datasets_index_path
+      routes.testing_prompt_prompt_version_datasets_path(prompt, self)
+    end
+
+    # Returns the path to create a new dataset for this prompt version
+    # @return [String] the path
+    def new_dataset_path
+      routes.new_testing_prompt_prompt_version_dataset_path(prompt, self)
+    end
+
+    # Returns the path to create datasets (POST target)
+    # @return [String] the path
+    def datasets_path
+      routes.testing_prompt_prompt_version_datasets_path(prompt, self)
+    end
+
     private
 
     # Sets the next version number based on existing versions

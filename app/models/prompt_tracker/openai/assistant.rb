@@ -222,6 +222,34 @@ module PromptTracker
         { test: test, assistant: self }
       end
 
+      # ========================================
+      # ROUTING METHODS (implements Testable interface)
+      # ========================================
+
+      # Returns the path to this assistant's show page
+      # @return [String] the path
+      def show_path
+        routes.testing_openai_assistant_path(self)
+      end
+
+      # Returns the path to the datasets index for this assistant
+      # @return [String] the path
+      def datasets_index_path
+        routes.testing_openai_assistant_datasets_path(self)
+      end
+
+      # Returns the path to create a new dataset for this assistant
+      # @return [String] the path
+      def new_dataset_path
+        routes.new_testing_openai_assistant_dataset_path(self)
+      end
+
+      # Returns the path to create datasets (POST target)
+      # @return [String] the path
+      def datasets_path
+        routes.testing_openai_assistant_datasets_path(self)
+      end
+
       private
 
       # Set default metadata for new records

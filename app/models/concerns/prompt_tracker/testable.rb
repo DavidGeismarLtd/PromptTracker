@@ -173,5 +173,74 @@ module PromptTracker
     def test_row_locals(test)
       raise NotImplementedError, "#{self.class.name} must implement #test_row_locals"
     end
+
+    # ========================================
+    # ROUTING METHODS
+    # Each testable must implement these to provide polymorphic routing
+    # These eliminate the need for case/when statements in helpers
+    # ========================================
+
+    # Returns the path to this testable's show page
+    #
+    # @return [String] the path
+    #
+    # @example PromptVersion
+    #   version.show_path # => "/testing/prompts/1/versions/2"
+    #
+    # @example Assistant
+    #   assistant.show_path # => "/testing/openai/assistants/1"
+    #
+    def show_path
+      raise NotImplementedError, "#{self.class.name} must implement #show_path"
+    end
+
+    # Returns the path to the datasets index for this testable
+    #
+    # @return [String] the path
+    #
+    # @example PromptVersion
+    #   version.datasets_index_path # => "/testing/prompts/1/versions/2/datasets"
+    #
+    # @example Assistant
+    #   assistant.datasets_index_path # => "/testing/openai/assistants/1/datasets"
+    #
+    def datasets_index_path
+      raise NotImplementedError, "#{self.class.name} must implement #datasets_index_path"
+    end
+
+    # Returns the path to create a new dataset for this testable
+    #
+    # @return [String] the path
+    #
+    # @example PromptVersion
+    #   version.new_dataset_path # => "/testing/prompts/1/versions/2/datasets/new"
+    #
+    # @example Assistant
+    #   assistant.new_dataset_path # => "/testing/openai/assistants/1/datasets/new"
+    #
+    def new_dataset_path
+      raise NotImplementedError, "#{self.class.name} must implement #new_dataset_path"
+    end
+
+    # Returns the path to create datasets for this testable (POST target)
+    #
+    # @return [String] the path
+    #
+    # @example PromptVersion
+    #   version.datasets_path # => "/testing/prompts/1/versions/2/datasets"
+    #
+    # @example Assistant
+    #   assistant.datasets_path # => "/testing/openai/assistants/1/datasets"
+    #
+    def datasets_path
+      raise NotImplementedError, "#{self.class.name} must implement #datasets_path"
+    end
+
+    private
+
+    # Helper to access route helpers from models
+    def routes
+      PromptTracker::Engine.routes.url_helpers
+    end
   end
 end

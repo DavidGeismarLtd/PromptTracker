@@ -75,7 +75,7 @@ module PromptTracker
 
         it "redirects to dataset show page" do
           post :create, params: valid_params
-          expect(response).to redirect_to(testing_prompt_prompt_version_dataset_path(prompt, version, Dataset.last))
+          expect(response).to redirect_to(testing_dataset_path(Dataset.last))
         end
 
         context "with invalid params" do
@@ -115,7 +115,7 @@ module PromptTracker
             id: dataset.id,
             dataset: { name: "Updated Name" }
           }
-          expect(response).to redirect_to(testing_prompt_prompt_version_dataset_path(prompt, version, dataset))
+          expect(response).to redirect_to(testing_dataset_path(dataset))
         end
       end
 

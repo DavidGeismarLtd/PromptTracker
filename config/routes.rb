@@ -15,7 +15,26 @@ PromptTracker::Engine.routes.draw do
       post :generate, on: :member
     end
 
-    # Prompt versions (for testing)
+    # ========================================
+    # SHALLOW DATASET ROUTES (universal, not nested under testable)
+    # Once a dataset exists, we only need its ID - it knows its testable
+    # ========================================
+    resources :datasets, only: [ :show, :edit, :update, :destroy ] do
+      member do
+        post :generate_rows # LLM-powered row generation
+      end
+
+      # Dataset rows nested under datasets (shallow)
+      resources :dataset_rows, only: [ :create, :update, :destroy ], path: "rows" do
+        collection do
+          delete :batch_destroy
+        end
+      end
+    end
+
+    # ========================================
+    # PROMPT VERSIONS (with nested dataset index/new/create)
+    # ========================================
     resources :prompts, only: [ :index, :show ] do
       # Playground for editing existing prompts
       resource :playground, only: [ :show ], controller: "playground" do
@@ -37,19 +56,9 @@ PromptTracker::Engine.routes.draw do
           post :generate, on: :member
         end
 
-        # Datasets nested under prompt versions
-        resources :datasets, only: [ :index, :new, :create, :show, :edit, :update, :destroy ] do
-          member do
-            post :generate_rows # LLM-powered row generation
-          end
-
-          # Dataset rows nested under datasets
-          resources :dataset_rows, only: [ :create, :update, :destroy ], path: "rows" do
-            collection do
-              delete :batch_destroy
-            end
-          end
-        end
+        # Datasets: only index/new/create nested (need testable context)
+        # show/edit/update/destroy use shallow routes above
+        resources :datasets, only: [ :index, :new, :create ]
       end
     end
 
@@ -72,7 +81,9 @@ PromptTracker::Engine.routes.draw do
       resources :human_evaluations, only: [ :create ]
     end
 
-    # OpenAI Assistants
+    # ========================================
+    # OPENAI ASSISTANTS (with nested dataset index/new/create)
+    # ========================================
     namespace :openai do
       # Standalone playground route for creating new assistants
       get "assistants/playground/new", to: "assistant_playground#new", as: "new_assistant_playground"
@@ -102,19 +113,9 @@ PromptTracker::Engine.routes.draw do
           end
         end
 
-        # Datasets nested under assistants
-        resources :datasets, controller: "assistant_datasets", only: [ :index, :new, :create, :show, :edit, :update, :destroy ] do
-          member do
-            post :generate_rows # LLM-powered row generation
-          end
-
-          # Dataset rows nested under datasets
-          resources :dataset_rows, only: [ :create, :update, :destroy ], path: "rows" do
-            collection do
-              delete :batch_destroy
-            end
-          end
-        end
+        # Datasets: only index/new/create nested (need testable context)
+        # show/edit/update/destroy use shallow routes in parent testing namespace
+        resources :datasets, only: [ :index, :new, :create ], controller: "/prompt_tracker/testing/datasets"
       end
     end
   end

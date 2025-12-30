@@ -6,7 +6,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <%= form_with(model: @dataset.dataset_rows.build,
-                    url: testing_prompt_prompt_version_dataset_dataset_rows_path(@prompt, @version, @dataset),
+                    url: dataset_rows_path(@dataset),
                     method: :post,
                     local: true) do |f| %>
         <div class="modal-body">
@@ -58,4 +58,3 @@
     </div>
   </div>
 </div>
-

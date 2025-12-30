@@ -171,15 +171,6 @@
                               placeholder: "e.g., 'Focus on edge cases with special characters' or 'Generate international examples with different languages'" %>
               <div class="form-text">Provide specific guidance to customize the generated data</div>
             </div>
-
-            <div class="mb-3">
-              <%= f.label :model, "Model (Optional)", class: "form-label" %>
-              <%= f.text_field :model,
-                               class: "form-control",
-                               placeholder: "Leave blank to use default model" %>
-              <div class="form-text">Specify a model ID (e.g., 'gpt-4o', 'claude-sonnet-4') or leave blank for default</div>
-            </div>
-
             <div class="alert alert-warning">
               <i class="bi bi-exclamation-triangle"></i>
               <strong>Note:</strong> Generation happens in the background. Rows will appear in real-time as they're created.

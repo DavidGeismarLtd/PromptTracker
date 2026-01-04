@@ -38,7 +38,7 @@ module PromptTracker
     # Preview both system_prompt and user_prompt with given variables
     def preview
       system_prompt = params[:system_prompt] || ""
-      user_prompt = params[:user_prompt] || params[:template] # Support both for backward compatibility during migration
+      user_prompt = params[:user_prompt]
       # Convert ActionController::Parameters to hash
       variables = params[:variables]&.to_unsafe_h || {}
 
@@ -51,41 +51,30 @@ module PromptTracker
         return
       end
 
-      # Render both prompts directly without validation
-      # (validation is too strict for simple Mustache templates)
-      begin
-        # Render system prompt if present
-        rendered_system = nil
-        if system_prompt.present?
-          system_renderer = TemplateRenderer.new(system_prompt)
-          rendered_system = system_renderer.render(variables)
-        end
-
-        # Render user prompt
-        user_renderer = TemplateRenderer.new(user_prompt)
-        rendered_user = user_renderer.render(variables)
-        is_liquid = user_renderer.liquid_template?
-
-        render json: {
-          success: true,
-          rendered_system: rendered_system,
-          rendered_user: rendered_user,
-          engine: is_liquid ? "liquid" : "mustache",
-          variables_detected: extract_variables_from_both_prompts(system_prompt, user_prompt)
-        }
-      rescue Liquid::SyntaxError => e
-        render json: {
-          success: false,
-          errors: [ "Liquid syntax error: #{e.message}" ]
-        }, status: :unprocessable_entity
-      rescue => e
-        Rails.logger.error "Preview error: #{e.class} - #{e.message}"
-        Rails.logger.error e.backtrace.join("\n")
-        render json: {
-          success: false,
-          errors: [ "Rendering error: #{e.message}" ]
-        }, status: :unprocessable_entity
+      # Render system prompt if present
+      rendered_system = nil
+      if system_prompt.present?
+        system_renderer = TemplateRenderer.new(system_prompt)
+        rendered_system = system_renderer.render(variables)
       end
+
+      # Render user prompt
+      user_renderer = TemplateRenderer.new(user_prompt)
+      rendered_user = user_renderer.render(variables)
+      is_liquid = user_renderer.liquid_template?
+
+      render json: {
+        success: true,
+        rendered_system: rendered_system,
+        rendered_user: rendered_user,
+        engine: is_liquid ? "liquid" : "mustache",
+        variables_detected: extract_variables_from_both_prompts(system_prompt, user_prompt)
+      }
+    rescue Liquid::SyntaxError => e
+      render json: {
+        success: false,
+        errors: [ "Liquid syntax error: #{e.message}" ]
+      }, status: :unprocessable_entity
     end
 
     # POST /playground/generate
@@ -117,95 +106,16 @@ module PromptTracker
     # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/save (updates specific version or creates new)
     # Save the user_prompt as a new draft version, update existing version, or new prompt
     def save
-      user_prompt = params[:user_prompt] || params[:template] # Support both for backward compatibility during migration
-      system_prompt = params[:system_prompt]
-      notes = params[:notes]
-      prompt_name = params[:prompt_name]
-      prompt_slug = params[:prompt_slug]
-      save_action = params[:save_action] # 'update' or 'new_version'
-      model_config = params[:model_config] || {}
+      result = PlaygroundSaveService.call(
+        params: save_params,
+        prompt: @prompt,
+        prompt_version: @prompt_version
+      )
 
-      if @prompt
-        # Check if we should update existing version or create new one
-        if save_action == "update" && @prompt_version && !@prompt_version.has_responses?
-          # Update existing version (only if it has no responses)
-          if @prompt_version.update(user_prompt: user_prompt, system_prompt: system_prompt, notes: notes, model_config: model_config)
-            render json: {
-              success: true,
-              version_id: @prompt_version.id,
-              version_number: @prompt_version.version_number,
-              redirect_url: testing_prompt_prompt_version_path(@prompt, @prompt_version),
-              action: "updated"
-            }
-          else
-            render json: {
-              success: false,
-              errors: @prompt_version.errors.full_messages
-            }, status: :unprocessable_entity
-          end
-        else
-          # Create new version
-          version = @prompt.prompt_versions.build(
-            user_prompt: user_prompt,
-            system_prompt: system_prompt,
-            status: "draft",
-            notes: notes,
-            model_config: model_config
-          )
-
-          if version.save
-            render json: {
-              success: true,
-              version_id: version.id,
-              version_number: version.version_number,
-              redirect_url: testing_prompt_prompt_version_path(@prompt, version),
-              action: "created"
-            }
-          else
-            render json: {
-              success: false,
-              errors: version.errors.full_messages
-            }, status: :unprocessable_entity
-          end
-        end
+      if result.success?
+        render json: build_success_response(result)
       else
-        # Standalone mode - create new prompt
-        if prompt_name.blank?
-          render json: {
-            success: false,
-            errors: [ "Prompt name is required" ]
-          }, status: :unprocessable_entity
-          return
-        end
-
-        prompt = Prompt.new(
-          name: prompt_name,
-          slug: prompt_slug.presence, # Will auto-generate if blank
-          description: notes
-        )
-
-        version = prompt.prompt_versions.build(
-          user_prompt: user_prompt,
-          system_prompt: system_prompt,
-          status: "draft",
-          notes: notes,
-          model_config: model_config
-        )
-
-        if prompt.save
-          render json: {
-            success: true,
-            prompt_id: prompt.id,
-            version_id: version.id,
-            version_number: version.version_number,
-            redirect_url: testing_prompt_prompt_version_path(prompt, version)
-          }
-        else
-          render json: {
-            success: false,
-            errors: prompt.errors.full_messages + version.errors.full_messages
-          }, status: :unprocessable_entity
-        end
+        render json: { success: false, errors: result.errors }, status: :unprocessable_entity
       end
     end
 
@@ -223,6 +133,35 @@ module PromptTracker
       if params[:version_id]
         @version = @prompt.prompt_versions.find(params[:version_id])
       end
+    end
+
+    def save_params
+      @save_params ||= params.permit(
+        :user_prompt, :system_prompt, :notes, :prompt_name,
+        :prompt_slug, :save_action
+      ).to_h.with_indifferent_access.merge(
+        model_config: params[:model_config]&.to_unsafe_h || {},
+        response_schema: extract_response_schema_param
+      )
+    end
+
+    def extract_response_schema_param
+      schema_param = params[:response_schema]
+      return nil if schema_param.blank?
+
+      schema_param.respond_to?(:to_unsafe_h) ? schema_param.to_unsafe_h : schema_param
+    end
+
+    def build_success_response(result)
+      response = {
+        success: true,
+        version_id: result.version.id,
+        version_number: result.version.version_number,
+        redirect_url: testing_prompt_prompt_version_path(result.prompt, result.version),
+        action: result.action.to_s
+      }
+      response[:prompt_id] = result.prompt.id if result.action == :created && @prompt.nil?
+      response
     end
 
     # Extract variable names from both system and user prompts

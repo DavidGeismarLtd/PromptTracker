@@ -76,6 +76,8 @@ PromptTracker::Engine.routes.draw do
     namespace :openai do
       # Standalone playground route for creating new assistants
       get "assistants/playground/new", to: "assistant_playground#new", as: "new_assistant_playground"
+      # Generate instructions for new assistants (before assistant is created)
+      post "assistants/playground/generate_instructions", to: "assistant_playground#generate_instructions", as: "generate_assistant_instructions"
 
       resources :assistants, only: [ :index, :show, :destroy ] do
         member do
@@ -99,6 +101,7 @@ PromptTracker::Engine.routes.draw do
           post :add_file_to_vector_store # Add file to vector store
           post :attach_vector_store      # Attach vector store to assistant
           post :submit_tool_outputs # Submit mock function responses
+          post :generate_instructions # Generate instructions with AI
         end
 
         # Tests nested under assistants

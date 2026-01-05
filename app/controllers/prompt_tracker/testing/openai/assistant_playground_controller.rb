@@ -219,7 +219,6 @@ module PromptTracker
             }, status: :unprocessable_entity
           end
         end
-
         # Create a vector store
         #
         # @param name [String] the vector store name
@@ -245,6 +244,30 @@ module PromptTracker
         rescue => e
           Rails.logger.error "Failed to create vector store: #{e.message}"
           { success: false, error: e.message }
+        end
+        # POST /testing/openai/assistants/:assistant_id/playground/generate_instructions
+        # POST /testing/openai/assistants/playground/generate_instructions (for new assistants)
+        #
+        # Generates assistant instructions from a natural language description using AI
+        def generate_instructions
+          description = params[:description]
+
+          if description.blank?
+            return render json: {
+              success: false,
+              error: "Description is required"
+            }, status: :unprocessable_entity
+          end
+
+          result = AssistantInstructionsGeneratorService.generate(description: description)
+
+          render json: {
+            success: true,
+            instructions: result[:instructions],
+            name: result[:name],
+            description: result[:description],
+            explanation: result[:explanation]
+          }
         end
 
         # POST /testing/openai/assistants/:assistant_id/playground/submit_tool_outputs

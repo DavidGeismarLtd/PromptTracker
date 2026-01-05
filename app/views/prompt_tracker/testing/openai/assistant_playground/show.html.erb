@@ -30,7 +30,8 @@
        data-assistant-playground-update-url-value="<%= @is_new ? '' : update_assistant_testing_openai_assistant_playground_path(@assistant.id) %>"
        data-assistant-playground-send-message-url-value="<%= @is_new ? '' : send_message_testing_openai_assistant_playground_path(@assistant.id) %>"
        data-assistant-playground-create-thread-url-value="<%= @is_new ? '' : create_thread_testing_openai_assistant_playground_path(@assistant.id) %>"
-       data-assistant-playground-load-messages-url-value="<%= @is_new ? '' : load_messages_testing_openai_assistant_playground_path(@assistant.id) %>">
+       data-assistant-playground-load-messages-url-value="<%= @is_new ? '' : load_messages_testing_openai_assistant_playground_path(@assistant.id) %>"
+       data-assistant-playground-generate-instructions-url-value="<%= @is_new ? testing_openai_generate_assistant_instructions_path : generate_instructions_testing_openai_assistant_playground_path(@assistant.id) %>">
 
     <!-- Left Side: Configuration Sidebar -->
     <div class="playground-config">
@@ -64,8 +65,13 @@
 
       <!-- System Instructions -->
       <div class="card mb-3">
-        <div class="card-header">
-          <i class="bi bi-file-text"></i> System Instructions
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-file-text"></i> System Instructions</span>
+          <button type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  data-action="click->assistant-playground#openGenerateModal">
+            <i class="bi bi-stars"></i> Generate
+          </button>
         </div>
         <div class="card-body">
           <textarea class="form-control font-monospace"
@@ -383,6 +389,12 @@
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
   </div>
+</div>
+
+<!-- Generate Instructions Modals (moved to body via modal-fix for proper z-index) -->
+<div data-controller="modal-fix">
+  <%= render "prompt_tracker/testing/openai/assistant_playground/generate_instructions_modal" %>
+  <%= render "prompt_tracker/testing/openai/assistant_playground/generating_instructions_modal" %>
 </div>
 
 <!-- Function Editor Modal (moved to body via modal-fix for proper z-index) -->

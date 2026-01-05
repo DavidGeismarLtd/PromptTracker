@@ -272,9 +272,6 @@ module PromptTracker
 
         # POST /testing/openai/assistants/:assistant_id/playground/submit_tool_outputs
         #
-
-        # POST /testing/openai/assistants/:assistant_id/playground/submit_tool_outputs
-        #
         # Submits function call results back to OpenAI when a run is waiting for tool outputs.
         #
         # == OpenAI Assistants Function Calling Flow

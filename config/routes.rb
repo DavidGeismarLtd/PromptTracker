@@ -98,6 +98,7 @@ PromptTracker::Engine.routes.draw do
           get  :list_vector_stores       # List vector stores
           post :add_file_to_vector_store # Add file to vector store
           post :attach_vector_store      # Attach vector store to assistant
+          post :submit_tool_outputs # Submit mock function responses
         end
 
         # Tests nested under assistants

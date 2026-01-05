@@ -14,8 +14,10 @@ module PromptTracker
         before_action :set_assistant, only: [
           :show, :update_assistant, :send_message, :load_messages,
           :upload_file, :list_files, :delete_file,
-          :create_vector_store, :list_vector_stores, :attach_vector_store, :add_file_to_vector_store
+          :create_vector_store, :list_vector_stores, :attach_vector_store, :add_file_to_vector_store, :submit_tool_outputs
         ]
+
+
         before_action :initialize_service
 
         # GET /testing/openai/assistants/playground/new
@@ -218,19 +220,104 @@ module PromptTracker
           end
         end
 
-        # POST /testing/openai/assistants/:assistant_id/playground/create_vector_store
+        # Create a vector store
         #
-        # Creates a vector store for file_search
-        def create_vector_store
-          result = @service.create_vector_store(
-            name: params[:name] || "Playground Vector Store",
-            file_ids: params[:file_ids] || []
+        # @param name [String] the vector store name
+        # @param file_ids [Array<String>] optional file IDs to add immediately
+        # @return [Hash] result with :success, :vector_store_id, :vector_store keys
+        def create_vector_store(name:, file_ids: [])
+          params = { name: name }
+          params[:file_ids] = file_ids if file_ids.present?
+
+          response = client.vector_stores.create(parameters: params)
+
+          {
+            success: true,
+            vector_store_id: response["id"],
+            vector_store: {
+              id: response["id"],
+              name: response["name"],
+              status: response["status"],
+              file_counts: response["file_counts"],
+              created_at: response["created_at"] ? Time.at(response["created_at"]) : nil
+            }
+          }
+        rescue => e
+          Rails.logger.error "Failed to create vector store: #{e.message}"
+          { success: false, error: e.message }
+        end
+
+        # POST /testing/openai/assistants/:assistant_id/playground/submit_tool_outputs
+        #
+
+        # POST /testing/openai/assistants/:assistant_id/playground/submit_tool_outputs
+        #
+        # Submits function call results back to OpenAI when a run is waiting for tool outputs.
+        #
+        # == OpenAI Assistants Function Calling Flow
+        #
+        # When an assistant has tools/functions defined, the following flow occurs:
+        #
+        # 1. User sends a message to the assistant
+        # 2. Assistant decides to call one or more functions → run status becomes "requires_action"
+        # 3. The run returns tool_calls: [{ id: "call_abc", function: { name: "get_weather", arguments: '{"city": "Paris"}' } }]
+        # 4. Client executes the function(s) locally or mocks the response (in playground mode)
+        # 5. Client calls this endpoint with the results → submit_tool_outputs
+        # 6. OpenAI continues the run with the function results
+        # 7. Assistant formulates its final response incorporating the function outputs
+        #
+        # == Parameters
+        #
+        # - thread_id [String] The conversation thread ID where the run is executing
+        # - run_id [String] The run ID that is in "requires_action" status waiting for tool outputs
+        # - tool_outputs [Array<Hash>] Array of function results to submit back to OpenAI:
+        #   - tool_call_id [String] Must match the "id" from the original tool_call
+        #   - output [String] The function's return value (what the assistant will see)
+        #
+        # == Response
+        #
+        # Returns one of two possible statuses:
+        # - "completed": The assistant has finished and includes its final message
+        # - "requires_action": The assistant wants to call MORE functions (parallel/sequential calls)
+        #
+        # @example Request body
+        #   {
+        #     "thread_id": "thread_abc123",
+        #     "run_id": "run_xyz789",
+        #     "tool_outputs": [
+        #       { "tool_call_id": "call_abc", "output": "Sunny, 22°C" }
+        #     ]
+        #   }
+        #
+        def submit_tool_outputs
+          thread_id = params[:thread_id]
+          run_id = params[:run_id]
+          tool_outputs = params[:tool_outputs]
+
+          if thread_id.blank? || run_id.blank?
+            return render json: {
+              success: false,
+              error: "thread_id and run_id are required"
+            }, status: :unprocessable_entity
+          end
+
+          # Submit the tool outputs to OpenAI and wait for the run to complete (or require more actions)
+          result = @service.submit_tool_outputs(
+            thread_id: thread_id,
+            run_id: run_id,
+            tool_outputs: tool_outputs
           )
 
           if result[:success]
+            # Response may include:
+            # - status: "completed" with message and usage, OR
+            # - status: "requires_action" with more tool_calls for sequential/parallel function calling
             render json: {
               success: true,
-              vector_store: result[:vector_store]
+              status: result[:status],
+              message: result[:message],
+              usage: result[:usage],
+              tool_calls: result[:tool_calls]
             }
           else
             render json: {
@@ -239,7 +326,6 @@ module PromptTracker
             }, status: :unprocessable_entity
           end
         end
-
         # GET /testing/openai/assistants/:assistant_id/playground/list_vector_stores
         #
         # Lists vector stores
@@ -320,6 +406,7 @@ module PromptTracker
             :top_p,
             :response_format,
             tools: [],
+            functions: [ :name, :description, :strict, { parameters: {} } ],
             metadata: {}
           )
         end

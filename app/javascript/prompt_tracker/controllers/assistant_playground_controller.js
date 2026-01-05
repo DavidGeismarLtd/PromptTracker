@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { Toast } from "bootstrap"
+import { Toast, Modal } from "bootstrap"
 
 // Connects to data-controller="assistant-playground"
 export default class extends Controller {
@@ -24,7 +24,9 @@ export default class extends Controller {
     "saveButtonText",
     "saveStatus",
     "toast",
-    "toastBody"
+    "toastBody",
+    // Functions section target for accessing nested function-editor controller
+    "functionsSection"
   ]
 
   static values = {
@@ -34,7 +36,8 @@ export default class extends Controller {
     updateUrl: String,
     sendMessageUrl: String,
     createThreadUrl: String,
-    loadMessagesUrl: String
+    loadMessagesUrl: String,
+    generateInstructionsUrl: String
   }
 
   connect() {
@@ -60,6 +63,41 @@ export default class extends Controller {
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout)
     }
+  }
+
+  // ========================================
+  // Function Editor Event Handlers
+  // ========================================
+
+  handleFunctionsChanged(event) {
+    // Store the latest functions from the function-editor controller
+    // Note: We intentionally do NOT auto-save here to avoid unexpected saves
+    // The user should explicitly click "Save" to persist function changes
+    this.functions = event.detail.functions || []
+  }
+
+  handleNotification(event) {
+    const { type, message } = event.detail
+    if (type === "error") {
+      this.showError(message)
+    } else if (type === "success") {
+      this.showSuccess(message)
+    }
+  }
+
+  getFunctions() {
+    // Try to get functions from the function-editor controller
+    if (this.hasFunctionsSectionTarget) {
+      const functionEditorController = this.application.getControllerForElementAndIdentifier(
+        this.functionsSectionTarget,
+        "function-editor"
+      )
+      if (functionEditorController) {
+        return functionEditorController.getFunctions()
+      }
+    }
+    // Fallback to stored functions
+    return this.functions || []
   }
 
   // ========================================
@@ -345,6 +383,7 @@ export default class extends Controller {
       instructions: this.instructionsTarget.value,
       model: this.modelTarget.value,
       tools: tools,
+      functions: this.getFunctions(),
       temperature: parseFloat(this.temperatureTarget.value),
       top_p: parseFloat(this.topPTarget.value),
       response_format: this.responseFormatTarget.value
@@ -474,5 +513,136 @@ export default class extends Controller {
 
   getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.content || ""
+  }
+
+  // ========================================
+  // Generate Instructions with AI
+  // ========================================
+
+  openGenerateModal() {
+    const modalEl = document.getElementById('generateInstructionsModal')
+    if (modalEl) {
+      this.generateModal = new Modal(modalEl)
+      this.generateModal.show()
+
+      // Attach event listener for the generate button (modal is moved to body by modal-fix)
+      const generateButton = document.getElementById('generateInstructionsButton')
+      if (generateButton && !generateButton._listenerAttached) {
+        generateButton.addEventListener('click', () => this.submitGeneration())
+        generateButton._listenerAttached = true
+      }
+    }
+  }
+
+  async submitGeneration() {
+    const descriptionTextarea = document.getElementById('generateInstructionsDescription')
+    if (!descriptionTextarea) {
+      this.showError('Description textarea not found')
+      return
+    }
+
+    const description = descriptionTextarea.value.trim()
+    if (!description) {
+      this.showError('Please describe what your assistant should do')
+      return
+    }
+
+    // Close the input modal
+    if (this.generateModal) {
+      this.generateModal.hide()
+    }
+
+    // Show generating modal
+    this.showGeneratingModal()
+
+    try {
+      await this.generateInstructionsFromDescription(description)
+    } catch (error) {
+      console.error('Generation error:', error)
+      this.showError(`Generation failed: ${error.message}`)
+    } finally {
+      this.hideGeneratingModal()
+      if (descriptionTextarea) {
+        descriptionTextarea.value = ''
+      }
+    }
+  }
+
+  showGeneratingModal() {
+    const modalEl = document.getElementById('generatingInstructionsModal')
+    if (modalEl) {
+      this.generatingModal = new Modal(modalEl)
+      this.generatingModal.show()
+    }
+  }
+
+  hideGeneratingModal() {
+    if (this.generatingModal) {
+      this.generatingModal.hide()
+      this.generatingModal = null
+    }
+  }
+
+  async generateInstructionsFromDescription(description) {
+    const response = await fetch(this.generateInstructionsUrlValue, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.getCsrfToken(),
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ description })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || `Server error (${response.status})`)
+    }
+
+    const data = await response.json()
+
+    if (data.success) {
+      // Insert the generated content with animation
+      await this.insertGeneratedContent(data)
+      this.showSuccess(data.explanation || 'Instructions generated successfully!')
+    } else {
+      throw new Error(data.error || 'Generation failed')
+    }
+  }
+
+  async insertGeneratedContent(data) {
+    // Animate text insertion for instructions
+    if (data.instructions && this.hasInstructionsTarget) {
+      await this.animateTextInsertion(this.instructionsTarget, data.instructions)
+      this.updateCharCount()
+    }
+
+    // Set name if provided and field is empty
+    if (data.name && this.hasNameTarget && !this.nameTarget.value.trim()) {
+      await this.animateTextInsertion(this.nameTarget, data.name)
+    }
+
+    // Set description if provided and field is empty
+    if (data.description && this.hasDescriptionTarget && !this.descriptionTarget.value.trim()) {
+      await this.animateTextInsertion(this.descriptionTarget, data.description)
+    }
+  }
+
+  async animateTextInsertion(element, text, speed = 10) {
+    element.value = ''
+    element.focus()
+
+    for (let i = 0; i < text.length; i++) {
+      element.value += text[i]
+      // Scroll to bottom for textareas
+      if (element.tagName === 'TEXTAREA') {
+        element.scrollTop = element.scrollHeight
+      }
+      // Small delay between characters for animation effect
+      await new Promise(resolve => setTimeout(resolve, speed))
+    }
+
+    // Trigger input event for any listeners
+    element.dispatchEvent(new Event('input', { bubbles: true }))
   }
 }

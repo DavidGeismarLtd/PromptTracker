@@ -106,7 +106,7 @@ module PromptTracker
     # @param assistant_id [String] the assistant ID
     # @param content [String] the message content
     # @param timeout [Integer] maximum seconds to wait for completion
-    # @return [Hash] result with :success, :message, :usage keys
+    # @return [Hash] result with :success, :message, :usage keys or :requires_action with :tool_calls
     def send_message(thread_id:, assistant_id:, content:, timeout: 60)
       # Add user message
       client.messages.create(
@@ -123,29 +123,56 @@ module PromptTracker
         parameters: { assistant_id: assistant_id }
       )
 
-      # Wait for completion
+      # Wait for completion (or requires_action)
       final_run = wait_for_completion(thread_id, run["id"], timeout)
 
+      # Check if run requires action (function calls)
+      if final_run["status"] == "requires_action"
+        return build_requires_action_response(thread_id, run["id"], final_run)
+      end
+
       # Get assistant's response
-      messages = client.messages.list(
-        thread_id: thread_id,
-        parameters: { order: "desc", limit: 1 }
-      )
-
-      assistant_message = messages["data"].first
-
-      {
-        success: true,
-        message: {
-          role: "assistant",
-          content: assistant_message.dig("content", 0, "text", "value"),
-          created_at: Time.at(assistant_message["created_at"]),
-          run_id: run["id"]
-        },
-        usage: final_run["usage"]
-      }
+      build_completed_response(thread_id, run["id"], final_run)
     rescue => e
       Rails.logger.error "Failed to send message: #{e.message}"
+      { success: false, error: e.message }
+    end
+
+    # Submit tool outputs and continue the run
+    #
+    # @param thread_id [String] the thread ID
+    # @param run_id [String] the run ID
+    # @param tool_outputs [Array<Hash>] array of tool outputs with :tool_call_id and :output
+    # @param timeout [Integer] maximum seconds to wait for completion
+    # @return [Hash] result with :success, :message, :usage keys or :requires_action with more :tool_calls
+    def submit_tool_outputs(thread_id:, run_id:, tool_outputs:, timeout: 60)
+      # Format tool outputs for OpenAI API
+      formatted_outputs = tool_outputs.map do |output|
+        {
+          tool_call_id: output[:tool_call_id] || output["tool_call_id"],
+          output: output[:output] || output["output"]
+        }
+      end
+
+      # Submit tool outputs
+      client.runs.submit_tool_outputs(
+        thread_id: thread_id,
+        run_id: run_id,
+        parameters: { tool_outputs: formatted_outputs }
+      )
+
+      # Wait for completion (or more requires_action)
+      final_run = wait_for_completion(thread_id, run_id, timeout)
+
+      # Check if run requires more action (parallel or sequential function calls)
+      if final_run["status"] == "requires_action"
+        return build_requires_action_response(thread_id, run_id, final_run)
+      end
+
+      # Get assistant's response
+      build_completed_response(thread_id, run_id, final_run)
+    rescue => e
+      Rails.logger.error "Failed to submit tool outputs: #{e.message}"
       { success: false, error: e.message }
     end
 
@@ -453,7 +480,10 @@ module PromptTracker
       api_params[:description] = params[:description] if params[:description].present?
       api_params[:instructions] = params[:instructions] if params[:instructions].present?
       api_params[:model] = params[:model] if params[:model].present?
-      api_params[:tools] = build_tools_array(params[:tools]) if params[:tools].present?
+      # Build tools array (including functions)
+      if params[:tools].present? || params[:functions].present?
+        api_params[:tools] = build_tools_array(params[:tools], params[:functions])
+      end
       api_params[:temperature] = params[:temperature].to_f if params[:temperature].present?
       api_params[:top_p] = params[:top_p].to_f if params[:top_p].present?
       api_params[:response_format] = build_response_format(params[:response_format]) if params[:response_format].present?
@@ -462,17 +492,43 @@ module PromptTracker
       api_params
     end
 
-    # Build tools array from tool names
+    # Build tools array from tool names and function definitions
     #
     # @param tools_param [Array<String>] array of tool names
+    # @param functions_param [Array<Hash>] array of function definitions
     # @return [Array<Hash>] array of tool objects
-    def build_tools_array(tools_param)
-      return [] if tools_param.blank?
-
+    def build_tools_array(tools_param, functions_param = nil)
       tools = []
-      tools << { type: "file_search" } if tools_param.include?("file_search")
-      tools << { type: "code_interpreter" } if tools_param.include?("code_interpreter")
-      # Functions will be added in future enhancement
+
+      if tools_param.present?
+        tools << { type: "file_search" } if tools_param.include?("file_search")
+        tools << { type: "code_interpreter" } if tools_param.include?("code_interpreter")
+      end
+
+      # Add function definitions
+      if functions_param.present?
+        functions_param.each do |func|
+          next if func[:name].blank?
+
+          function_def = {
+            name: func[:name],
+            description: func[:description] || ""
+          }
+
+          # Add parameters if provided
+          if func[:parameters].present?
+            function_def[:parameters] = func[:parameters]
+          end
+
+          # Add strict mode if enabled
+          if func[:strict].present? && func[:strict] == true
+            function_def[:strict] = true
+          end
+
+          tools << { type: "function", function: function_def }
+        end
+      end
+
       tools
     end
 
@@ -503,12 +559,12 @@ module PromptTracker
       }
     end
 
-    # Wait for assistant run to complete
+    # Wait for assistant run to complete or require action
     #
     # @param thread_id [String] the thread ID
     # @param run_id [String] the run ID
     # @param timeout [Integer] maximum seconds to wait
-    # @return [Hash] final run status
+    # @return [Hash] final run status (completed or requires_action)
     # @raise [PlaygroundError] if run fails or times out
     def wait_for_completion(thread_id, run_id, timeout)
       start_time = Time.now
@@ -518,7 +574,7 @@ module PromptTracker
         status = run["status"]
 
         case status
-        when "completed"
+        when "completed", "requires_action"
           return run
         when "failed"
           error_msg = run.dig("last_error", "message") || "Unknown error"
@@ -527,8 +583,6 @@ module PromptTracker
           raise PlaygroundError, "Run was cancelled"
         when "expired"
           raise PlaygroundError, "Run expired"
-        when "requires_action"
-          raise PlaygroundError, "Tool calls not yet supported in playground"
         end
 
         # Check timeout
@@ -539,6 +593,62 @@ module PromptTracker
         # Poll every second
         sleep 1
       end
+    end
+
+    # Build response for a run that requires action (function calls)
+    #
+    # @param thread_id [String] the thread ID
+    # @param run_id [String] the run ID
+    # @param run [Hash] the run object from OpenAI API
+    # @return [Hash] response with tool_calls
+    def build_requires_action_response(thread_id, run_id, run)
+      tool_calls = run.dig("required_action", "submit_tool_outputs", "tool_calls") || []
+
+      formatted_tool_calls = tool_calls.map do |tc|
+        {
+          id: tc["id"],
+          type: tc["type"],
+          function: {
+            name: tc.dig("function", "name"),
+            arguments: tc.dig("function", "arguments")
+          }
+        }
+      end
+
+      {
+        success: true,
+        status: "requires_action",
+        thread_id: thread_id,
+        run_id: run_id,
+        tool_calls: formatted_tool_calls
+      }
+    end
+
+    # Build response for a completed run
+    #
+    # @param thread_id [String] the thread ID
+    # @param run_id [String] the run ID
+    # @param run [Hash] the run object from OpenAI API
+    # @return [Hash] response with message and usage
+    def build_completed_response(thread_id, run_id, run)
+      messages = client.messages.list(
+        thread_id: thread_id,
+        parameters: { order: "desc", limit: 1 }
+      )
+
+      assistant_message = messages["data"].first
+
+      {
+        success: true,
+        status: "completed",
+        message: {
+          role: "assistant",
+          content: assistant_message.dig("content", 0, "text", "value"),
+          created_at: Time.at(assistant_message["created_at"]),
+          run_id: run_id
+        },
+        usage: run["usage"]
+      }
     end
   end
 end

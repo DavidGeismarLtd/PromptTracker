@@ -176,6 +176,232 @@ module PromptTracker
         expect(result[:message][:content]).to eq("Hello!")
         expect(result[:usage]).to be_present
       end
+
+      it "returns requires_action status when function calls are needed" do
+        mock_client = double("OpenAI::Client")
+        mock_messages = double("messages")
+        mock_runs = double("runs")
+
+        allow(service).to receive(:client).and_return(mock_client)
+        allow(mock_client).to receive(:messages).and_return(mock_messages)
+        allow(mock_client).to receive(:runs).and_return(mock_runs)
+
+        allow(mock_messages).to receive(:create).and_return({ "id" => "msg_123" })
+        allow(mock_runs).to receive(:create).and_return({ "id" => "run_123", "status" => "queued" })
+
+        # Mock run requiring action
+        allow(service).to receive(:wait_for_completion).and_return({
+          "id" => "run_123",
+          "status" => "requires_action",
+          "required_action" => {
+            "type" => "submit_tool_outputs",
+            "submit_tool_outputs" => {
+              "tool_calls" => [
+                {
+                  "id" => "call_123",
+                  "type" => "function",
+                  "function" => {
+                    "name" => "get_weather",
+                    "arguments" => '{"location": "San Francisco"}'
+                  }
+                }
+              ]
+            }
+          }
+        })
+
+        result = service.send_message(
+          thread_id: "thread_123",
+          assistant_id: "asst_123",
+          content: "What's the weather?"
+        )
+
+        expect(result[:success]).to be true
+        expect(result[:status]).to eq("requires_action")
+        expect(result[:tool_calls]).to be_an(Array)
+        expect(result[:tool_calls].first[:function][:name]).to eq("get_weather")
+      end
+    end
+
+    describe "#submit_tool_outputs" do
+      it "submits tool outputs and returns completed response" do
+        mock_client = double("OpenAI::Client")
+        mock_messages = double("messages")
+        mock_runs = double("runs")
+
+        allow(service).to receive(:client).and_return(mock_client)
+        allow(mock_client).to receive(:messages).and_return(mock_messages)
+        allow(mock_client).to receive(:runs).and_return(mock_runs)
+
+        allow(mock_runs).to receive(:submit_tool_outputs).and_return({ "id" => "run_123", "status" => "queued" })
+
+        allow(service).to receive(:wait_for_completion).and_return({
+          "id" => "run_123",
+          "status" => "completed",
+          "usage" => { "total_tokens" => 150 }
+        })
+
+        allow(mock_messages).to receive(:list).and_return({
+          "data" => [
+            {
+              "role" => "assistant",
+              "content" => [ { "text" => { "value" => "The weather is sunny!" } } ],
+              "created_at" => Time.now.to_i
+            }
+          ]
+        })
+
+        result = service.submit_tool_outputs(
+          thread_id: "thread_123",
+          run_id: "run_123",
+          tool_outputs: [
+            { tool_call_id: "call_123", output: '{"temperature": 72}' }
+          ]
+        )
+
+        expect(result[:success]).to be true
+        expect(result[:status]).to eq("completed")
+        expect(result[:message][:content]).to eq("The weather is sunny!")
+      end
+
+      it "handles multiple tool outputs" do
+        mock_client = double("OpenAI::Client")
+        mock_messages = double("messages")
+        mock_runs = double("runs")
+
+        allow(service).to receive(:client).and_return(mock_client)
+        allow(mock_client).to receive(:messages).and_return(mock_messages)
+        allow(mock_client).to receive(:runs).and_return(mock_runs)
+
+        expect(mock_runs).to receive(:submit_tool_outputs).with(
+          thread_id: "thread_123",
+          run_id: "run_123",
+          parameters: {
+            tool_outputs: [
+              { tool_call_id: "call_1", output: "result1" },
+              { tool_call_id: "call_2", output: "result2" }
+            ]
+          }
+        ).and_return({ "id" => "run_123" })
+
+        allow(service).to receive(:wait_for_completion).and_return({
+          "id" => "run_123",
+          "status" => "completed",
+          "usage" => { "total_tokens" => 200 }
+        })
+
+        allow(mock_messages).to receive(:list).and_return({
+          "data" => [
+            {
+              "role" => "assistant",
+              "content" => [ { "text" => { "value" => "Done!" } } ],
+              "created_at" => Time.now.to_i
+            }
+          ]
+        })
+
+        result = service.submit_tool_outputs(
+          thread_id: "thread_123",
+          run_id: "run_123",
+          tool_outputs: [
+            { tool_call_id: "call_1", output: "result1" },
+            { tool_call_id: "call_2", output: "result2" }
+          ]
+        )
+
+        expect(result[:success]).to be true
+      end
+    end
+
+    describe "#build_tools_array" do
+      it "includes function definitions in tools array" do
+        functions = [
+          {
+            name: "get_weather",
+            description: "Get current weather",
+            parameters: { type: "object", properties: { location: { type: "string" } } }
+          }
+        ]
+
+        result = service.send(:build_tools_array, [], functions)
+
+        expect(result.length).to eq(1)
+        expect(result.first[:type]).to eq("function")
+        expect(result.first[:function][:name]).to eq("get_weather")
+      end
+
+      it "formats function parameters correctly" do
+        functions = [
+          {
+            name: "search",
+            description: "Search for items",
+            parameters: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "Search query" },
+                limit: { type: "integer", description: "Max results" }
+              },
+              required: [ "query" ]
+            }
+          }
+        ]
+
+        result = service.send(:build_tools_array, nil, functions)
+
+        expect(result.first[:function][:parameters][:type]).to eq("object")
+        expect(result.first[:function][:parameters][:properties][:query][:type]).to eq("string")
+      end
+
+      it "handles strict mode" do
+        functions = [
+          {
+            name: "strict_function",
+            description: "A strict function",
+            strict: true
+          }
+        ]
+
+        result = service.send(:build_tools_array, nil, functions)
+
+        expect(result.first[:function][:strict]).to be true
+      end
+
+      it "handles functions without parameters" do
+        functions = [
+          {
+            name: "get_time",
+            description: "Get current time"
+          }
+        ]
+
+        result = service.send(:build_tools_array, nil, functions)
+
+        expect(result.first[:function][:name]).to eq("get_time")
+        expect(result.first[:function]).not_to have_key(:parameters)
+      end
+
+      it "combines built-in tools with functions" do
+        functions = [
+          { name: "custom_func", description: "Custom" }
+        ]
+
+        result = service.send(:build_tools_array, [ "file_search", "code_interpreter" ], functions)
+
+        expect(result.length).to eq(3)
+        expect(result.map { |t| t[:type] }).to contain_exactly("file_search", "code_interpreter", "function")
+      end
+
+      it "skips functions with blank names" do
+        functions = [
+          { name: "", description: "No name" },
+          { name: "valid_func", description: "Valid" }
+        ]
+
+        result = service.send(:build_tools_array, nil, functions)
+
+        expect(result.length).to eq(1)
+        expect(result.first[:function][:name]).to eq("valid_func")
+      end
     end
 
     describe "#upload_file" do

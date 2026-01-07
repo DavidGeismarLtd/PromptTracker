@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_02_084908) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_07_132516) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -63,9 +63,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_02_084908) do
     t.jsonb "schema", default: [], null: false
     t.string "created_by"
     t.jsonb "metadata", default: {}, null: false
+    t.integer "dataset_type", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index [ "created_at" ], name: "index_prompt_tracker_datasets_on_created_at"
+    t.index [ "dataset_type" ], name: "index_prompt_tracker_datasets_on_dataset_type"
     t.index [ "testable_type", "testable_id" ], name: "index_prompt_tracker_datasets_on_testable_type_and_testable_id"
   end
 
@@ -150,10 +152,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_02_084908) do
     t.bigint "trace_id"
     t.bigint "span_id"
     t.boolean "is_test_run", default: false, null: false
+    t.string "conversation_id"
+    t.integer "turn_number"
+    t.jsonb "tools_used", default: []
+    t.jsonb "tool_outputs", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index [ "ab_test_id", "ab_variant" ], name: "index_llm_responses_on_ab_test_and_variant"
     t.index [ "ab_test_id" ], name: "index_prompt_tracker_llm_responses_on_ab_test_id"
+    t.index [ "conversation_id", "turn_number" ], name: "index_llm_responses_on_conversation_turn"
+    t.index [ "conversation_id" ], name: "index_prompt_tracker_llm_responses_on_conversation_id"
     t.index [ "environment" ], name: "index_prompt_tracker_llm_responses_on_environment"
     t.index [ "is_test_run" ], name: "index_prompt_tracker_llm_responses_on_is_test_run"
     t.index [ "model" ], name: "index_prompt_tracker_llm_responses_on_model"
@@ -164,6 +172,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_02_084908) do
     t.index [ "span_id" ], name: "index_prompt_tracker_llm_responses_on_span_id"
     t.index [ "status", "created_at" ], name: "index_llm_responses_on_status_and_created_at"
     t.index [ "status" ], name: "index_prompt_tracker_llm_responses_on_status"
+    t.index [ "tools_used" ], name: "index_prompt_tracker_llm_responses_on_tools_used", using: :gin
     t.index [ "trace_id" ], name: "index_prompt_tracker_llm_responses_on_trace_id"
     t.index [ "user_id" ], name: "index_prompt_tracker_llm_responses_on_user_id"
   end
@@ -307,11 +316,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_02_084908) do
     t.boolean "enabled", default: true, null: false
     t.jsonb "tags", default: [], null: false
     t.jsonb "metadata", default: {}, null: false
+    t.integer "test_mode", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index [ "enabled" ], name: "index_prompt_tracker_tests_on_enabled"
     t.index [ "name" ], name: "index_prompt_tracker_tests_on_name"
     t.index [ "tags" ], name: "index_prompt_tracker_tests_on_tags", using: :gin
+    t.index [ "test_mode" ], name: "index_prompt_tracker_tests_on_test_mode"
     t.index [ "testable_type", "testable_id" ], name: "index_prompt_tracker_tests_on_testable_type_and_testable_id"
   end
 

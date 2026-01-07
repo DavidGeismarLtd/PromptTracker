@@ -10,12 +10,13 @@ module PromptTracker
     # - Provides parameter schema processing
     #
     # Do NOT inherit from this class directly. Instead, inherit from:
-    # - BasePromptVersionEvaluator (for text-based evaluations)
-    # - BaseOpenAiAssistantEvaluator (for conversation-based evaluations)
+    # - BaseChatCompletionEvaluator (for single-turn text evaluations)
+    # - BaseConversationalEvaluator (for multi-turn conversation evaluations)
+    # - BaseAssistantsApiEvaluator (for Assistants API-specific evaluations)
     #
     # Subclasses must implement:
     # - #evaluate_score: Calculate the numeric score (0-100)
-    # - .compatible_with: Class method returning array of compatible testable classes
+    # - .api_type: Class method returning :chat_completion, :conversational, or :assistants_api
     # - .metadata: Class method providing evaluator metadata
     #
     # Subclasses can optionally override:
@@ -125,21 +126,32 @@ module PromptTracker
         end
       end
 
-      # Class Methods for Compatibility
+      # Class Methods for API Type
+
+      # Returns the API type this evaluator works with
+      # Subclasses MUST override this method via their base class
+      #
+      # @return [Symbol] :chat_completion, :conversational, or :assistants_api
+      # @example
+      #   def self.api_type
+      #     :chat_completion
+      #   end
+      def self.api_type
+        raise NotImplementedError, "Subclasses must implement .api_type"
+      end
+
+      # Class Methods for Compatibility (Legacy - will be removed)
 
       # Returns array of testable classes this evaluator is compatible with
-      # Subclasses MUST override this method
+      # @deprecated Use api_type and inheritance-based filtering instead
       #
       # @return [Array<Class>] array of compatible testable classes
-      # @example
-      #   def self.compatible_with
-      #     [PromptTracker::PromptVersion]
-      #   end
       def self.compatible_with
         raise NotImplementedError, "Subclasses must implement .compatible_with"
       end
 
       # Check if this evaluator is compatible with a given testable
+      # @deprecated Use api_type and inheritance-based filtering instead
       #
       # @param testable [Object] the testable to check compatibility with
       # @return [Boolean] true if compatible

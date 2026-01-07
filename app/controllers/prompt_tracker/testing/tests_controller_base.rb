@@ -189,6 +189,7 @@ module PromptTracker
           :name,
           :description,
           :enabled,
+          :test_mode,
           :metadata,
           :evaluator_configs
         )

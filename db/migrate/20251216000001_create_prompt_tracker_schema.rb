@@ -119,6 +119,15 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.bigint :trace_id
       t.bigint :span_id
       t.boolean :is_test_run, default: false, null: false
+
+      # Multi-turn conversation tracking
+      t.string :conversation_id  # Groups related responses in a multi-turn conversation
+      t.integer :turn_number     # Order of this response in the conversation (1-indexed)
+
+      # Tool usage tracking
+      t.jsonb :tools_used, default: []   # Array of tool names used in this call
+      t.jsonb :tool_outputs, default: {} # Hash of tool name => output data
+
       t.timestamps
     end
 
@@ -133,6 +142,9 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_llm_responses, :trace_id
     add_index :prompt_tracker_llm_responses, :span_id
     add_index :prompt_tracker_llm_responses, :is_test_run
+    add_index :prompt_tracker_llm_responses, :conversation_id
+    add_index :prompt_tracker_llm_responses, [ :conversation_id, :turn_number ], name: "index_llm_responses_on_conversation_turn"
+    add_index :prompt_tracker_llm_responses, :tools_used, using: :gin
     add_index :prompt_tracker_llm_responses, [ :status, :created_at ], name: "index_llm_responses_on_status_and_created_at"
     add_index :prompt_tracker_llm_responses, [ :provider, :model, :created_at ], name: "index_llm_responses_on_provider_model_created_at"
     add_index :prompt_tracker_llm_responses, [ :ab_test_id, :ab_variant ], name: "index_llm_responses_on_ab_test_and_variant"
@@ -233,6 +245,10 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.boolean :enabled, default: true, null: false
       t.jsonb :tags, default: [], null: false
       t.jsonb :metadata, default: {}, null: false
+
+      # Test mode: single_turn (0) or conversational (1)
+      t.integer :test_mode, default: 0, null: false
+
       t.timestamps
     end
 
@@ -240,6 +256,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_tests, :name
     add_index :prompt_tracker_tests, :enabled
     add_index :prompt_tracker_tests, :tags, using: :gin
+    add_index :prompt_tracker_tests, :test_mode
 
     # ============================================================================
     # TABLE 9: prompt_test_suites
@@ -379,11 +396,16 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.jsonb :schema, null: false, default: []
       t.string :created_by
       t.jsonb :metadata, null: false, default: {}
+
+      # Dataset type: single_turn (0) or conversational (1)
+      t.integer :dataset_type, default: 0, null: false
+
       t.timestamps
     end
 
     add_index :prompt_tracker_datasets, [ :testable_type, :testable_id ]
     add_index :prompt_tracker_datasets, :created_at
+    add_index :prompt_tracker_datasets, :dataset_type
 
     # ============================================================================
     # TABLE 15: dataset_rows

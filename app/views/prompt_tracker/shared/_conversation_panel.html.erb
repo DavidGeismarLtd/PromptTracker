@@ -1,0 +1,79 @@
+<%#
+  Shared Conversation Panel Partial
+  Used by: Prompt Playground (Response API mode)
+
+  Local variables:
+    - messages: Array of message hashes
+    - can_reset: Boolean, whether to show reset button
+    - reset_url: String, URL for reset action (optional)
+    - send_url: String, URL for send action
+    - disabled: Boolean, whether input is disabled (optional, default: false)
+    - placeholder: String, placeholder text (optional)
+%>
+
+<%
+  messages ||= []
+  can_reset ||= messages.any?
+  disabled ||= false
+  placeholder ||= "Type your message..."
+%>
+
+<div class="card h-100" data-controller="conversation"
+     data-conversation-send-url-value="<%= send_url %>"
+     data-conversation-reset-url-value="<%= reset_url %>">
+
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Conversation</h5>
+    <% if can_reset && reset_url.present? %>
+      <button class="btn btn-sm btn-outline-secondary"
+              data-action="conversation#reset"
+              title="Reset conversation">
+        <i class="bi bi-arrow-clockwise"></i> Reset
+      </button>
+    <% end %>
+  </div>
+
+  <div class="card-body p-0 d-flex flex-column" style="height: 500px;">
+    <%# Messages container %>
+    <div class="messages-container flex-grow-1 overflow-auto p-3"
+         data-conversation-target="messagesContainer">
+      <% if messages.empty? %>
+        <div class="text-center text-muted py-5 empty-state">
+          <i class="bi bi-chat-left-text" style="font-size: 3rem;"></i>
+          <p class="mt-3">Send a message to start the conversation</p>
+        </div>
+      <% else %>
+        <%= render "prompt_tracker/shared/conversation_messages", messages: messages %>
+      <% end %>
+
+      <%# Typing indicator (hidden by default) %>
+      <div class="message assistant-message loading" style="display: none;"
+           data-conversation-target="typingIndicator">
+        <div class="message-avatar"><i class="bi bi-robot"></i></div>
+        <div class="message-content">
+          <div class="typing-indicator"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <%# Message input %>
+    <div class="border-top p-3">
+      <form data-action="submit->conversation#submit">
+        <div class="input-group">
+          <textarea class="form-control" rows="2"
+                    placeholder="<%= placeholder %>"
+                    data-conversation-target="messageInput"
+                    <%= 'disabled' if disabled %>
+                    required></textarea>
+          <button type="submit" class="btn btn-primary"
+                  data-conversation-target="sendButton"
+                  <%= 'disabled' if disabled %>>
+            <i class="bi bi-send"></i> Send
+          </button>
+        </div>
+        <small class="text-muted">Press Enter to send, Shift+Enter for new line</small>
+      </form>
+    </div>
+  </div>
+</div>
+

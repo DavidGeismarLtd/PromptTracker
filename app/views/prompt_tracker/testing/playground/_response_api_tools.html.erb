@@ -1,0 +1,54 @@
+<%#
+  Response API Tools Configuration
+  Shown when provider is openai_responses
+
+  Local variables:
+    - available_tools: Array of tool hashes from PlaygroundHelper#available_tools_for_provider
+    - enabled_tools: Array of enabled tool IDs
+%>
+
+<%
+  available_tools ||= []
+  enabled_tools ||= []
+%>
+
+<div class="response-api-tools mt-3" data-playground-target="responseApiTools">
+  <label class="form-label">
+    <i class="bi bi-tools"></i> Response API Tools
+    <span class="badge bg-info ms-1">Beta</span>
+  </label>
+  <div class="form-text mb-2">
+    Enable built-in tools for the Response API. These tools allow the model to search the web,
+    analyze files, and execute code.
+  </div>
+
+  <div class="row g-2">
+    <% available_tools.each do |tool| %>
+      <div class="col-md-4">
+        <div class="form-check card p-2 h-100">
+          <input class="form-check-input"
+                 type="checkbox"
+                 id="tool_<%= tool[:id] %>"
+                 value="<%= tool[:id] %>"
+                 data-playground-target="toolCheckbox"
+                 data-action="change->playground#onToolChange"
+                 <%= 'checked' if enabled_tools.include?(tool[:id]) %>>
+          <label class="form-check-label d-block" for="tool_<%= tool[:id] %>">
+            <i class="bi <%= tool[:icon] %> me-1"></i>
+            <strong><%= tool[:name] %></strong>
+            <br>
+            <small class="text-muted"><%= tool[:description] %></small>
+          </label>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <% if available_tools.empty? %>
+    <div class="alert alert-secondary py-2">
+      <i class="bi bi-info-circle"></i>
+      No tools available for this provider.
+    </div>
+  <% end %>
+</div>
+

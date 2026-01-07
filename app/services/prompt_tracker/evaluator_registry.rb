@@ -48,16 +48,59 @@ module PromptTracker
       end
 
       # Returns evaluators compatible with a specific testable
+      # @deprecated Use for_test or for_mode instead
       #
       # @param testable [Object] the testable to filter by (e.g., PromptVersion, Assistant)
       # @return [Hash] hash of evaluator_key => metadata for compatible evaluators
-      # @example
-      #   EvaluatorRegistry.for_testable(prompt_version)
-      #   # => { length: {...}, keyword: {...}, llm_judge: {...} }
-      #   EvaluatorRegistry.for_testable(assistant)
-      #   # => { conversation_judge: {...} }
       def for_testable(testable)
         all.select { |_key, meta| meta[:evaluator_class].compatible_with?(testable) }
+      end
+
+      # Returns evaluators compatible with a specific test (by test_mode and testable)
+      #
+      # This uses the API-based evaluator hierarchy:
+      # - single_turn mode: only BaseChatCompletionEvaluator subclasses
+      # - conversational mode + Assistant: all BaseConversationalEvaluator subclasses
+      # - conversational mode + PromptVersion: BaseConversationalEvaluator subclasses except BaseAssistantsApiEvaluator
+      #
+      # @param test [Test] the test to filter evaluators for
+      # @return [Hash] hash of evaluator_key => metadata for compatible evaluators
+      # @example
+      #   EvaluatorRegistry.for_test(single_turn_test)
+      #   # => { length: {...}, keyword: {...}, llm_judge: {...} }
+      #   EvaluatorRegistry.for_test(conversational_assistant_test)
+      #   # => { conversation_judge: {...}, file_search: {...}, function_call: {...} }
+      def for_test(test)
+        test_mode = test.test_mode || "single_turn"
+        testable = test.testable
+
+        for_mode(test_mode, testable: testable)
+      end
+
+      # Returns evaluators compatible with a specific mode and optional testable
+      #
+      # @param test_mode [String, Symbol] the test mode (:single_turn or :conversational)
+      # @param testable [Object, nil] optional testable for additional filtering
+      # @return [Hash] hash of evaluator_key => metadata for compatible evaluators
+      def for_mode(test_mode, testable: nil)
+        all.select do |_key, meta|
+          klass = meta[:evaluator_class]
+
+          if test_mode.to_s == "single_turn"
+            # Only Chat Completion evaluators
+            klass < Evaluators::BaseChatCompletionEvaluator
+          elsif testable.is_a?(PromptTracker::Openai::Assistant)
+            # All conversational evaluators (including Assistants-specific)
+            klass < Evaluators::BaseConversationalEvaluator
+          elsif testable.present?
+            # PromptVersion in conversational mode - exclude Assistants-specific
+            klass < Evaluators::BaseConversationalEvaluator &&
+              !(klass < Evaluators::BaseAssistantsApiEvaluator)
+          else
+            # No testable specified - show all conversational (conservative default)
+            klass < Evaluators::BaseConversationalEvaluator
+          end
+        end
       end
 
       # Gets metadata for a specific evaluator
@@ -177,10 +220,15 @@ module PromptTracker
         evaluators_path = File.join(File.dirname(__FILE__), "evaluators", "*.rb")
 
         Dir.glob(evaluators_path).each do |file|
-          # Skip base evaluator classes
+          # Skip base evaluator classes (both old and new naming)
           next if file.end_with?("base_evaluator.rb")
           next if file.end_with?("base_prompt_version_evaluator.rb")
           next if file.end_with?("base_openai_assistant_evaluator.rb")
+          next if file.end_with?("base_chat_completion_evaluator.rb")
+          next if file.end_with?("base_conversational_evaluator.rb")
+          next if file.end_with?("base_assistants_api_evaluator.rb")
+          # Skip backup files
+          next if file.end_with?(".bak")
 
           # Extract class name from filename
           filename = File.basename(file, ".rb")

@@ -1,5 +1,21 @@
 # frozen_string_literal: true
 
+# == Schema Information
+#
+# Table name: prompt_tracker_datasets
+#
+#  id                 :bigint           not null, primary key
+#  name               :string           not null
+#  description        :text
+#  schema             :jsonb            not null
+#  created_by         :string
+#  metadata           :jsonb            not null
+#  dataset_type       :integer          default(0), not null  # 0=single_turn, 1=conversational
+#  testable_type      :string
+#  testable_id        :bigint
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#
 FactoryBot.define do
   factory :dataset, class: "PromptTracker::Dataset" do
     association :testable, factory: :prompt_version
@@ -7,6 +23,7 @@ FactoryBot.define do
     description { "A test dataset for validating prompts" }
     created_by { "test_user" }
     metadata { {} }
+    dataset_type { :single_turn }
 
     # Schema is automatically copied from testable on create
     # But we can override it if needed
@@ -18,25 +35,31 @@ FactoryBot.define do
       if evaluator.custom_schema
         dataset.schema = evaluator.custom_schema
       elsif dataset.schema.blank? && dataset.testable
-        # Schema is set by the model's copy_schema_from_testable callback
-        # But for factories, we can set it manually
-        if dataset.testable.is_a?(PromptTracker::PromptVersion)
-          dataset.schema = dataset.testable.variables_schema if dataset.testable.variables_schema.present?
-        elsif dataset.testable.is_a?(PromptTracker::Openai::Assistant)
-          dataset.schema = dataset.testable.variables_schema
-        end
+        # Use required_schema which accounts for dataset_type
+        dataset.schema = dataset.required_schema
       end
     end
 
-    # Trait for prompt version datasets
+    # Trait for prompt version datasets (single-turn by default)
     trait :for_prompt_version do
       association :testable, factory: :prompt_version
+      dataset_type { :single_turn }
     end
 
-    # Trait for assistant datasets
+    # Trait for assistant datasets (conversational by default)
     trait :for_assistant do
       association :testable, factory: :openai_assistant
-      # Schema is automatically set from testable.variables_schema in after(:build) above
+      dataset_type { :conversational }
+    end
+
+    # Trait for single-turn datasets
+    trait :single_turn do
+      dataset_type { :single_turn }
+    end
+
+    # Trait for conversational datasets
+    trait :conversational do
+      dataset_type { :conversational }
     end
 
     trait :with_rows do
@@ -45,7 +68,9 @@ FactoryBot.define do
       end
     end
 
-    trait :with_assistant_rows do
+    # Trait with conversational rows (requires conversational dataset_type)
+    trait :with_conversational_rows do
+      dataset_type { :conversational }
       after(:create) do |dataset|
         create(:dataset_row, dataset: dataset, row_data: {
           interlocutor_simulation_prompt: "You are a patient experiencing a severe headache. You're worried it might be a migraine. Be concerned and ask for advice.",
@@ -60,6 +85,11 @@ FactoryBot.define do
           max_turns: 4
         })
       end
+    end
+
+    # Legacy alias for backward compatibility
+    trait :with_assistant_rows do
+      with_conversational_rows
     end
 
     trait :invalid_schema do

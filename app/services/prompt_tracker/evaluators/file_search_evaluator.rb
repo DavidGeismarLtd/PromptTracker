@@ -15,7 +15,7 @@ module PromptTracker
     #   })
     #   evaluation = evaluator.evaluate
     #
-    class FileSearchEvaluator < BaseOpenaiAssistantEvaluator
+    class FileSearchEvaluator < BaseAssistantsApiEvaluator
       # Default configuration
       DEFAULT_CONFIG = {
         expected_files: [],

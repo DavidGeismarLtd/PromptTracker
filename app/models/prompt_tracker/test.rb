@@ -10,6 +10,7 @@
 #  enabled            :boolean          default(TRUE), not null
 #  tags               :jsonb            not null
 #  metadata           :jsonb            not null
+#  test_mode          :integer          default(0), not null  # 0=single_turn, 1=conversational
 #  testable_type      :string
 #  testable_id        :bigint
 #  created_at         :datetime         not null
@@ -49,6 +50,9 @@ module PromptTracker
   class Test < ApplicationRecord
     self.table_name = "prompt_tracker_tests"
 
+    # Test mode enum: determines how the test is executed
+    enum :test_mode, { single_turn: 0, conversational: 1 }, default: :single_turn
+
     # Polymorphic association - can belong to PromptVersion or Assistant
     belongs_to :testable, polymorphic: true
 
@@ -69,6 +73,8 @@ module PromptTracker
     # Validations
     validates :name, presence: true
     validates :testable, presence: true
+    validate :testable_supports_test_mode
+    validate :dataset_compatible_with_test_mode, if: -> { respond_to?(:dataset) && dataset.present? }
 
     # Store configs JSON temporarily for after_save callback
     attr_accessor :evaluator_configs_json
@@ -89,6 +95,8 @@ module PromptTracker
     scope :recent, -> { order(created_at: :desc) }
     scope :for_prompt_versions, -> { where(testable_type: "PromptTracker::PromptVersion") }
     scope :for_assistants, -> { where(testable_type: "PromptTracker::Openai::Assistant") }
+    scope :single_turn_tests, -> { where(test_mode: :single_turn) }
+    scope :conversational_tests, -> { where(test_mode: :conversational) }
 
     # Get recent test runs
     def recent_runs(limit = 10)
@@ -133,7 +141,52 @@ module PromptTracker
       testable.run_test(test: self, dataset_row: dataset_row)
     end
 
+    # Check if testable supports the current test mode
+    #
+    # @return [Boolean] true if testable supports this test mode
+    def testable_supports_test_mode?
+      return true unless testable.present?
+
+      case testable
+      when PromptVersion
+        # Single-turn always supported
+        return true if single_turn?
+        # Conversational requires Response API provider
+        testable.model_config&.dig("provider") == "openai_responses"
+      when Openai::Assistant
+        # Assistants only support conversational mode
+        conversational?
+      else
+        true
+      end
+    end
+
     private
+
+    # Validates that testable supports the selected test mode
+    def testable_supports_test_mode
+      return if testable_supports_test_mode?
+
+      case testable
+      when PromptVersion
+        errors.add(:test_mode, "conversational mode requires Response API provider (openai_responses)")
+      when Openai::Assistant
+        errors.add(:test_mode, "Assistants only support conversational mode")
+      end
+    end
+
+    # Validates that dataset type is compatible with test mode
+    def dataset_compatible_with_test_mode
+      return unless dataset.respond_to?(:conversational?)
+
+      if conversational? && !dataset.conversational?
+        errors.add(:dataset, "must be a conversational dataset for conversational tests")
+      end
+
+      if single_turn? && dataset.conversational?
+        errors.add(:dataset, "cannot use a conversational dataset for single-turn tests")
+      end
+    end
 
     def sync_evaluator_configs_from_json
       return unless @evaluator_configs_json

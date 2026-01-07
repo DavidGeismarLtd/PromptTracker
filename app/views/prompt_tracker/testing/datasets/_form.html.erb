@@ -28,6 +28,41 @@
     <div class="form-text">Optional description to help others understand this dataset</div>
   </div>
 
+  <!-- Dataset Type -->
+  <div class="mb-4">
+    <label class="form-label"><i class="bi bi-arrows-angle-expand"></i> Dataset Type</label>
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="form-check mb-3">
+          <%= f.radio_button :dataset_type, "single_turn", class: "form-check-input", id: "dataset_type_single_turn", checked: dataset.dataset_type.nil? || dataset.dataset_type == "single_turn" %>
+          <label class="form-check-label" for="dataset_type_single_turn">
+            <strong><i class="bi bi-chat-left-text"></i> Single-Turn</strong>
+            <br>
+            <small class="text-muted">Standard dataset with input variables only. Used for single-turn tests.</small>
+          </label>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="form-check mb-3">
+          <%= f.radio_button :dataset_type, "conversational", class: "form-check-input", id: "dataset_type_conversational" %>
+          <label class="form-check-label" for="dataset_type_conversational">
+            <strong><i class="bi bi-chat-dots"></i> Conversational</strong>
+            <br>
+            <small class="text-muted">Includes conversation simulation settings. Used for multi-turn tests.</small>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-light small mb-0">
+      <i class="bi bi-info-circle"></i>
+      <strong>Conversational datasets</strong> require additional fields in each entry:
+      <ul class="mb-0 mt-2">
+        <li><code>interlocutor_simulation_prompt</code> - A prompt instructing the LLM how to simulate user responses</li>
+        <li><code>max_turns</code> - Maximum number of conversation turns (default: 5)</li>
+      </ul>
+    </div>
+  </div>
+
   <%# Schema info - driven by dataset.schema (works for any testable type) %>
   <div class="mb-3">
     <label class="form-label">Schema</label>

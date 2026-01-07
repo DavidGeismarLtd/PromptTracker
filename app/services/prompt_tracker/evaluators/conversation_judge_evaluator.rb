@@ -23,7 +23,7 @@ module PromptTracker
     #   #    - score: 85 (average of all message scores)
     #   #    - metadata: { message_scores: [90, 80, 85], ... }
     #
-    class ConversationJudgeEvaluator < BaseOpenaiAssistantEvaluator
+    class ConversationJudgeEvaluator < BaseConversationalEvaluator
       # Default configuration
       DEFAULT_CONFIG = {
         judge_model: "gpt-4o",
@@ -111,21 +111,7 @@ module PromptTracker
 
       private
 
-      # Get messages from conversation_data
-      #
-      # @return [Array<Hash>] array of messages
-      def messages
-        raise ArgumentError, "conversation_data must have conversation_data" if conversation_data.nil?
-
-        @messages ||= conversation_data["messages"] || conversation_data[:messages] || []
-      end
-
-      # Get assistant messages from conversation
-      #
-      # @return [Array<Hash>] array of assistant messages
-      def assistant_messages
-        @assistant_messages ||= messages.select { |m| m["role"] == "assistant" || m[:role] == "assistant" }
-      end
+      # NOTE: messages and assistant_messages are now inherited from BaseConversationalEvaluator
 
       # Get or compute message scores (memoized)
       # This ensures we only call the LLM once per message

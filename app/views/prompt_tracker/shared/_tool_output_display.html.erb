@@ -1,0 +1,48 @@
+<%#
+  Shared Tool Output Display Partial
+  Displays tool usage badges for Response API and Assistant responses
+
+  Local variables:
+    - tools: Array of tool hashes with :type (or just strings for tool names)
+             Optional keys: :name (for functions), :query (for web_search)
+%>
+
+<div class="tools-used mt-2">
+  <% tools.each do |tool| %>
+    <%
+      # Handle both hash and string formats
+      if tool.is_a?(Hash)
+        tool_type = tool[:type] || tool["type"]
+        tool_name = tool[:name] || tool["name"]
+        tool_query = tool[:query] || tool["query"]
+      else
+        tool_type = tool.to_s
+        tool_name = nil
+        tool_query = nil
+      end
+    %>
+    <div class="tool-badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded bg-light border me-1 mb-1">
+      <% case tool_type %>
+      <% when "web_search" %>
+        <i class="bi bi-globe text-primary"></i>
+        <span class="small">web_search</span>
+        <% if tool_query.present? %>
+          <small class="text-muted ms-1">- "<%= truncate(tool_query, length: 30) %>"</small>
+        <% end %>
+      <% when "file_search" %>
+        <i class="bi bi-file-earmark-search text-info"></i>
+        <span class="small">file_search</span>
+      <% when "code_interpreter" %>
+        <i class="bi bi-code-slash text-success"></i>
+        <span class="small">code_interpreter</span>
+      <% when "function" %>
+        <i class="bi bi-gear text-secondary"></i>
+        <span class="small"><%= tool_name || "function" %></span>
+      <% else %>
+        <i class="bi bi-tools text-muted"></i>
+        <span class="small"><%= tool_type %></span>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+

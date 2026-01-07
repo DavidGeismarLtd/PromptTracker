@@ -116,7 +116,7 @@ module PromptTracker
       end
 
       def dataset_params
-        params.require(:dataset).permit(:name, :description, :schema, metadata: {})
+        params.require(:dataset).permit(:name, :description, :schema, :dataset_type, metadata: {})
       end
     end
   end

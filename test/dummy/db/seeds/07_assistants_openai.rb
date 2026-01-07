@@ -33,11 +33,12 @@ medical_assistant = PromptTracker::Openai::Assistant.new(
 )
 medical_assistant.save!
 
-# Create dataset for medical assistant
+# Create conversational dataset for medical assistant
 medical_dataset = PromptTracker::Dataset.create!(
   testable: medical_assistant,
   name: "Common Symptoms",
-  description: "Test cases for common medical symptoms"
+  description: "Test cases for common medical symptoms",
+  dataset_type: :conversational
 )
 
 medical_dataset.dataset_rows.create!([
@@ -73,12 +74,13 @@ medical_dataset.dataset_rows.create!([
   }
 ])
 
-# Create test with ConversationJudgeEvaluator
+# Create conversational test with ConversationJudgeEvaluator
 medical_test = PromptTracker::Test.create!(
   testable: medical_assistant,
   name: "Symptom Triage Quality",
   description: "Evaluates quality of symptom triage conversations",
-  enabled: true
+  enabled: true,
+  test_mode: :conversational
 )
 
 medical_test.evaluator_configs.create!(
@@ -128,11 +130,12 @@ support_assistant = PromptTracker::Openai::Assistant.new(
 )
 support_assistant.save!
 
-# Create dataset for support assistant
+# Create conversational dataset for support assistant
 support_dataset = PromptTracker::Dataset.create!(
   testable: support_assistant,
   name: "Common Support Issues",
-  description: "Test cases for common customer support scenarios"
+  description: "Test cases for common customer support scenarios",
+  dataset_type: :conversational
 )
 
 support_dataset.dataset_rows.create!([
@@ -168,12 +171,13 @@ support_dataset.dataset_rows.create!([
   }
 ])
 
-# Create test with ConversationJudgeEvaluator
+# Create conversational test with ConversationJudgeEvaluator
 support_test = PromptTracker::Test.create!(
   testable: support_assistant,
   name: "Support Quality & Resolution",
   description: "Evaluates quality of customer support conversations",
-  enabled: true
+  enabled: true,
+  test_mode: :conversational
 )
 
 support_test.evaluator_configs.create!(
@@ -223,11 +227,12 @@ tech_assistant = PromptTracker::Openai::Assistant.new(
 )
 tech_assistant.save!
 
-# Create dataset for tech support assistant
+# Create conversational dataset for tech support assistant
 tech_dataset = PromptTracker::Dataset.create!(
   testable: tech_assistant,
   name: "Technical Issues",
-  description: "Test cases for common technical support scenarios"
+  description: "Test cases for common technical support scenarios",
+  dataset_type: :conversational
 )
 
 tech_dataset.dataset_rows.create!([
@@ -263,12 +268,13 @@ tech_dataset.dataset_rows.create!([
   }
 ])
 
-# Create test with ConversationJudgeEvaluator
+# Create conversational test with ConversationJudgeEvaluator
 tech_test = PromptTracker::Test.create!(
   testable: tech_assistant,
   name: "Technical Troubleshooting Quality",
   description: "Evaluates quality of technical support conversations",
-  enabled: true
+  enabled: true,
+  test_mode: :conversational
 )
 
 tech_test.evaluator_configs.create!(
@@ -428,11 +434,12 @@ travel_assistant = PromptTracker::Openai::Assistant.new(
 )
 travel_assistant.save!
 
-# Create dataset for travel assistant
+# Create conversational dataset for travel assistant
 travel_dataset = PromptTracker::Dataset.create!(
   testable: travel_assistant,
   name: "Travel Booking Scenarios",
-  description: "Test cases for travel planning and booking with function calls"
+  description: "Test cases for travel planning and booking with function calls",
+  dataset_type: :conversational
 )
 
 travel_dataset.dataset_rows.create!([
@@ -468,12 +475,13 @@ travel_dataset.dataset_rows.create!([
   }
 ])
 
-# Create test with Function Call Evaluator
+# Create conversational test with Function Call Evaluator
 travel_test = PromptTracker::Test.create!(
   testable: travel_assistant,
   name: "Travel Function Usage",
   description: "Evaluates if the assistant correctly uses travel-related functions",
-  enabled: true
+  enabled: true,
+  test_mode: :conversational
 )
 
 # Function Call Evaluator - check if search functions are called
@@ -509,12 +517,13 @@ travel_test.evaluator_configs.create!(
 
 puts "  ✓ Created travel booking assistant with functions, dataset and test"
 
-# Create a second test specifically for argument validation
+# Create a second conversational test specifically for argument validation
 travel_args_test = PromptTracker::Test.create!(
   testable: travel_assistant,
   name: "Travel Function Arguments",
   description: "Validates that function arguments are correctly formatted",
-  enabled: true
+  enabled: true,
+  test_mode: :conversational
 )
 
 travel_args_test.evaluator_configs.create!(

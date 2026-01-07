@@ -5,13 +5,14 @@ module PromptTracker
   #
   # This job:
   # 1. Loads an existing TestRun (created by controller with "running" status)
-  # 2. Detects test type and routes to appropriate runner using convention
+  # 2. Detects test type and routes to appropriate runner
   # 3. Executes the test via the runner service
   # 4. Updates the test run with results
   # 5. Broadcasts completion via Turbo Streams
   #
-  # Convention-based routing:
-  # - PromptTracker::PromptVersion → PromptTracker::TestRunners::PromptVersionRunner
+  # Runner routing:
+  # - PromptTracker::PromptVersion (single-turn) → PromptTracker::TestRunners::PromptVersionRunner
+  # - PromptTracker::PromptVersion (conversational) → PromptTracker::TestRunners::Openai::ResponseApiConversationalRunner
   # - PromptTracker::Openai::Assistant → PromptTracker::TestRunners::Openai::AssistantRunner
   #
   # @example Enqueue a prompt version test run
@@ -38,8 +39,9 @@ module PromptTracker
       test_run = TestRun.find(test_run_id)
       test = test_run.test
       testable = test.testable
-      # Route to appropriate runner based on testable type using convention
-      runner_class = resolve_runner_class(testable)
+
+      # Route to appropriate runner based on testable type and test mode
+      runner_class = resolve_runner_class(test, testable)
 
       runner = runner_class.new(
         test_run: test_run,
@@ -54,29 +56,45 @@ module PromptTracker
 
     private
 
-    # Resolve the runner class based on testable type using convention
+    # Resolve the runner class based on testable type and test mode
     #
-    # Convention:
-    # - PromptTracker::PromptVersion → PromptTracker::TestRunners::PromptVersionRunner
-    # - PromptTracker::Openai::Assistant → PromptTracker::TestRunners::Openai::AssistantRunner
-    #
+    # @param test [Test] the test configuration
     # @param testable [Object] the testable object
     # @return [Class] the runner class
     # @raise [ArgumentError] if no runner found for testable type
-    def resolve_runner_class(testable)
-      # Get the full class name (e.g., "PromptTracker::PromptVersion")
+    def resolve_runner_class(test, testable)
+      case testable
+      when PromptVersion
+        if test_is_conversational?(test)
+          TestRunners::Openai::ResponseApiConversationalRunner
+        else
+          resolve_by_convention(testable)
+        end
+      when Openai::Assistant
+        TestRunners::Openai::AssistantRunner
+      else
+        resolve_by_convention(testable)
+      end
+    end
+
+    # Check if test is conversational mode
+    #
+    # @param test [Test] the test
+    # @return [Boolean]
+    def test_is_conversational?(test)
+      # Check if test has test_mode column and is conversational
+      test.respond_to?(:conversational?) && test.conversational?
+    end
+
+    # Resolve runner class by convention (fallback)
+    #
+    # @param testable [Object] the testable object
+    # @return [Class] the runner class
+    def resolve_by_convention(testable)
       testable_class_name = testable.class.name
-
-      # Remove the PromptTracker:: prefix to get the relative path
-      # e.g., "PromptVersion" or "Openai::Assistant"
       relative_class_name = testable_class_name.sub(/^PromptTracker::/, "")
-
-      # Build the runner class name by convention
-      # e.g., "PromptTracker::TestRunners::PromptVersionRunner"
-      # or "PromptTracker::TestRunners::Openai::AssistantRunner"
       runner_class_name = "PromptTracker::TestRunners::#{relative_class_name}Runner"
 
-      # Constantize and return the runner class
       runner_class_name.constantize
     rescue NameError => e
       raise ArgumentError, "No runner found for testable type: #{testable_class_name}. " \

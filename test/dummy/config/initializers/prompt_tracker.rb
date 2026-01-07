@@ -22,6 +22,7 @@ PromptTracker.configure do |config|
   # Direct API key configuration. A provider is only available if its key is set.
   config.api_keys = {
     openai: ENV["OPENAI_API_KEY"],
+    openai_responses: ENV["OPENAI_API_KEY"], # Uses same key as openai, different API endpoint
     anthropic: ENV["ANTHROPIC_API_KEY"],
     google: ENV["GOOGLE_API_KEY"]
   }
@@ -42,6 +43,15 @@ PromptTracker.configure do |config|
         capabilities: [ :chat, :function_calling ] },
       { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", category: "GPT-3.5",
         capabilities: [ :chat, :function_calling ] }
+    ],
+    # OpenAI Responses API - supports built-in tools (web_search, file_search, code_interpreter)
+    openai_responses: [
+      { id: "gpt-4o", name: "GPT-4o", category: "Latest",
+        capabilities: [ :chat, :structured_output, :vision, :function_calling, :web_search, :file_search, :code_interpreter ] },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", category: "Latest",
+        capabilities: [ :chat, :structured_output, :vision, :function_calling, :web_search, :file_search, :code_interpreter ] },
+      { id: "gpt-4-turbo", name: "GPT-4 Turbo", category: "GPT-4",
+        capabilities: [ :chat, :vision, :function_calling ] }
     ],
     anthropic: [
       { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", category: "Claude 3.5",

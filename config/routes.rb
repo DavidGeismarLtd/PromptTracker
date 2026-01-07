@@ -13,6 +13,8 @@ PromptTracker::Engine.routes.draw do
       post :preview, on: :member
       post :save, on: :member
       post :generate, on: :member
+      post :execute, on: :member           # Execute Response API call
+      post :reset_conversation, on: :member # Reset conversation state
     end
 
     # Prompt versions (for testing)
@@ -22,6 +24,8 @@ PromptTracker::Engine.routes.draw do
         post :preview, on: :member
         post :save, on: :member
         post :generate, on: :member
+        post :execute, on: :member           # Execute Response API call
+        post :reset_conversation, on: :member # Reset conversation state
       end
 
       resources :prompt_versions, only: [ :show ], path: "versions" do
@@ -35,6 +39,8 @@ PromptTracker::Engine.routes.draw do
           post :preview, on: :member
           post :save, on: :member
           post :generate, on: :member
+          post :execute, on: :member           # Execute Response API call
+          post :reset_conversation, on: :member # Reset conversation state
         end
 
         # Datasets nested under prompt versions

@@ -1,6 +1,21 @@
-<div class="container-fluid mt-4"
+<%
+  # Compute URLs for conversation panel
+  if @prompt_version
+    execute_url = execute_testing_prompt_prompt_version_playground_path(@prompt, @prompt_version)
+    reset_url = reset_conversation_testing_prompt_prompt_version_playground_path(@prompt, @prompt_version)
+  elsif @prompt
+    execute_url = execute_testing_prompt_playground_path(@prompt)
+    reset_url = reset_conversation_testing_prompt_playground_path(@prompt)
+  else
+    execute_url = execute_testing_playground_path
+    reset_url = reset_conversation_testing_playground_path
+  end
+%>
+<div id="playground-container"
+     class="container-fluid mt-4"
      data-controller="playground"
      data-playground-generate-prompt-outlet="#generate-prompt-controller"
+     data-playground-conversation-outlet="#conversation-panel"
      <% if @prompt_version %>
        data-playground-prompt-id-value="<%= @prompt.id %>"
        data-playground-version-id-value="<%= @prompt_version.id %>"
@@ -319,6 +334,12 @@
           </div>
         </div>
       </div>
+
+      <!-- Conversation Panel (for Response API) -->
+      <%= render "prompt_tracker/testing/playground/conversation_panel",
+                 conversation_state: respond_to?(:conversation_state_from_session) ? conversation_state_from_session(session) : {},
+                 execute_url: execute_url,
+                 reset_url: reset_url %>
     </div>
   </div>
 

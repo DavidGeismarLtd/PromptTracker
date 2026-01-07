@@ -36,7 +36,9 @@ export default class extends Controller {
     "aiButtonText",
     "aiButtonIcon",
     "responseSchema",
-    "responseSchemaError"
+    "responseSchemaError",
+    // Response API target
+    "responseApiToolsContainer"
   ]
 
   static values = {
@@ -48,7 +50,7 @@ export default class extends Controller {
     isStandalone: Boolean
   }
 
-  static outlets = ["generate-prompt"]
+  static outlets = ["generate-prompt", "conversation"]
 
   connect() {
     console.log('[PlaygroundController] connect() called')
@@ -172,7 +174,7 @@ export default class extends Controller {
     }
   }
 
-  // Action: Provider change - update model dropdown
+  // Action: Provider change - update model dropdown and Response API UI
   onProviderChange() {
     if (!this.hasModelProviderTarget || !this.hasModelNameTarget) return
 
@@ -219,6 +221,28 @@ export default class extends Controller {
     // Select first model
     if (this.modelNameTarget.options.length > 0) {
       this.modelNameTarget.selectedIndex = 0
+    }
+
+    // Toggle Response API UI based on provider
+    this.updateResponseApiVisibility(provider)
+  }
+
+  // Show/hide Response API specific UI elements
+  updateResponseApiVisibility(provider) {
+    const isResponseApi = provider === 'openai_responses'
+
+    // Show/hide Response API tools container
+    if (this.hasResponseApiToolsContainerTarget) {
+      this.responseApiToolsContainerTarget.style.display = isResponseApi ? '' : 'none'
+    }
+
+    // Show/hide conversation panel via conversation outlet
+    if (this.hasConversationOutlet) {
+      if (isResponseApi) {
+        this.conversationOutlet.show()
+      } else {
+        this.conversationOutlet.hide()
+      }
     }
   }
 
@@ -838,6 +862,61 @@ export default class extends Controller {
     }
 
     return config
+  }
+
+  // Get system prompt from editor (called by conversation controller via outlet)
+  getSystemPrompt() {
+    if (this.hasSystemPromptEditorTarget) {
+      return this.systemPromptEditorTarget.value || ''
+    }
+    return ''
+  }
+
+  // Get user prompt template from editor (called by conversation controller via outlet)
+  getUserPrompt() {
+    if (this.hasUserPromptEditorTarget) {
+      return this.userPromptEditorTarget.value || ''
+    }
+    return ''
+  }
+
+  // Get variables as an object (called by conversation controller via outlet)
+  getVariables() {
+    return this.collectVariables()
+  }
+
+  // Check if there are variables that haven't been filled in
+  hasUnfilledVariables() {
+    const userPrompt = this.hasUserPromptEditorTarget ? this.userPromptEditorTarget.value : ''
+    const systemPrompt = this.hasSystemPromptEditorTarget ? this.systemPromptEditorTarget.value : ''
+
+    // Extract all variables from both prompts
+    const userVariables = this.extractVariables(userPrompt)
+    const systemVariables = this.extractVariables(systemPrompt)
+    const allVariables = [...new Set([...systemVariables, ...userVariables])]
+
+    if (allVariables.length === 0) return false
+
+    // Check if any variable is empty
+    const currentValues = this.collectVariables()
+    return allVariables.some(varName => !currentValues[varName]?.trim())
+  }
+
+  // Get the list of unfilled variable names
+  getUnfilledVariables() {
+    const userPrompt = this.hasUserPromptEditorTarget ? this.userPromptEditorTarget.value : ''
+    const systemPrompt = this.hasSystemPromptEditorTarget ? this.systemPromptEditorTarget.value : ''
+
+    // Extract all variables from both prompts
+    const userVariables = this.extractVariables(userPrompt)
+    const systemVariables = this.extractVariables(systemPrompt)
+    const allVariables = [...new Set([...systemVariables, ...userVariables])]
+
+    if (allVariables.length === 0) return []
+
+    // Return variables that are empty
+    const currentValues = this.collectVariables()
+    return allVariables.filter(varName => !currentValues[varName]?.trim())
   }
 
   // Get response schema from form (parsed JSON or null)

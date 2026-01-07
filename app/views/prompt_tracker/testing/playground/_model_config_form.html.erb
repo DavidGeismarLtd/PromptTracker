@@ -46,6 +46,15 @@
       <div class="form-text">LLM provider to use for API calls. Only providers with configured API keys are shown.</div>
     </div>
 
+    <%# Response API Tools - shown when provider is openai_responses %>
+    <div id="response-api-tools-container"
+         style="<%= current_provider == 'openai_responses' ? '' : 'display: none;' %>"
+         data-playground-target="responseApiToolsContainer">
+      <%= render "prompt_tracker/testing/playground/response_api_tools",
+                 available_tools: respond_to?(:available_tools_for_provider) ? available_tools_for_provider : [],
+                 enabled_tools: @version&.model_config&.dig('tools') || [] %>
+    </div>
+
     <div class="mb-3">
       <label for="model-name" class="form-label">Model</label>
       <%

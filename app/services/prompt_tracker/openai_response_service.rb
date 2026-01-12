@@ -44,17 +44,19 @@ module PromptTracker
     # @param model [String] the model ID (e.g., "gpt-4o")
     # @param user_prompt [String] the user message content
     # @param system_prompt [String, nil] optional system instructions
-    # @param tools [Array<Symbol>] Response API tools (:web_search, :file_search, :code_interpreter)
+    # @param tools [Array<Symbol>] Response API tools (:web_search, :file_search, :code_interpreter, :functions)
+    # @param tool_config [Hash] configuration for tools (e.g., file_search vector_store_ids, function definitions)
     # @param temperature [Float] the temperature (0.0-2.0)
     # @param max_tokens [Integer, nil] maximum output tokens
     # @param options [Hash] additional API parameters
     # @return [Hash] response with :text, :response_id, :usage, :model, :tool_calls, :raw keys
-    def self.call(model:, user_prompt:, system_prompt: nil, tools: [], temperature: 0.7, max_tokens: nil, **options)
+    def self.call(model:, user_prompt:, system_prompt: nil, tools: [], tool_config: {}, temperature: 0.7, max_tokens: nil, **options)
       new(
         model: model,
         user_prompt: user_prompt,
         system_prompt: system_prompt,
         tools: tools,
+        tool_config: tool_config,
         temperature: temperature,
         max_tokens: max_tokens,
         **options
@@ -67,28 +69,31 @@ module PromptTracker
     # @param user_prompt [String] the user message content
     # @param previous_response_id [String] the ID from a previous response
     # @param tools [Array<Symbol>] Response API tools
+    # @param tool_config [Hash] configuration for tools
     # @param options [Hash] additional API parameters
     # @return [Hash] response with :text, :response_id, :usage, :model, :tool_calls, :raw keys
-    def self.call_with_context(model:, user_prompt:, previous_response_id:, tools: [], **options)
+    def self.call_with_context(model:, user_prompt:, previous_response_id:, tools: [], tool_config: {}, **options)
       new(
         model: model,
         user_prompt: user_prompt,
         previous_response_id: previous_response_id,
         tools: tools,
+        tool_config: tool_config,
         **options
       ).call
     end
 
     attr_reader :model, :user_prompt, :system_prompt, :previous_response_id,
-                :tools, :temperature, :max_tokens, :options
+                :tools, :tool_config, :temperature, :max_tokens, :options
 
     def initialize(model:, user_prompt:, system_prompt: nil, previous_response_id: nil,
-                   tools: [], temperature: 0.7, max_tokens: nil, **options)
+                   tools: [], tool_config: {}, temperature: 0.7, max_tokens: nil, **options)
       @model = model
       @user_prompt = user_prompt
       @system_prompt = system_prompt
       @previous_response_id = previous_response_id
       @tools = tools
+      @tool_config = tool_config || {}
       @temperature = temperature
       @max_tokens = max_tokens
       @options = options
@@ -143,20 +148,59 @@ module PromptTracker
     # @param tools [Array<Symbol, Hash>] tool symbols or custom tool hashes
     # @return [Array<Hash>] formatted tools
     def format_tools(tools)
-      tools.map do |tool|
+      formatted = []
+
+      tools.each do |tool|
         # Allow passing custom tool hashes directly
-        next tool if tool.is_a?(Hash)
+        if tool.is_a?(Hash)
+          formatted << tool
+          next
+        end
 
         case tool.to_sym
         when :web_search
-          { type: "web_search_preview" }
+          formatted << { type: "web_search_preview" }
         when :file_search
-          { type: "file_search" }
+          formatted << format_file_search_tool
         when :code_interpreter
-          { type: "code_interpreter" }
+          formatted << { type: "code_interpreter" }
+        when :functions
+          # Functions are added separately, not as a single tool
+          formatted.concat(format_function_tools)
         else
-          { type: tool.to_s }
+          formatted << { type: tool.to_s }
         end
+      end
+
+      formatted
+    end
+
+    # Format file_search tool with optional vector_store_ids
+    #
+    # @return [Hash] formatted file_search tool
+    def format_file_search_tool
+      file_search_config = tool_config.dig("file_search") || tool_config.dig(:file_search) || {}
+      vector_store_ids = file_search_config["vector_store_ids"] || file_search_config[:vector_store_ids] || []
+
+      tool_hash = { type: "file_search" }
+      tool_hash[:vector_store_ids] = vector_store_ids if vector_store_ids.any?
+      tool_hash
+    end
+
+    # Format custom function definitions into API format
+    #
+    # @return [Array<Hash>] formatted function tools
+    def format_function_tools
+      functions = tool_config.dig("functions") || tool_config.dig(:functions) || []
+
+      functions.map do |func|
+        {
+          type: "function",
+          name: func["name"] || func[:name],
+          description: func["description"] || func[:description] || "",
+          parameters: func["parameters"] || func[:parameters] || {},
+          strict: func["strict"] || func[:strict] || false
+        }
       end
     end
 

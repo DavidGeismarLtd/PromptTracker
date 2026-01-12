@@ -356,7 +356,7 @@ module PromptTracker
     #
     # @param provider [Symbol] the provider key
     # @param api [Symbol] the API key
-    # @return [Array<Hash>] array of tool hashes with :id, :name, :description, :icon
+    # @return [Array<Hash>] array of tool hashes with :id, :name, :description, :icon, :configurable
     def tools_for_api(provider, api)
       api_config = providers.dig(provider.to_sym, :apis, api.to_sym)
       return [] unless api_config
@@ -370,7 +370,8 @@ module PromptTracker
           id: capability.to_s,
           name: tool_metadata[:name],
           description: tool_metadata[:description],
-          icon: tool_metadata[:icon]
+          icon: tool_metadata[:icon],
+          configurable: tool_metadata[:configurable] == true
         }
       end.compact
     end
@@ -419,12 +420,19 @@ module PromptTracker
         file_search: {
           name: "File Search",
           description: "Search through uploaded files",
-          icon: "bi-file-earmark-search"
+          icon: "bi-file-earmark-search",
+          configurable: true
         },
         code_interpreter: {
           name: "Code Interpreter",
           description: "Execute Python code for analysis",
           icon: "bi-code-slash"
+        },
+        functions: {
+          name: "Functions",
+          description: "Define custom function schemas",
+          icon: "bi-braces-asterisk",
+          configurable: true
         }
       }
     end

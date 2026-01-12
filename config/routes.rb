@@ -204,4 +204,11 @@ PromptTracker::Engine.routes.draw do
       get :config_form
     end
   end
+
+  # ========================================
+  # API SECTION - Internal API endpoints
+  # ========================================
+  namespace :api do
+    resources :vector_stores, only: [ :index, :create ]
+  end
 end

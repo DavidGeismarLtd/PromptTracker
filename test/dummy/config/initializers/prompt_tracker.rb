@@ -41,7 +41,7 @@ PromptTracker.configure do |config|
         response_api: {
           name: "Responses API",
           description: "Stateful conversations with built-in tools",
-          capabilities: [ :web_search, :file_search, :code_interpreter ]
+          capabilities: [ :web_search, :file_search, :code_interpreter, :functions ]
         },
         assistants_api: {
           name: "Assistants API",

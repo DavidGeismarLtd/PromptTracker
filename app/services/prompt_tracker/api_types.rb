@@ -14,6 +14,9 @@ module PromptTracker
   # @example Get all API types
   #   ApiTypes::ALL # => [:openai_chat_completion, :openai_response_api, ...]
   #
+  # @example Convert from config format
+  #   ApiTypes.from_config(:openai, :chat_completion) # => :openai_chat_completion
+  #
   module ApiTypes
     # OpenAI Chat Completions API (single-turn or multi-turn with manual state management)
     OPENAI_CHAT_COMPLETION = :openai_chat_completion
@@ -27,19 +30,24 @@ module PromptTracker
     # Anthropic Messages API
     ANTHROPIC_MESSAGES = :anthropic_messages
 
+    # Google Gemini API
+    GOOGLE_GEMINI = :google_gemini
+
     # All supported API types
     ALL = [
       OPENAI_CHAT_COMPLETION,
       OPENAI_RESPONSE_API,
       OPENAI_ASSISTANTS_API,
-      ANTHROPIC_MESSAGES
+      ANTHROPIC_MESSAGES,
+      GOOGLE_GEMINI
     ].freeze
 
     # APIs that support single-response evaluation
     SINGLE_RESPONSE_APIS = [
       OPENAI_CHAT_COMPLETION,
       OPENAI_RESPONSE_API,
-      ANTHROPIC_MESSAGES
+      ANTHROPIC_MESSAGES,
+      GOOGLE_GEMINI
     ].freeze
 
     # APIs that support conversational evaluation
@@ -47,6 +55,38 @@ module PromptTracker
       OPENAI_RESPONSE_API,
       OPENAI_ASSISTANTS_API
     ].freeze
+
+    # Mapping from config format (provider, api) to ApiType constant
+    CONFIG_TO_API_TYPE = {
+      %i[openai chat_completion] => OPENAI_CHAT_COMPLETION,
+      %i[openai response_api] => OPENAI_RESPONSE_API,
+      %i[openai assistants_api] => OPENAI_ASSISTANTS_API,
+      %i[anthropic messages] => ANTHROPIC_MESSAGES,
+      %i[google gemini] => GOOGLE_GEMINI
+    }.freeze
+
+    # Mapping from ApiType constant to config format (provider, api)
+    API_TYPE_TO_CONFIG = CONFIG_TO_API_TYPE.invert.freeze
+
+    # Convert from config format (provider + api) to ApiType constant.
+    #
+    # @param provider [Symbol, String] the provider key (e.g., :openai)
+    # @param api [Symbol, String] the API key (e.g., :chat_completion)
+    # @return [Symbol, nil] the ApiType constant or nil if not found
+    def self.from_config(provider, api)
+      CONFIG_TO_API_TYPE[[ provider.to_sym, api.to_sym ]]
+    end
+
+    # Convert from ApiType constant to config format.
+    #
+    # @param api_type [Symbol] the ApiType constant
+    # @return [Hash, nil] hash with :provider and :api keys, or nil if not found
+    def self.to_config(api_type)
+      result = API_TYPE_TO_CONFIG[api_type.to_sym]
+      return nil unless result
+
+      { provider: result[0], api: result[1] }
+    end
 
     # Returns all API types
     #
@@ -93,6 +133,8 @@ module PromptTracker
         "OpenAI Assistants API"
       when ANTHROPIC_MESSAGES
         "Anthropic Messages"
+      when GOOGLE_GEMINI
+        "Google Gemini"
       else
         api_type.to_s.titleize
       end

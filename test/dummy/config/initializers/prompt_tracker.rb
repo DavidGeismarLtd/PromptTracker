@@ -17,41 +17,72 @@ PromptTracker.configure do |config|
   config.basic_auth_password = nil
 
   # ===========================================================================
-  # API Keys
+  # API Keys (per provider, not per API)
   # ===========================================================================
-  # Direct API key configuration. A provider is only available if its key is set.
+  # A provider is only available if its key is set.
   config.api_keys = {
     openai: ENV["OPENAI_API_KEY"],
-    openai_responses: ENV["OPENAI_API_KEY"], # Uses same key as openai, different API endpoint
-    anthropic: ENV["ANTHROPIC_API_KEY"],
-    google: ENV["GOOGLE_API_KEY"]
+    anthropic: ENV["ANTHROPIC_API_KEY"]
+  }
+
+  # ===========================================================================
+  # Providers and Their APIs
+  # ===========================================================================
+  # Define providers and the APIs they offer.
+  config.providers = {
+    openai: {
+      name: "OpenAI",
+      apis: {
+        chat_completion: {
+          name: "Chat Completions",
+          description: "Standard chat API with messages",
+          default: true
+        },
+        response_api: {
+          name: "Responses API",
+          description: "Stateful conversations with built-in tools",
+          capabilities: [ :web_search, :file_search, :code_interpreter ]
+        },
+        assistants_api: {
+          name: "Assistants API",
+          description: "Full assistant features with threads and runs"
+        }
+      }
+    },
+    anthropic: {
+      name: "Anthropic",
+      apis: {
+        messages: {
+          name: "Messages API",
+          description: "Claude chat API",
+          default: true
+        }
+      }
+    }
   }
 
   # ===========================================================================
   # Master Model Registry
   # ===========================================================================
   # All available models in the system. Each model can have capabilities.
+  # supported_apis: Array of API keys this model works with (nil = all)
   config.models = {
     openai: [
       { id: "gpt-4o", name: "GPT-4o", category: "Latest",
-        capabilities: [ :chat, :structured_output, :vision, :function_calling ] },
+        capabilities: [ :chat, :structured_output, :vision, :function_calling ],
+        supported_apis: [ :chat_completion, :response_api, :assistants_api ] },
       { id: "gpt-4o-mini", name: "GPT-4o Mini", category: "Latest",
-        capabilities: [ :chat, :structured_output, :vision, :function_calling ] },
+        capabilities: [ :chat, :structured_output, :vision, :function_calling ],
+        supported_apis: [ :chat_completion, :response_api, :assistants_api ] },
       { id: "gpt-4-turbo", name: "GPT-4 Turbo", category: "GPT-4",
-        capabilities: [ :chat, :vision, :function_calling ] },
+        capabilities: [ :chat, :vision, :function_calling ],
+        supported_apis: [ :chat_completion, :response_api, :assistants_api ] },
       { id: "gpt-4", name: "GPT-4", category: "GPT-4",
-        capabilities: [ :chat, :function_calling ] },
+        capabilities: [ :chat, :function_calling ],
+        supported_apis: [ :chat_completion, :assistants_api ] },
       { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", category: "GPT-3.5",
-        capabilities: [ :chat, :function_calling ] }
-    ],
-    # OpenAI Responses API - supports built-in tools (web_search, file_search, code_interpreter)
-    openai_responses: [
-      { id: "gpt-4o", name: "GPT-4o", category: "Latest",
-        capabilities: [ :chat, :structured_output, :vision, :function_calling, :web_search, :file_search, :code_interpreter ] },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini", category: "Latest",
-        capabilities: [ :chat, :structured_output, :vision, :function_calling, :web_search, :file_search, :code_interpreter ] },
-      { id: "gpt-4-turbo", name: "GPT-4 Turbo", category: "GPT-4",
-        capabilities: [ :chat, :vision, :function_calling ] }
+        capabilities: [ :chat, :function_calling ],
+        supported_apis: [ :chat_completion, :assistants_api ] }
     ],
     anthropic: [
       { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", category: "Claude 3.5",
@@ -68,7 +99,7 @@ PromptTracker.configure do |config|
   }
 
   # ===========================================================================
-  # OpenAI Assistants Configuration (separate from chat completions)
+  # OpenAI Assistants Configuration (separate API key, optional)
   # ===========================================================================
   config.openai_assistants = {
     api_key: ENV["OPENAI_LOUNA_API_KEY"],
@@ -115,13 +146,39 @@ PromptTracker.configure do |config|
   }
 
   # ===========================================================================
-  # Default Models
+  # Default Selections
   # ===========================================================================
   config.defaults = {
     playground_provider: :openai,
+    playground_api: :chat_completion,
     playground_model: "gpt-4o",
     llm_judge_model: "gpt-4o",
     dataset_generation_model: "gpt-4o",
     prompt_generation_model: "gpt-4o-mini"
   }
+
+  # ===========================================================================
+  # Built-in Tools (Optional - defaults are provided)
+  # ===========================================================================
+  # Customize the display metadata for built-in API tools.
+  # These are used by Response API and Assistants API.
+  # Uncomment and modify to customize:
+  #
+  # config.builtin_tools = {
+  #   web_search: {
+  #     name: "Web Search",
+  #     description: "Search the web for current information",
+  #     icon: "bi-globe"
+  #   },
+  #   file_search: {
+  #     name: "File Search",
+  #     description: "Search through uploaded files",
+  #     icon: "bi-file-earmark-search"
+  #   },
+  #   code_interpreter: {
+  #     name: "Code Interpreter",
+  #     description: "Execute Python code for analysis",
+  #     icon: "bi-code-slash"
+  #   }
+  # }
 end

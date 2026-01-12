@@ -20,19 +20,31 @@ email_summary_v1 = email_summary.prompt_versions.create!(
   variables_schema: [
     { "name" => "email_thread", "type" => "string", "required" => true }
   ],
-  model_config: { "temperature" => 0.3, "max_tokens" => 200 },
+  model_config: {
+    "provider" => "openai",
+    "api" => "chat_completion",
+    "model" => "gpt-4o",
+    "temperature" => 0.3,
+    "max_tokens" => 200
+  },
   created_by: "alice@example.com"
 )
 
-# Version 2 - Draft: Bullet point format
+# Version 2 - Draft: Bullet point format using Claude
 email_summary_v2 = email_summary.prompt_versions.create!(
   user_prompt: "Summarize the following email thread as bullet points (3-5 key points):\n\n{{email_thread}}",
   status: "draft",
   variables_schema: [
     { "name" => "email_thread", "type" => "string", "required" => true }
   ],
-  model_config: { "temperature" => 0.3, "max_tokens" => 250 },
-  notes: "Testing bullet point format for easier scanning",
+  model_config: {
+    "provider" => "anthropic",
+    "api" => "messages",
+    "model" => "claude-sonnet-4-20250514",
+    "temperature" => 0.3,
+    "max_tokens" => 250
+  },
+  notes: "Testing bullet point format with Claude for easier scanning",
   created_by: "bob@example.com"
 )
 

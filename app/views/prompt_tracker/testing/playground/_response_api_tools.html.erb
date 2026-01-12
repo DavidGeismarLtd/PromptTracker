@@ -1,9 +1,9 @@
 <%#
   Response API Tools Configuration
-  Shown when provider is openai_responses
+  Shown when Response API is selected
 
   Local variables:
-    - available_tools: Array of tool hashes from PlaygroundHelper#available_tools_for_provider
+    - available_tools: Array of tool hashes from Configuration#tools_for_api
     - enabled_tools: Array of enabled tool IDs
 %>
 
@@ -11,6 +11,42 @@
   available_tools ||= []
   enabled_tools ||= []
 %>
+
+<style>
+  .tool-card {
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    border: 2px solid transparent;
+  }
+  .tool-card:hover {
+    border-color: var(--bs-primary);
+    background-color: var(--bs-light);
+  }
+  .tool-card.active {
+    border-color: var(--bs-primary);
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+  }
+  .tool-card .tool-icon {
+    font-size: 1.25rem;
+    opacity: 0.6;
+    transition: opacity 0.15s ease-in-out;
+  }
+  .tool-card.active .tool-icon {
+    opacity: 1;
+    color: var(--bs-primary);
+  }
+  .tool-card .check-indicator {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    opacity: 0;
+    color: var(--bs-primary);
+    transition: opacity 0.15s ease-in-out;
+  }
+  .tool-card.active .check-indicator {
+    opacity: 1;
+  }
+</style>
 
 <div class="response-api-tools mt-3" data-playground-target="responseApiTools">
   <label class="form-label">
@@ -22,33 +58,38 @@
     analyze files, and execute code.
   </div>
 
-  <div class="row g-2">
+  <div class="row g-2" data-playground-target="responseApiToolsContent">
     <% available_tools.each do |tool| %>
+      <%
+        is_enabled = enabled_tools.include?(tool[:id])
+        card_class = is_enabled ? 'active' : ''
+      %>
       <div class="col-md-4">
-        <div class="form-check card p-2 h-100">
-          <input class="form-check-input"
+        <label class="card tool-card p-3 h-100 position-relative <%= card_class %>"
+               for="tool_<%= tool[:id] %>"
+               data-action="click->playground#onToolCardClick">
+          <input class="d-none"
                  type="checkbox"
                  id="tool_<%= tool[:id] %>"
                  value="<%= tool[:id] %>"
                  data-playground-target="toolCheckbox"
                  data-action="change->playground#onToolChange"
-                 <%= 'checked' if enabled_tools.include?(tool[:id]) %>>
-          <label class="form-check-label d-block" for="tool_<%= tool[:id] %>">
-            <i class="bi <%= tool[:icon] %> me-1"></i>
-            <strong><%= tool[:name] %></strong>
-            <br>
+                 <%= 'checked' if is_enabled %>>
+          <i class="bi bi-check-circle-fill check-indicator"></i>
+          <div class="text-center">
+            <i class="bi <%= tool[:icon] %> tool-icon d-block mb-2"></i>
+            <strong class="d-block"><%= tool[:name] %></strong>
             <small class="text-muted"><%= tool[:description] %></small>
-          </label>
-        </div>
+          </div>
+        </label>
       </div>
     <% end %>
   </div>
 
   <% if available_tools.empty? %>
-    <div class="alert alert-secondary py-2">
+    <div class="alert alert-secondary py-2" data-playground-target="noToolsAlert">
       <i class="bi bi-info-circle"></i>
-      No tools available for this provider.
+      No tools available for this API.
     </div>
   <% end %>
 </div>
-

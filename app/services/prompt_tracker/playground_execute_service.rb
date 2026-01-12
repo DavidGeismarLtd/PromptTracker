@@ -98,12 +98,15 @@ module PromptTracker
     def execute_response_api
       previous_response_id = conversation_state[:previous_response_id]
       tools = parse_tools(model_config[:tools])
+      tool_config = model_config[:tool_config] || {}
+
       if previous_response_id.present?
         OpenaiResponseService.call_with_context(
           model: model_config[:model] || "gpt-4o",
           user_prompt: content,
           previous_response_id: previous_response_id,
           tools: tools,
+          tool_config: tool_config,
           temperature: model_config[:temperature] || 0.7
         )
       else
@@ -114,6 +117,7 @@ module PromptTracker
           user_prompt: content,
           system_prompt: combined_instructions,
           tools: tools,
+          tool_config: tool_config,
           temperature: model_config[:temperature] || 0.7
         )
       end

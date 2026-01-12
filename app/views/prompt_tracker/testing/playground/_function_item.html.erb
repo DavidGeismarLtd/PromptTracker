@@ -1,0 +1,65 @@
+<%#
+  Function Item for Tools Configuration
+  Renders a single function definition with name, description, and parameters
+
+  Local variables:
+    - function: Hash with function definition (name, description, parameters)
+    - index: Integer index for unique IDs
+%>
+
+<%
+  function ||= {}
+  index ||= 0
+%>
+
+<div class="function-item card mb-2" data-tools-config-target="functionItem" data-function-index="<%= index %>">
+  <div class="card-body p-2">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div class="flex-grow-1 me-2">
+        <input type="text"
+               class="form-control form-control-sm mb-1"
+               placeholder="Function name (e.g., get_weather)"
+               value="<%= function['name'] || function[:name] %>"
+               data-tools-config-target="functionName"
+               data-action="input->tools-config#onFunctionChange">
+        <input type="text"
+               class="form-control form-control-sm"
+               placeholder="Description"
+               value="<%= function['description'] || function[:description] %>"
+               data-tools-config-target="functionDescription"
+               data-action="input->tools-config#onFunctionChange">
+      </div>
+      <button type="button"
+              class="btn btn-sm btn-outline-danger"
+              data-action="click->tools-config#removeFunction">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+    
+    <div class="mb-2">
+      <label class="form-label small mb-1">Parameters (JSON Schema)</label>
+      <textarea class="form-control form-control-sm font-monospace"
+                rows="4"
+                placeholder='{"type": "object", "properties": {...}, "required": [...]}'
+                data-tools-config-target="functionParameters"
+                data-action="input->tools-config#onFunctionChange"><%= (function['parameters'] || function[:parameters])&.to_json %></textarea>
+      <div class="form-text small">
+        Define parameters using JSON Schema format.
+        <a href="https://json-schema.org/understanding-json-schema/" target="_blank">Learn more</a>
+      </div>
+    </div>
+    
+    <div class="form-check form-check-inline">
+      <input type="checkbox"
+             class="form-check-input"
+             id="strict_<%= index %>"
+             <%= 'checked' if function['strict'] || function[:strict] %>
+             data-tools-config-target="functionStrict"
+             data-action="change->tools-config#onFunctionChange">
+      <label class="form-check-label small" for="strict_<%= index %>">
+        Strict mode (enforce schema)
+      </label>
+    </div>
+  </div>
+</div>
+

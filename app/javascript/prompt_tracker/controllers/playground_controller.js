@@ -335,7 +335,8 @@ export default class extends Controller {
 
     tools.forEach(tool => {
       const col = document.createElement('div')
-      col.className = 'col-md-4'
+      col.className = 'col-md-3'
+      const isConfigurable = tool.configurable === true
 
       col.innerHTML = `
         <label class="card tool-card p-3 h-100 position-relative"
@@ -346,12 +347,15 @@ export default class extends Controller {
                  id="tool_${tool.id}"
                  value="${tool.id}"
                  data-playground-target="toolCheckbox"
-                 data-action="change->playground#onToolChange">
+                 data-tools-config-target="toolCheckbox"
+                 data-tool-id="${tool.id}"
+                 data-configurable="${isConfigurable}"
+                 data-action="change->playground#onToolChange change->tools-config#onToolToggle">
           <i class="bi bi-check-circle-fill check-indicator"></i>
           <div class="text-center">
             <i class="bi ${tool.icon} tool-icon d-block mb-2"></i>
-            <strong class="d-block">${tool.name}</strong>
-            <small class="text-muted">${tool.description}</small>
+            <strong class="d-block" style="font-size: 0.85rem;">${tool.name}</strong>
+            <small class="text-muted" style="font-size: 0.7rem;">${tool.description}</small>
           </div>
         </label>
       `
@@ -985,6 +989,12 @@ export default class extends Controller {
       config.tools = enabledTools
     }
 
+    // Collect tool configuration (vector stores, functions, etc.)
+    const toolConfig = this.getToolConfig()
+    if (Object.keys(toolConfig).length > 0) {
+      config.tool_config = toolConfig
+    }
+
     return config
   }
 
@@ -995,6 +1005,23 @@ export default class extends Controller {
     return this.toolCheckboxTargets
       .filter(checkbox => checkbox.checked)
       .map(checkbox => checkbox.value)
+  }
+
+  // Get tool configuration from tools-config controller
+  getToolConfig() {
+    // Try to get config from tools-config controller if it exists
+    const toolsConfigElement = this.element.querySelector('[data-controller="tools-config"]')
+    if (toolsConfigElement) {
+      const toolsConfigController = this.application.getControllerForElementAndIdentifier(
+        toolsConfigElement,
+        'tools-config'
+      )
+      if (toolsConfigController && typeof toolsConfigController.getToolConfig === 'function') {
+        const config = toolsConfigController.getToolConfig()
+        return config.tool_config || {}
+      }
+    }
+    return {}
   }
 
   // Action: Tool checkbox change

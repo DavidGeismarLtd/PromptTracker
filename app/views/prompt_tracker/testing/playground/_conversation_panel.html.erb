@@ -1,0 +1,213 @@
+<%#
+  Conversation Panel for Response API
+  Shows multi-turn conversation history and input
+
+  This partial uses the dedicated conversation controller, which communicates
+  with the playground controller via an outlet to get system_prompt, model_config, and variables.
+
+  Local variables:
+    - conversation_state: Hash with messages array and metadata
+    - execute_url: URL for sending messages (required)
+    - reset_url: URL for resetting conversation (required)
+%>
+
+<%
+  conversation_state ||= { messages: [], previous_response_id: nil, started_at: nil }
+  messages = conversation_state[:messages] || []
+  execute_url ||= defined?(prompt_tracker.prompt_playground_execute_path) ? prompt_tracker.prompt_playground_execute_path : '#'
+  reset_url ||= defined?(prompt_tracker.prompt_playground_reset_conversation_path) ? prompt_tracker.prompt_playground_reset_conversation_path : '#'
+%>
+
+<div id="conversation-panel"
+     data-controller="conversation"
+     data-conversation-send-url-value="<%= execute_url %>"
+     data-conversation-reset-url-value="<%= reset_url %>"
+     data-conversation-visible-value="false"
+     data-conversation-playground-outlet="#playground-container">
+
+  <div class="card mb-3" data-conversation-target="panel" style="display: none;">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="bi bi-chat-dots"></i>
+        Conversation
+        <span class="badge bg-info ms-1" data-conversation-target="messageCount">
+          <%= messages.size %> messages
+        </span>
+      </h5>
+      <div>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                data-action="click->conversation#reset"
+                title="Clear conversation and start fresh">
+          <i class="bi bi-arrow-counterclockwise"></i>
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <!-- Conversation history -->
+      <div class="conversation-messages mb-3"
+           data-conversation-target="messagesContainer"
+           style="max-height: 400px; overflow-y: auto;">
+        <% if messages.empty? %>
+          <div class="text-center text-muted py-5 empty-state">
+            <i class="bi bi-chat-left-text" style="font-size: 3rem;"></i>
+            <p class="mt-3">Send a message to start the conversation</p>
+          </div>
+        <% else %>
+          <% messages.each do |message| %>
+            <div class="message <%= message[:role] %>-message fade-in">
+              <div class="message-avatar">
+                <% if message[:role] == 'user' %>
+                  <i class="bi bi-person"></i>
+                <% else %>
+                  <i class="bi bi-robot"></i>
+                <% end %>
+              </div>
+              <div class="message-content">
+                <div class="message-text"><%= message[:content] %></div>
+                <% if message[:tools_used].present? %>
+                  <div class="tools-used mt-2">
+                    <% message[:tools_used].each do |tool| %>
+                      <div class="tool-badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded bg-light border me-1 mb-1">
+                        <i class="bi bi-tools text-muted"></i>
+                        <span class="small"><%= tool[:type] || tool %></span>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+                <div class="message-meta">
+                  <small class="text-muted">
+                    <% if message[:created_at] %>
+                      <%= Time.parse(message[:created_at]).strftime('%H:%M') %>
+                    <% end %>
+                  </small>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <!-- Typing indicator (hidden by default) -->
+      <div class="message assistant-message" data-conversation-target="typingIndicator" style="display: none;">
+        <div class="message-avatar">
+          <i class="bi bi-robot"></i>
+        </div>
+        <div class="message-content">
+          <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message input -->
+      <div class="conversation-input">
+        <div class="input-group">
+          <textarea class="form-control"
+                    rows="2"
+                    placeholder="Type your message... (Ctrl/Cmd+Enter to send)"
+                    data-conversation-target="messageInput"></textarea>
+          <button type="button"
+                  class="btn btn-primary"
+                  data-action="click->conversation#submit"
+                  data-conversation-target="sendButton">
+            <i class="bi bi-send"></i>
+          </button>
+        </div>
+        <div class="form-text">
+          Press <kbd><%= request.user_agent&.include?('Mac') ? '⌘' : 'Ctrl' %></kbd>+<kbd>Enter</kbd> to send
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .message {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+  }
+
+  .user-message {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+    flex-direction: row-reverse;
+  }
+
+  .user-message .message-avatar {
+    background-color: var(--bs-primary, #0d6efd);
+    color: white;
+  }
+
+  .assistant-message {
+    background-color: var(--bs-secondary-bg-subtle, #e2e3e5);
+  }
+
+  .assistant-message .message-avatar {
+    background-color: var(--bs-secondary, #6c757d);
+    color: white;
+  }
+
+  .message-content {
+    flex: 1;
+  }
+
+  .message-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .message-meta {
+    margin-top: 0.25rem;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Typing indicator */
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0;
+  }
+
+  .typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background-color: var(--bs-secondary, #6c757d);
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out;
+  }
+
+  .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+</style>

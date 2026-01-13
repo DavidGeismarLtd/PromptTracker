@@ -10,12 +10,18 @@ module PromptTracker
     # - Provides parameter schema processing
     #
     # Do NOT inherit from this class directly. Instead, inherit from:
-    # - BasePromptVersionEvaluator (for text-based evaluations)
-    # - BaseOpenAiAssistantEvaluator (for conversation-based evaluations)
+    # - SingleResponse::BaseSingleResponseEvaluator (for single-turn text evaluations)
+    # - Conversational::BaseConversationalEvaluator (for multi-turn conversation evaluations)
+    # - Conversational::BaseAssistantsApiEvaluator (for Assistants API-specific evaluations)
+    #
+    # Legacy aliases are available for backward compatibility:
+    # - BaseChatCompletionEvaluator -> SingleResponse::BaseSingleResponseEvaluator
+    # - BaseConversationalEvaluator -> Conversational::BaseConversationalEvaluator
+    # - BaseAssistantsApiEvaluator -> Conversational::BaseAssistantsApiEvaluator
     #
     # Subclasses must implement:
     # - #evaluate_score: Calculate the numeric score (0-100)
-    # - .compatible_with: Class method returning array of compatible testable classes
+    # - .api_type: Class method returning :chat_completion, :conversational, or :assistants_api
     # - .metadata: Class method providing evaluator metadata
     #
     # Subclasses can optionally override:
@@ -125,21 +131,85 @@ module PromptTracker
         end
       end
 
-      # Class Methods for Compatibility
+      # Class Methods for API Type (Legacy - transitioning to compatible_with_apis)
+
+      # Returns the API type this evaluator works with
+      # @deprecated Use compatible_with_apis instead
+      #
+      # @return [Symbol] :chat_completion, :conversational, or :assistants_api
+      def self.api_type
+        raise NotImplementedError, "Subclasses must implement .api_type"
+      end
+
+      # Class Methods for API Compatibility (New V2 Architecture)
+
+      # Returns which APIs this evaluator is compatible with.
+      #
+      # This is the new architecture for evaluator compatibility.
+      # Subclasses should override this to specify which API types they support.
+      # Use :all to indicate compatibility with all APIs.
+      #
+      # @return [Array<Symbol>] array of API type symbols from ApiTypes
+      # @example
+      #   def self.compatible_with_apis
+      #     [ApiTypes::OPENAI_CHAT_COMPLETION, ApiTypes::OPENAI_RESPONSE_API]
+      #   end
+      #
+      # @example All APIs
+      #   def self.compatible_with_apis
+      #     [:all]
+      #   end
+      def self.compatible_with_apis
+        # Default: derive from legacy api_type for backward compatibility
+        case api_type
+        when :chat_completion
+          [ ApiTypes::OPENAI_CHAT_COMPLETION, ApiTypes::ANTHROPIC_MESSAGES ]
+        when :conversational
+          [ ApiTypes::OPENAI_RESPONSE_API, ApiTypes::OPENAI_ASSISTANTS_API ]
+        when :assistants_api
+          [ ApiTypes::OPENAI_ASSISTANTS_API ]
+        else
+          [ :all ]
+        end
+      end
+
+      # Check if evaluator is compatible with a specific API type
+      #
+      # @param api_type [Symbol] the API type to check
+      # @return [Boolean] true if compatible
+      def self.compatible_with_api?(api_type)
+        compatible_with_apis.include?(api_type) || compatible_with_apis.include?(:all)
+      end
+
+      # Returns the evaluator category: :single_response or :conversational
+      #
+      # This determines whether the evaluator expects:
+      # - :single_response - a single normalized response hash
+      # - :conversational - a conversation with messages array
+      #
+      # @return [Symbol] :single_response or :conversational
+      def self.category
+        # Default: derive from legacy api_type for backward compatibility
+        case api_type
+        when :chat_completion
+          :single_response
+        else
+          :conversational
+        end
+      end
+
+      # Class Methods for Compatibility (Legacy - will be removed)
 
       # Returns array of testable classes this evaluator is compatible with
-      # Subclasses MUST override this method
+      # @deprecated Use compatible_with_apis instead
       #
       # @return [Array<Class>] array of compatible testable classes
-      # @example
-      #   def self.compatible_with
-      #     [PromptTracker::PromptVersion]
-      #   end
       def self.compatible_with
         raise NotImplementedError, "Subclasses must implement .compatible_with"
       end
 
       # Check if this evaluator is compatible with a given testable
+      # @deprecated Use compatible_with_api? instead
       #
       # @param testable [Object] the testable to check compatibility with
       # @return [Boolean] true if compatible

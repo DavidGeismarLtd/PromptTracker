@@ -4,31 +4,37 @@
 #
 # Table name: prompt_tracker_llm_responses
 #
-#  ab_test_id        :bigint
-#  ab_variant        :string
-#  context           :jsonb
-#  cost_usd          :decimal(10, 6)
-#  created_at        :datetime         not null
-#  environment       :string
-#  error_message     :text
-#  error_type        :string
-#  id                :bigint           not null, primary key
-#  is_test_run       :boolean          default(FALSE), not null
-#  model             :string           not null
-#  prompt_version_id :bigint           not null
-#  provider          :string           not null
-#  rendered_prompt   :text             not null
-#  response_metadata :jsonb
-#  response_text     :text
-#  response_time_ms  :integer
-#  session_id        :string
-#  status            :string           default("pending"), not null
-#  tokens_completion :integer
-#  tokens_prompt     :integer
-#  tokens_total      :integer
-#  updated_at        :datetime         not null
-#  user_id           :string
-#  variables_used    :jsonb
+#  ab_test_id           :bigint
+#  ab_variant           :string
+#  context              :jsonb
+#  conversation_id      :string           # Groups related responses in a multi-turn conversation
+#  cost_usd             :decimal(10, 6)
+#  created_at           :datetime         not null
+#  environment          :string
+#  error_message        :text
+#  error_type           :string
+#  id                   :bigint           not null, primary key
+#  is_test_run          :boolean          default(FALSE), not null
+#  model                :string           not null
+#  previous_response_id :string           # References the response_id of the previous turn
+#  prompt_version_id    :bigint           not null
+#  provider             :string           not null
+#  rendered_prompt      :text             not null
+#  response_id          :string           # OpenAI Response API response ID (e.g., resp_abc123)
+#  response_metadata    :jsonb
+#  response_text        :text
+#  response_time_ms     :integer
+#  session_id           :string
+#  status               :string           default("pending"), not null
+#  tokens_completion    :integer
+#  tokens_prompt        :integer
+#  tokens_total         :integer
+#  tool_outputs         :jsonb            default({})  # Detailed outputs from each tool
+#  tools_used           :jsonb            default([])  # Array of tool names used
+#  turn_number          :integer          # Position in the conversation (1, 2, 3, ...)
+#  updated_at           :datetime         not null
+#  user_id              :string
+#  variables_used       :jsonb
 #
 module PromptTracker
   # Represents a single LLM API call and its response.
@@ -93,6 +99,7 @@ module PromptTracker
 
     # Callbacks
     after_create :trigger_auto_evaluation, unless: :is_test_run?
+    before_validation :set_turn_number, if: :conversation_id_changed?
 
     # Validations
     validates :rendered_prompt, presence: true
@@ -120,9 +127,15 @@ module PromptTracker
               numericality: { greater_than_or_equal_to: 0 },
               allow_nil: true
 
+    validates :turn_number,
+              numericality: { only_integer: true, greater_than_or_equal_to: 1 },
+              allow_nil: true
+
     validate :variables_used_must_be_hash
     validate :response_metadata_must_be_hash
     validate :context_must_be_hash
+    validate :tools_used_must_be_array
+    validate :tool_outputs_must_be_hash
 
     # Scopes
 
@@ -171,6 +184,34 @@ module PromptTracker
     # Returns only test run calls
     # @return [ActiveRecord::Relation<LlmResponse>]
     scope :test_calls, -> { where(is_test_run: true) }
+
+    # Response API Scopes
+
+    # Returns responses that used tools (web_search, file_search, code_interpreter, etc.)
+    # @return [ActiveRecord::Relation<LlmResponse>]
+    scope :with_tools, -> { where("tools_used IS NOT NULL AND jsonb_array_length(tools_used) > 0") }
+
+    # Returns responses that used a specific tool
+    # @param tool_name [String] the tool name (e.g., "web_search", "file_search")
+    # @return [ActiveRecord::Relation<LlmResponse>]
+    scope :with_tool, ->(tool_name) { where("tools_used @> ?", [ tool_name ].to_json) }
+
+    # Returns responses for a specific conversation
+    # @param conversation_id [String] the conversation identifier
+    # @return [ActiveRecord::Relation<LlmResponse>]
+    scope :for_conversation, ->(conversation_id) { where(conversation_id: conversation_id).order(:turn_number) }
+
+    # Returns responses that are part of multi-turn conversations
+    # @return [ActiveRecord::Relation<LlmResponse>]
+    scope :multi_turn, -> { where.not(conversation_id: nil) }
+
+    # Returns only single-turn responses (not part of a conversation)
+    # @return [ActiveRecord::Relation<LlmResponse>]
+    scope :single_turn, -> { where(conversation_id: nil) }
+
+    # Returns the first turn of each conversation
+    # @return [ActiveRecord::Relation<LlmResponse>]
+    scope :conversation_starts, -> { where(turn_number: 1) }
 
     # Instance Methods
 
@@ -342,6 +383,81 @@ module PromptTracker
       end
     end
 
+    # Response API Helper Methods
+
+    # Checks if this response used any tools
+    #
+    # @return [Boolean] true if tools were used
+    def used_tools?
+      tools_used.present? && tools_used.any?
+    end
+
+    # Checks if this response used a specific tool
+    #
+    # @param tool_name [String] the tool name to check
+    # @return [Boolean] true if the tool was used
+    def used_tool?(tool_name)
+      tools_used&.include?(tool_name)
+    end
+
+    # Checks if this response is part of a multi-turn conversation
+    #
+    # @return [Boolean] true if part of a conversation
+    def multi_turn?
+      conversation_id.present?
+    end
+
+    # Checks if this is the first turn in a conversation
+    #
+    # @return [Boolean] true if this is the first turn
+    def first_turn?
+      turn_number == 1
+    end
+
+    # Returns all responses in this conversation
+    #
+    # @return [ActiveRecord::Relation<LlmResponse>] ordered by turn_number
+    def conversation_responses
+      return self.class.none unless conversation_id.present?
+
+      self.class.for_conversation(conversation_id)
+    end
+
+    # Returns the previous response in this conversation
+    #
+    # @return [LlmResponse, nil] the previous response or nil
+    def previous_response
+      return nil unless previous_response_id.present?
+
+      self.class.find_by(response_id: previous_response_id)
+    end
+
+    # Returns the next response in this conversation
+    #
+    # @return [LlmResponse, nil] the next response or nil
+    def next_response
+      return nil unless conversation_id.present? && turn_number.present?
+
+      self.class.find_by(conversation_id: conversation_id, turn_number: turn_number + 1)
+    end
+
+    # Returns the output from a specific tool
+    #
+    # @param tool_name [String] the tool name
+    # @return [Hash, nil] the tool output or nil
+    def tool_output_for(tool_name)
+      tool_outputs&.dig(tool_name)
+    end
+
+    # Returns summary of tools used in this response
+    #
+    # @return [String] comma-separated list of tools or "None"
+    def tools_summary
+      return "None" unless used_tools?
+
+      tools_used.join(", ")
+    end
+
     private
 
     # Triggers automatic evaluation after response is created
@@ -369,6 +485,29 @@ module PromptTracker
       return if context.nil? || context.is_a?(Hash)
 
       errors.add(:context, "must be a hash")
+    end
+
+    # Validates that tools_used is an array
+    def tools_used_must_be_array
+      return if tools_used.nil? || tools_used.is_a?(Array)
+
+      errors.add(:tools_used, "must be an array")
+    end
+
+    # Validates that tool_outputs is a hash
+    def tool_outputs_must_be_hash
+      return if tool_outputs.nil? || tool_outputs.is_a?(Hash)
+
+      errors.add(:tool_outputs, "must be a hash")
+    end
+
+    # Sets turn_number for conversation tracking
+    def set_turn_number
+      return unless conversation_id.present? && turn_number.nil?
+
+      # Find the max turn number in this conversation and increment
+      max_turn = self.class.where(conversation_id: conversation_id).maximum(:turn_number) || 0
+      self.turn_number = max_turn + 1
     end
   end
 end

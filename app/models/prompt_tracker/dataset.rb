@@ -10,6 +10,7 @@
 #  schema             :jsonb            not null
 #  created_by         :string
 #  metadata           :jsonb            not null
+#  dataset_type       :integer          default(0), not null  # 0=single_turn, 1=conversational
 #  testable_type      :string
 #  testable_id        :bigint
 #  created_at         :datetime         not null
@@ -48,6 +49,15 @@ module PromptTracker
   #   )
   #
   class Dataset < ApplicationRecord
+    # Dataset type enum: determines what kind of test data this contains
+    enum :dataset_type, { single_turn: 0, conversational: 1 }, default: :single_turn
+
+    # Additional fields required for conversational datasets
+    CONVERSATIONAL_FIELDS = [
+      { "name" => "interlocutor_simulation_prompt", "type" => "text", "required" => true },
+      { "name" => "max_turns", "type" => "integer", "required" => false, "default" => 5 }
+    ].freeze
+
     # Polymorphic association - can belong to PromptVersion or Assistant
     belongs_to :testable, polymorphic: true
 
@@ -80,8 +90,11 @@ module PromptTracker
     scope :by_name, -> { order(:name) }
     scope :for_prompt_versions, -> { where(testable_type: "PromptTracker::PromptVersion") }
     scope :for_assistants, -> { where(testable_type: "PromptTracker::Openai::Assistant") }
+    scope :single_turn_datasets, -> { where(dataset_type: :single_turn) }
+    scope :conversational_datasets, -> { where(dataset_type: :conversational) }
 
     # Callbacks
+    before_validation :set_dataset_type_from_testable, on: :create
     before_validation :copy_schema_from_testable, on: :create, if: -> { schema.blank? }
 
     # Get row count
@@ -96,10 +109,30 @@ module PromptTracker
     # @return [Boolean] true if schema matches current testable schema
     def schema_valid?
       return false unless testable
-      return false if testable.variables_schema.blank?
+
+      # For conversational datasets, required_schema includes CONVERSATIONAL_FIELDS
+      # even if testable.variables_schema is empty, so we compare against required_schema
+      expected_schema = required_schema
+
+      # A dataset is valid if it has a schema matching the expected schema
+      # (empty schema for single-turn testables with no variables is also valid)
+      return true if schema.blank? && expected_schema.blank?
 
       # Schema is valid if it matches the expected schema (excluding description field)
-      normalize_schema(schema) == normalize_schema(testable.variables_schema)
+      normalize_schema(schema) == normalize_schema(expected_schema)
+    end
+
+    # Get the required schema for this dataset type
+    # Conversational datasets need additional fields for interlocutor simulation
+    #
+    # @return [Array<Hash>] the required schema fields
+    def required_schema
+      base_schema = testable&.variables_schema || []
+
+      return base_schema if single_turn?
+
+      # Conversational datasets need additional fields
+      base_schema + CONVERSATIONAL_FIELDS
     end
 
     # Get variable names from schema
@@ -111,11 +144,22 @@ module PromptTracker
 
     private
 
+    # Automatically set dataset_type to conversational for Assistant testables
+    # unless explicitly set otherwise
+    def set_dataset_type_from_testable
+      return unless testable
+      return unless single_turn? # Only change if it's still the default
+
+      # Assistants should use conversational datasets by default
+      self.dataset_type = :conversational if testable.is_a?(PromptTracker::Openai::Assistant)
+    end
+
     # Copy schema from testable on creation
+    # Uses required_schema which includes conversational fields if dataset_type is conversational
     def copy_schema_from_testable
       return unless testable
 
-      self.schema = testable.variables_schema
+      self.schema = required_schema
     end
 
     # Validate that schema is an array

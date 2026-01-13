@@ -20,7 +20,7 @@ module PromptTracker
     #     require_all: false  # Pass if ANY function is called
     #   })
     #
-    class FunctionCallEvaluator < BaseOpenaiAssistantEvaluator
+    class FunctionCallEvaluator < Conversational::BaseConversationalEvaluator
       # Default configuration
       DEFAULT_CONFIG = {
         expected_functions: [],      # Array of function names that should be called
@@ -159,14 +159,7 @@ module PromptTracker
         args.transform_keys(&:to_s)
       end
 
-      # Get messages from conversation_data
-      #
-      # @return [Array<Hash>] array of messages
-      def messages
-        return [] if conversation_data.nil?
-
-        @messages ||= conversation_data["messages"] || conversation_data[:messages] || []
-      end
+      # NOTE: messages is now inherited from BaseConversationalEvaluator
 
       # Extract all function names that were called during the conversation
       #

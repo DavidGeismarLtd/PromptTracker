@@ -1,0 +1,35 @@
+<%#
+  Shared Conversation Messages Partial
+  Used by: Assistant Playground, Prompt Playground (Response API mode)
+
+  Local variables:
+    - messages: Array of message hashes with :role, :content, :tools_used (optional), :created_at (optional)
+%>
+
+<% messages.each do |message| %>
+  <%
+    role = message[:role] || message["role"]
+    content = message[:content] || message["content"]
+    tools_used = message[:tools_used] || message["tools_used"] || []
+    created_at = message[:created_at] || message["created_at"]
+  %>
+  <div class="message <%= role %>-message fade-in">
+    <div class="message-avatar">
+      <i class="bi bi-<%= role == 'user' ? 'person' : 'robot' %>"></i>
+    </div>
+    <div class="message-content">
+      <div class="message-text"><%= simple_format(content) %></div>
+
+      <% if tools_used.present? && tools_used.any? %>
+        <%= render "prompt_tracker/shared/tool_output_display", tools: tools_used %>
+      <% end %>
+
+      <div class="message-meta">
+        <small class="text-muted">
+          <%= created_at.present? ? Time.parse(created_at.to_s).strftime("%H:%M:%S") : Time.current.strftime("%H:%M:%S") %>
+        </small>
+      </div>
+    </div>
+  </div>
+<% end %>
+

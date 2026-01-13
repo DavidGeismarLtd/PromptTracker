@@ -9,6 +9,15 @@ module PromptTracker
   #     config.basic_auth_username = "admin"
   #     config.basic_auth_password = "secret"
   #     config.api_keys = { openai: ENV["OPENAI_API_KEY"] }
+  #     config.providers = {
+  #       openai: {
+  #         name: "OpenAI",
+  #         apis: {
+  #           chat_completion: { name: "Chat Completions", default: true },
+  #           response_api: { name: "Responses API" }
+  #         }
+  #       }
+  #     }
   #     config.models = { openai: [{ id: "gpt-4o", name: "GPT-4o" }] }
   #   end
   #
@@ -29,6 +38,20 @@ module PromptTracker
     # @return [Hash] hash of provider symbol => API key string
     attr_accessor :api_keys
 
+    # Provider definitions with their available APIs.
+    # @return [Hash] hash of provider symbol => provider config hash
+    # @example
+    #   {
+    #     openai: {
+    #       name: "OpenAI",
+    #       apis: {
+    #         chat_completion: { name: "Chat Completions", default: true },
+    #         response_api: { name: "Responses API", capabilities: [:web_search] }
+    #       }
+    #     }
+    #   }
+    attr_accessor :providers
+
     # Master model registry. All available models in the system.
     # @return [Hash] hash of provider symbol => array of model hashes
     attr_accessor :models
@@ -45,16 +68,31 @@ module PromptTracker
     # @return [Hash] hash of setting name => value
     attr_accessor :defaults
 
+    # Built-in tools metadata (for Response API and Assistants API).
+    # Maps tool capability symbols to display information.
+    # @return [Hash] hash of tool symbol => tool metadata hash
+    # @example
+    #   {
+    #     web_search: {
+    #       name: "Web Search",
+    #       description: "Search the web for current information",
+    #       icon: "bi-globe"
+    #     }
+    #   }
+    attr_accessor :builtin_tools
+
     # Initialize with default values.
     def initialize
       @prompts_path = default_prompts_path
       @basic_auth_username = nil
       @basic_auth_password = nil
       @api_keys = {}
+      @providers = {}
       @models = {}
       @openai_assistants = { api_key: nil, available_models: [] }
       @contexts = {}
       @defaults = {}
+      @builtin_tools = default_builtin_tools
     end
 
     # Check if basic authentication is enabled.
@@ -135,6 +173,110 @@ module PromptTracker
       defaults[key]
     end
 
+    # Get the default API for a context.
+    # @param context [Symbol] the context name
+    # @return [Symbol, nil] the default API or nil
+    def default_api_for(context)
+      key = :"#{context}_api"
+      defaults[key]
+    end
+
+    # =========================================================================
+    # Provider/API Methods
+    # =========================================================================
+
+    # Get the display name for a provider.
+    # @param provider [Symbol] the provider key
+    # @return [String] the provider display name
+    def provider_name(provider)
+      providers.dig(provider.to_sym, :name) || provider.to_s.titleize
+    end
+
+    # Get available APIs for a provider.
+    # @param provider [Symbol] the provider key
+    # @return [Array<Hash>] array of API hashes with :key, :name, :default, :capabilities
+    def apis_for(provider)
+      provider_config = providers[provider.to_sym]
+      return [] unless provider_config && provider_config[:apis]
+
+      provider_config[:apis].map do |api_key, api_config|
+        {
+          key: api_key,
+          name: api_config[:name] || api_key.to_s.titleize,
+          default: api_config[:default] || false,
+          capabilities: api_config[:capabilities] || [],
+          description: api_config[:description]
+        }
+      end
+    end
+
+    # Get the default API for a provider.
+    # @param provider [Symbol] the provider key
+    # @return [Symbol, nil] the default API key or first available API
+    def default_api_for_provider(provider)
+      apis = apis_for(provider)
+      default_api = apis.find { |a| a[:default] }
+      (default_api || apis.first)&.dig(:key)
+    end
+
+    # Check if a provider has multiple APIs.
+    # @param provider [Symbol] the provider key
+    # @return [Boolean] true if provider has more than one API
+    def provider_has_multiple_apis?(provider)
+      apis_for(provider).size > 1
+    end
+
+    # Get models for a specific provider and API combination.
+    # @param provider [Symbol] the provider key
+    # @param api [Symbol] the API key
+    # @return [Array<Hash>] array of model hashes compatible with the API
+    def models_for_api(provider, api)
+      provider_models = models[provider.to_sym] || []
+
+      provider_models.select do |model|
+        supported_apis = model[:supported_apis]
+        # If no supported_apis specified, assume model works with all APIs
+        supported_apis.nil? || supported_apis.include?(api.to_sym)
+      end
+    end
+
+    # Build a combined provider+api identifier for storage.
+    # @param provider [Symbol] the provider key
+    # @param api [Symbol] the API key
+    # @return [String] combined identifier like "openai:chat_completion"
+    def build_provider_api_key(provider, api)
+      "#{provider}:#{api}"
+    end
+
+    # Parse a combined provider+api identifier.
+    # @param combined_key [String] combined identifier like "openai:chat_completion"
+    # @return [Hash] hash with :provider and :api keys
+    def parse_provider_api_key(combined_key)
+      parts = combined_key.to_s.split(":", 2)
+      {
+        provider: parts[0]&.to_sym,
+        api: parts[1]&.to_sym
+      }
+    end
+
+    # Get all provider/API combinations for the UI.
+    # @return [Array<Hash>] array of hashes with provider and API info
+    def all_provider_api_options
+      configured_providers.flat_map do |provider|
+        apis = apis_for(provider)
+        apis.map do |api|
+          {
+            provider: provider,
+            provider_name: provider_name(provider),
+            api: api[:key],
+            api_name: api[:name],
+            label: "#{provider_name(provider)} - #{api[:name]}",
+            value: build_provider_api_key(provider, api[:key])
+          }
+        end
+      end
+    end
+
     # Check if OpenAI Assistants API is configured.
     # @return [Boolean] true if configured with an API key
     def openai_assistants_configured?
@@ -209,6 +351,31 @@ module PromptTracker
       defaults[:llm_judge_model] = value
     end
 
+    # Get available tools for a specific provider and API combination.
+    # Returns tool metadata for capabilities defined in the API config.
+    #
+    # @param provider [Symbol] the provider key
+    # @param api [Symbol] the API key
+    # @return [Array<Hash>] array of tool hashes with :id, :name, :description, :icon, :configurable
+    def tools_for_api(provider, api)
+      api_config = providers.dig(provider.to_sym, :apis, api.to_sym)
+      return [] unless api_config
+
+      capabilities = api_config[:capabilities] || []
+      capabilities.map do |capability|
+        tool_metadata = builtin_tools[capability.to_sym]
+        next unless tool_metadata
+
+        {
+          id: capability.to_s,
+          name: tool_metadata[:name],
+          description: tool_metadata[:description],
+          icon: tool_metadata[:icon],
+          configurable: tool_metadata[:configurable] == true
+        }
+      end.compact
+    end
+
     private
 
     # Filter models for a specific provider based on context restrictions.
@@ -239,6 +406,35 @@ module PromptTracker
       else
         File.join(Dir.pwd, "app", "prompts")
       end
+    end
+
+    # Get the default built-in tools with metadata.
+    # @return [Hash] hash of tool symbol => tool metadata
+    def default_builtin_tools
+      {
+        web_search: {
+          name: "Web Search",
+          description: "Search the web for current information",
+          icon: "bi-globe"
+        },
+        file_search: {
+          name: "File Search",
+          description: "Search through uploaded files",
+          icon: "bi-file-earmark-search",
+          configurable: true
+        },
+        code_interpreter: {
+          name: "Code Interpreter",
+          description: "Execute Python code for analysis",
+          icon: "bi-code-slash"
+        },
+        functions: {
+          name: "Functions",
+          description: "Define custom function schemas",
+          icon: "bi-braces-asterisk",
+          configurable: true
+        }
+      }
     end
   end
 

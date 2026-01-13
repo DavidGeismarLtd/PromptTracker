@@ -235,6 +235,75 @@ module PromptTracker
       PromptTracker.configuration.default_provider_for(context)
     end
 
+    # Get the default API for a context.
+    #
+    # @param context [Symbol] the context name
+    # @return [Symbol, nil] the default API
+    # @example
+    #   default_api_for(:playground) # => :chat_completion
+    def default_api_for(context)
+      PromptTracker.configuration.default_api_for(context)
+    end
+
+    # Get the display name for a provider.
+    #
+    # @param provider [Symbol] the provider key
+    # @return [String] the provider display name
+    # @example
+    #   provider_name(:openai) # => "OpenAI"
+    def provider_name(provider)
+      PromptTracker.configuration.provider_name(provider)
+    end
+
+    # Get available APIs for a provider.
+    #
+    # @param provider [Symbol] the provider key
+    # @return [Array<Hash>] array of API hashes with :key, :name, :default, :capabilities
+    # @example
+    #   apis_for(:openai) # => [{ key: :chat_completion, name: "Chat Completions", ... }]
+    def apis_for(provider)
+      PromptTracker.configuration.apis_for(provider)
+    end
+
+    # Get the default API for a provider.
+    #
+    # @param provider [Symbol] the provider key
+    # @return [Symbol, nil] the default API key
+    # @example
+    #   default_api_for_provider(:openai) # => :chat_completion
+    def default_api_for_provider(provider)
+      PromptTracker.configuration.default_api_for_provider(provider)
+    end
+
+    # Check if a provider has multiple APIs.
+    #
+    # @param provider [Symbol] the provider key
+    # @return [Boolean] true if provider has more than one API
+    # @example
+    #   provider_has_multiple_apis?(:openai) # => true
+    #   provider_has_multiple_apis?(:anthropic) # => false
+    def provider_has_multiple_apis?(provider)
+      PromptTracker.configuration.provider_has_multiple_apis?(provider)
+    end
+
+    # Get models for a specific provider and API combination.
+    #
+    # @param provider [Symbol] the provider key
+    # @param api [Symbol] the API key
+    # @return [Array<Hash>] array of model hashes compatible with the API
+    # @example
+    #   models_for_api(:openai, :chat_completion) # => [{ id: "gpt-4o", ... }]
+    def models_for_api(provider, api)
+      PromptTracker.configuration.models_for_api(provider, api)
+    end
+
+    # Get all provider/API combinations for the UI.
+    #
+    # @return [Array<Hash>] array of hashes with provider and API info
+    def all_provider_api_options
+      PromptTracker.configuration.all_provider_api_options
+    end
+
     # Highlight variable values in rendered prompt
     #
     # @param rendered_prompt [String] the rendered prompt text

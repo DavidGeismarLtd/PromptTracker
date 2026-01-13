@@ -61,6 +61,7 @@
                         <tr>
                           <th>Version</th>
                           <th>Status</th>
+                          <th>Model</th>
                           <th>Created</th>
                           <th class="text-end">Test Results</th>
                           <% if show_monitor_button %>
@@ -86,6 +87,26 @@
                               <% end %>
                             </td>
                             <td><%= status_badge(version.status) %></td>
+                            <td>
+                              <%
+                                model_config = version.model_config || {}
+                                provider = model_config['provider']
+                                api = model_config['api']
+                                model = model_config['model']
+                              %>
+                              <% if model.present? %>
+                                <div class="small">
+                                  <span class="text-muted"><%= provider&.titleize %></span>
+                                  <% if api.present? %>
+                                    <span class="text-muted">/ <%= api.to_s.titleize %></span>
+                                  <% end %>
+                                  <br>
+                                  <strong><%= model %></strong>
+                                </div>
+                              <% else %>
+                                <span class="text-muted small">Not configured</span>
+                              <% end %>
+                            </td>
                             <td><%= format_timestamp(version.created_at) %></td>
                             <td class="text-end">
                               <%

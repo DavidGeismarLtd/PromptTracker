@@ -4,30 +4,37 @@
 #
 # Table name: prompt_tracker_llm_responses
 #
-#  ab_test_id        :bigint
-#  ab_variant        :string
-#  context           :jsonb
-#  cost_usd          :decimal(10, 6)
-#  created_at        :datetime         not null
-#  environment       :string
-#  error_message     :text
-#  error_type        :string
-#  id                :bigint           not null, primary key
-#  model             :string           not null
-#  prompt_version_id :bigint           not null
-#  provider          :string           not null
-#  rendered_prompt   :text             not null
-#  response_metadata :jsonb
-#  response_text     :text
-#  response_time_ms  :integer
-#  session_id        :string
-#  status            :string           default("pending"), not null
-#  tokens_completion :integer
-#  tokens_prompt     :integer
-#  tokens_total      :integer
-#  updated_at        :datetime         not null
-#  user_id           :string
-#  variables_used    :jsonb
+#  ab_test_id           :bigint
+#  ab_variant           :string
+#  context              :jsonb
+#  conversation_id      :string           # Groups related responses in a multi-turn conversation
+#  cost_usd             :decimal(10, 6)
+#  created_at           :datetime         not null
+#  environment          :string
+#  error_message        :text
+#  error_type           :string
+#  id                   :bigint           not null, primary key
+#  is_test_run          :boolean          default(FALSE), not null
+#  model                :string           not null
+#  previous_response_id :string           # References the response_id of the previous turn
+#  prompt_version_id    :bigint           not null
+#  provider             :string           not null
+#  rendered_prompt      :text             not null
+#  response_id          :string           # OpenAI Response API response ID (e.g., resp_abc123)
+#  response_metadata    :jsonb
+#  response_text        :text
+#  response_time_ms     :integer
+#  session_id           :string
+#  status               :string           default("pending"), not null
+#  tokens_completion    :integer
+#  tokens_prompt        :integer
+#  tokens_total         :integer
+#  tool_outputs         :jsonb            default({})  # Detailed outputs from each tool
+#  tools_used           :jsonb            default([])  # Array of tool names used
+#  turn_number          :integer          # Position in the conversation (1, 2, 3, ...)
+#  updated_at           :datetime         not null
+#  user_id              :string
+#  variables_used       :jsonb
 #
 FactoryBot.define do
   factory :llm_response, class: "PromptTracker::LlmResponse" do
@@ -83,6 +90,46 @@ FactoryBot.define do
     trait :in_ab_test do
       association :ab_test, factory: :ab_test
       ab_variant { "A" }
+    end
+
+    # Response API traits
+    trait :response_api do
+      provider { "openai_responses" }
+      response_id { "resp_#{SecureRandom.hex(12)}" }
+    end
+
+    trait :with_tools do
+      response_api
+      tools_used { %w[web_search] }
+      tool_outputs do
+        {
+          "web_search" => {
+            "query" => "test query",
+            "results" => [
+              { "title" => "Test Result", "url" => "https://example.com", "snippet" => "Test snippet" }
+            ]
+          }
+        }
+      end
+    end
+
+    trait :in_conversation do
+      response_api
+      conversation_id { "conv_#{SecureRandom.hex(8)}" }
+      turn_number { 1 }
+    end
+
+    trait :multi_turn do
+      response_api
+      transient do
+        conversation_uuid { "conv_#{SecureRandom.hex(8)}" }
+        turn { 1 }
+        prev_response_id { nil }
+      end
+
+      conversation_id { conversation_uuid }
+      turn_number { turn }
+      previous_response_id { prev_response_id }
     end
   end
 end

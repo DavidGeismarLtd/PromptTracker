@@ -119,6 +119,47 @@ module PromptTracker
       end
     end
 
+    # POST /playground/execute
+    # POST /prompts/:prompt_id/playground/execute
+    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/execute
+    # Execute a Response API call with conversation support
+    def execute
+      result = PlaygroundExecuteService.call(
+        content: params[:content],
+        system_prompt: params[:system_prompt],
+        user_prompt_template: params[:user_prompt],
+        model_config: params[:model_config]&.to_unsafe_h || {},
+        conversation_state: conversation_state,
+        variables: params[:variables]&.to_unsafe_h || {}
+      )
+
+      if result.success?
+        # Update session with new conversation state
+        update_conversation_state(result.conversation_state)
+
+        render json: {
+          success: true,
+          message: {
+            content: result.content,
+            tools_used: result.tools_used
+          },
+          usage: result.usage
+        }
+      else
+        render json: { success: false, error: result.error }, status: :unprocessable_entity
+      end
+    end
+
+    # POST /playground/reset_conversation
+    # POST /prompts/:prompt_id/playground/reset_conversation
+    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/reset_conversation
+    # Reset the conversation state
+    def reset_conversation
+      clear_conversation_state
+
+      render json: { success: true }
+    end
+
     private
 
     def set_prompt
@@ -201,6 +242,38 @@ module PromptTracker
     def build_sample_variables(variable_names)
       variable_names.each_with_object({}) do |name, hash|
         hash[name] = ""
+      end
+    end
+
+    # Get conversation state from session
+    # Uses a unique key based on prompt/version context
+    def conversation_state
+      session[conversation_session_key] || {
+        "messages" => [],
+        "previous_response_id" => nil,
+        "started_at" => nil
+      }
+    end
+
+    # Update conversation state in session
+    def update_conversation_state(state)
+      session[conversation_session_key] = state
+    end
+
+    # Clear conversation state from session
+    def clear_conversation_state
+      session.delete(conversation_session_key)
+    end
+
+    # Generate unique session key for conversation state
+    def conversation_session_key
+      base_key = "playground_conversation"
+      if @prompt_version
+        "#{base_key}_version_#{@prompt_version.id}"
+      elsif @prompt
+        "#{base_key}_prompt_#{@prompt.id}"
+      else
+        "#{base_key}_standalone"
       end
     end
     end

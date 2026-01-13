@@ -90,7 +90,10 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
           expect(config).to be_valid
         end
 
-        it "prevents Assistant evaluators for PromptVersion tests" do
+        it "allows ConversationJudgeEvaluator for PromptVersion tests (conversational tests)" do
+          # ConversationJudgeEvaluator now extends BaseConversationalEvaluator which is
+          # compatible with both PromptVersion (for Response API conversational tests)
+          # and Openai::Assistant
           prompt = create(:prompt)
           version = create(:prompt_version, prompt: prompt)
           test = create(:test, testable: version)
@@ -99,10 +102,7 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
             evaluator_type: "PromptTracker::Evaluators::ConversationJudgeEvaluator"
           )
 
-          expect(config).not_to be_valid
-          expect(config.errors[:evaluator_type]).to include(
-            match(/ConversationJudgeEvaluator is only compatible with PromptTracker::Openai::Assistant/)
-          )
+          expect(config).to be_valid
         end
 
         it "allows Assistant evaluators for Assistant tests" do

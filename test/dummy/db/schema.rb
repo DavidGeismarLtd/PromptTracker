@@ -154,6 +154,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_07_132516) do
     t.boolean "is_test_run", default: false, null: false
     t.string "conversation_id"
     t.integer "turn_number"
+    t.string "response_id"
+    t.string "previous_response_id"
     t.jsonb "tools_used", default: []
     t.jsonb "tool_outputs", default: {}
     t.datetime "created_at", null: false
@@ -165,9 +167,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_07_132516) do
     t.index [ "environment" ], name: "index_prompt_tracker_llm_responses_on_environment"
     t.index [ "is_test_run" ], name: "index_prompt_tracker_llm_responses_on_is_test_run"
     t.index [ "model" ], name: "index_prompt_tracker_llm_responses_on_model"
+    t.index [ "previous_response_id" ], name: "index_prompt_tracker_llm_responses_on_previous_response_id"
     t.index [ "prompt_version_id" ], name: "index_prompt_tracker_llm_responses_on_prompt_version_id"
     t.index [ "provider", "model", "created_at" ], name: "index_llm_responses_on_provider_model_created_at"
     t.index [ "provider" ], name: "index_prompt_tracker_llm_responses_on_provider"
+    t.index [ "response_id" ], name: "index_prompt_tracker_llm_responses_on_response_id", unique: true, where: "(response_id IS NOT NULL)"
     t.index [ "session_id" ], name: "index_prompt_tracker_llm_responses_on_session_id"
     t.index [ "span_id" ], name: "index_prompt_tracker_llm_responses_on_span_id"
     t.index [ "status", "created_at" ], name: "index_llm_responses_on_status_and_created_at"

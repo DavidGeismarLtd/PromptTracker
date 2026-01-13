@@ -124,6 +124,10 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.string :conversation_id  # Groups related responses in a multi-turn conversation
       t.integer :turn_number     # Order of this response in the conversation (1-indexed)
 
+      # OpenAI Response API support
+      t.string :response_id          # OpenAI Response API response ID (e.g., resp_abc123)
+      t.string :previous_response_id # References the response_id of the previous turn
+
       # Tool usage tracking
       t.jsonb :tools_used, default: []   # Array of tool names used in this call
       t.jsonb :tool_outputs, default: {} # Hash of tool name => output data
@@ -148,6 +152,8 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_llm_responses, [ :status, :created_at ], name: "index_llm_responses_on_status_and_created_at"
     add_index :prompt_tracker_llm_responses, [ :provider, :model, :created_at ], name: "index_llm_responses_on_provider_model_created_at"
     add_index :prompt_tracker_llm_responses, [ :ab_test_id, :ab_variant ], name: "index_llm_responses_on_ab_test_and_variant"
+    add_index :prompt_tracker_llm_responses, :response_id, unique: true, where: "response_id IS NOT NULL"
+    add_index :prompt_tracker_llm_responses, :previous_response_id
 
     # ============================================================================
     # TABLE 5: evaluations

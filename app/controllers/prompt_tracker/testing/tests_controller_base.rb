@@ -217,6 +217,19 @@ module PromptTracker
         ENV["PROMPT_TRACKER_USE_REAL_LLM"] == "true"
       end
 
+      # Get required variable names for custom run validation
+      # For Assistants: uses Dataset::CONVERSATIONAL_FIELDS (interlocutor_simulation_prompt, etc.)
+      # For PromptVersions: uses the testable's variables_schema
+      def required_custom_run_variables
+        if @testable.is_a?(PromptTracker::Openai::Assistant)
+          # Assistants use conversational fields from Dataset
+          Dataset::CONVERSATIONAL_FIELDS.select { |v| v["required"] }.map { |v| v["name"] }
+        else
+          # PromptVersions use their own variables_schema
+          @testable.variables_schema.select { |v| v["required"] }.map { |v| v["name"] }
+        end
+      end
+
       # Run a single test with a dataset
       def run_with_dataset(test)
         dataset_id = params[:dataset_id]
@@ -250,16 +263,14 @@ module PromptTracker
       def run_with_custom_variables(test)
         custom_vars = params[:custom_variables] || {}
 
-        # For assistants, validate required variables
-        if @testable.is_a?(PromptTracker::Openai::Assistant)
-          required_vars = @testable.variables_schema.select { |v| v["required"] }.map { |v| v["name"] }
-          missing_vars = required_vars.select { |var| custom_vars[var].blank? }
+        # Validate required variables based on testable type
+        required_vars = required_custom_run_variables
+        missing_vars = required_vars.select { |var| custom_vars[var].blank? }
 
-          if missing_vars.any?
-            redirect_to testable_path,
-                        alert: "Please provide: #{missing_vars.map(&:humanize).join(', ')}"
-            return
-          end
+        if missing_vars.any?
+          redirect_to testable_path,
+                      alert: "Please provide: #{missing_vars.map(&:humanize).join(', ')}"
+          return
         end
 
         # Create a test run with custom variables
@@ -317,16 +328,14 @@ module PromptTracker
       def run_all_with_custom_variables(tests)
         custom_vars = params[:custom_variables] || {}
 
-        # For assistants, validate required variables
-        if @testable.is_a?(PromptTracker::Openai::Assistant)
-          required_vars = @testable.variables_schema.select { |v| v["required"] }.map { |v| v["name"] }
-          missing_vars = required_vars.select { |var| custom_vars[var].blank? }
+        # Validate required variables based on testable type
+        required_vars = required_custom_run_variables
+        missing_vars = required_vars.select { |var| custom_vars[var].blank? }
 
-          if missing_vars.any?
-            redirect_to testable_path,
-                        alert: "Please provide: #{missing_vars.map(&:humanize).join(', ')}"
-            return
-          end
+        if missing_vars.any?
+          redirect_to testable_path,
+                      alert: "Please provide: #{missing_vars.map(&:humanize).join(', ')}"
+          return
         end
 
         total_runs = 0

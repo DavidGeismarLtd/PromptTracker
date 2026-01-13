@@ -32,6 +32,11 @@ FactoryBot.define do
     end
 
     after(:build) do |dataset, evaluator|
+      # Auto-detect dataset_type based on testable type if not explicitly set
+      if dataset.testable.is_a?(PromptTracker::Openai::Assistant) && dataset.single_turn?
+        dataset.dataset_type = :conversational
+      end
+
       if evaluator.custom_schema
         dataset.schema = evaluator.custom_schema
       elsif dataset.schema.blank? && dataset.testable

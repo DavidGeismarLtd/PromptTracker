@@ -69,11 +69,8 @@ module PromptTracker
         usage: response[:usage],
         conversation_state: new_state
       )
-      # rescue ExecuteError => e
-      #   Result.new(success?: false, error: e.message)
-      # rescue StandardError => e
-      #   Rails.logger.error("PlaygroundExecuteService error: #{e.message}")
-      #   Result.new(success?: false, error: "Execution failed: #{e.message}")
+    rescue ExecuteError => e
+      Result.new(success?: false, error: e.message)
     end
 
     private

@@ -25,6 +25,7 @@ export default class extends Controller {
     "charCount",
     "previewStatus",
     "modelProvider",
+    "modelApi",
     "modelName",
     "modelTemperature",
     "modelMaxTokens",
@@ -36,7 +37,13 @@ export default class extends Controller {
     "aiButtonText",
     "aiButtonIcon",
     "responseSchema",
-    "responseSchemaError"
+    "responseSchemaError",
+    // Provider/API UI targets
+    "apiSelectContainer",
+    "apiDescription",
+    "responseApiToolsContainer",
+    "responseApiToolsContent",
+    "toolCheckbox"
   ]
 
   static values = {
@@ -48,7 +55,7 @@ export default class extends Controller {
     isStandalone: Boolean
   }
 
-  static outlets = ["generate-prompt"]
+  static outlets = ["generate-prompt", "conversation"]
 
   connect() {
     console.log('[PlaygroundController] connect() called')
@@ -172,15 +179,82 @@ export default class extends Controller {
     }
   }
 
-  // Action: Provider change - update model dropdown
+  // Action: Provider change - update API and model dropdowns
   onProviderChange() {
-    if (!this.hasModelProviderTarget || !this.hasModelNameTarget) return
+    if (!this.hasModelProviderTarget) return
 
     const provider = this.modelProviderTarget.value
-    const modelsData = JSON.parse(this.modelProviderTarget.dataset.models || '{}')
-    const models = modelsData[provider] || []
+    const providerData = JSON.parse(this.modelProviderTarget.dataset.providerData || '{}')
+    const data = providerData[provider]
 
-    // Clear current options
+    if (!data) return
+
+    // Update API dropdown
+    this.updateApiDropdown(data.apis)
+
+    // Get selected API (first one or default)
+    const selectedApi = this.hasModelApiTarget ? this.modelApiTarget.value : data.apis[0]?.key
+
+    // Update models for selected API
+    const models = data.models_by_api[selectedApi] || []
+    this.updateModelDropdown(models)
+
+    // Get tools for selected API
+    const tools = data.tools_by_api?.[selectedApi] || []
+
+    // Update API-specific UI
+    this.updateApiSpecificUI(data.apis.find(a => a.key === selectedApi), tools)
+  }
+
+  // Action: API change - update model dropdown and API-specific UI
+  onApiChange() {
+    if (!this.hasModelProviderTarget || !this.hasModelApiTarget) return
+
+    const provider = this.modelProviderTarget.value
+    const api = this.modelApiTarget.value
+    const providerData = JSON.parse(this.modelProviderTarget.dataset.providerData || '{}')
+    const data = providerData[provider]
+
+    if (!data) return
+
+    // Update models for selected API
+    const models = data.models_by_api[api] || []
+    this.updateModelDropdown(models)
+
+    // Get tools for selected API
+    const tools = data.tools_by_api?.[api] || []
+
+    // Update API description and tools
+    const apiConfig = data.apis.find(a => a.key === api)
+    this.updateApiSpecificUI(apiConfig, tools)
+  }
+
+  // Update the API dropdown options
+  updateApiDropdown(apis) {
+    if (!this.hasModelApiTarget) return
+
+    this.modelApiTarget.innerHTML = ''
+
+    apis.forEach(api => {
+      const option = document.createElement('option')
+      option.value = api.key
+      option.textContent = api.name
+      option.dataset.description = api.description || ''
+      option.dataset.capabilities = JSON.stringify(api.capabilities || [])
+      if (api.default) option.selected = true
+      this.modelApiTarget.appendChild(option)
+    })
+
+    // Show/hide API selector based on number of APIs
+    if (this.hasApiSelectContainerTarget) {
+      this.apiSelectContainerTarget.style.display = apis.length <= 1 ? 'none' : ''
+    }
+  }
+
+  // Update the model dropdown options
+  updateModelDropdown(models) {
+    if (!this.hasModelNameTarget) return
+
     this.modelNameTarget.innerHTML = ''
 
     // Group models by category
@@ -206,7 +280,6 @@ export default class extends Controller {
         })
         this.modelNameTarget.appendChild(optgroup)
       } else {
-        // Add models without category directly
         categoryModels.forEach(model => {
           const option = document.createElement('option')
           option.value = model.id
@@ -220,6 +293,75 @@ export default class extends Controller {
     if (this.modelNameTarget.options.length > 0) {
       this.modelNameTarget.selectedIndex = 0
     }
+  }
+
+  // Update API-specific UI elements (description, tools, etc.)
+  updateApiSpecificUI(apiConfig, tools = []) {
+    // Update API description
+    if (this.hasApiDescriptionTarget) {
+      this.apiDescriptionTarget.textContent = apiConfig?.description || 'Select an API endpoint'
+    }
+
+    // Check if API has tool capabilities
+    const hasTools = tools && tools.length > 0
+
+    // Show/hide Response API tools container
+    if (this.hasResponseApiToolsContainerTarget) {
+      this.responseApiToolsContainerTarget.style.display = hasTools ? '' : 'none'
+
+      // Update tools content if we have tools data
+      if (hasTools && this.hasResponseApiToolsContentTarget) {
+        this.updateToolsContent(tools)
+      }
+    }
+
+    // Show/hide conversation panel via conversation outlet
+    const isConversationalApi = apiConfig?.key === 'response_api' || apiConfig?.key === 'assistants_api'
+    if (this.hasConversationOutlet) {
+      if (isConversationalApi) {
+        this.conversationOutlet.show()
+      } else {
+        this.conversationOutlet.hide()
+      }
+    }
+  }
+
+  // Update the tools checkboxes dynamically
+  updateToolsContent(tools) {
+    if (!this.hasResponseApiToolsContentTarget) return
+
+    const container = this.responseApiToolsContentTarget
+    container.innerHTML = ''
+
+    tools.forEach(tool => {
+      const col = document.createElement('div')
+      col.className = 'col-md-3'
+      const isConfigurable = tool.configurable === true
+
+      col.innerHTML = `
+        <label class="card tool-card p-3 h-100 position-relative"
+               for="tool_${tool.id}"
+               data-action="click->playground#onToolCardClick">
+          <input class="d-none"
+                 type="checkbox"
+                 id="tool_${tool.id}"
+                 value="${tool.id}"
+                 data-playground-target="toolCheckbox"
+                 data-tools-config-target="toolCheckbox"
+                 data-tool-id="${tool.id}"
+                 data-configurable="${isConfigurable}"
+                 data-action="change->playground#onToolChange change->tools-config#onToolToggle">
+          <i class="bi bi-check-circle-fill check-indicator"></i>
+          <div class="text-center">
+            <i class="bi ${tool.icon} tool-icon d-block mb-2"></i>
+            <strong class="d-block" style="font-size: 0.85rem;">${tool.name}</strong>
+            <small class="text-muted" style="font-size: 0.7rem;">${tool.description}</small>
+          </div>
+        </label>
+      `
+
+      container.appendChild(col)
+    })
   }
 
   // Action: Model config change
@@ -813,6 +955,10 @@ export default class extends Controller {
       config.provider = this.modelProviderTarget.value
     }
 
+    if (this.hasModelApiTarget && this.modelApiTarget.value) {
+      config.api = this.modelApiTarget.value
+    }
+
     if (this.hasModelNameTarget && this.modelNameTarget.value) {
       config.model = this.modelNameTarget.value
     }
@@ -837,7 +983,125 @@ export default class extends Controller {
       config.presence_penalty = parseFloat(this.modelPresencePenaltyTarget.value)
     }
 
+    // Collect enabled tools from checkboxes
+    const enabledTools = this.getEnabledTools()
+    if (enabledTools.length > 0) {
+      config.tools = enabledTools
+    }
+
+    // Collect tool configuration (vector stores, functions, etc.)
+    const toolConfig = this.getToolConfig()
+    if (Object.keys(toolConfig).length > 0) {
+      config.tool_config = toolConfig
+    }
+
     return config
+  }
+
+  // Get enabled tools from tool checkboxes
+  getEnabledTools() {
+    if (!this.hasToolCheckboxTarget) return []
+
+    return this.toolCheckboxTargets
+      .filter(checkbox => checkbox.checked)
+      .map(checkbox => checkbox.value)
+  }
+
+  // Get tool configuration from tools-config controller
+  getToolConfig() {
+    // Try to get config from tools-config controller if it exists
+    const toolsConfigElement = this.element.querySelector('[data-controller="tools-config"]')
+    if (toolsConfigElement) {
+      const toolsConfigController = this.application.getControllerForElementAndIdentifier(
+        toolsConfigElement,
+        'tools-config'
+      )
+      if (toolsConfigController && typeof toolsConfigController.getToolConfig === 'function') {
+        const config = toolsConfigController.getToolConfig()
+        return config.tool_config || {}
+      }
+    }
+    return {}
+  }
+
+  // Action: Tool checkbox change
+  onToolChange(event) {
+    // Update card visual state when checkbox changes
+    const checkbox = event.target
+    const card = checkbox.closest('.tool-card')
+    if (card) {
+      card.classList.toggle('active', checkbox.checked)
+    }
+    console.log('[PlaygroundController] Tools changed:', this.getEnabledTools())
+  }
+
+  // Action: Tool card click - toggle checkbox and update visual state
+  onToolCardClick(event) {
+    // The label click will toggle the checkbox automatically
+    // We just need to update the card class after the checkbox state changes
+    const card = event.currentTarget
+    const checkbox = card.querySelector('input[type="checkbox"]')
+    if (checkbox) {
+      // Small delay to let the checkbox state update first
+      requestAnimationFrame(() => {
+        card.classList.toggle('active', checkbox.checked)
+      })
+    }
+  }
+
+  // Get system prompt from editor (called by conversation controller via outlet)
+  getSystemPrompt() {
+    if (this.hasSystemPromptEditorTarget) {
+      return this.systemPromptEditorTarget.value || ''
+    }
+    return ''
+  }
+
+  // Get user prompt template from editor (called by conversation controller via outlet)
+  getUserPrompt() {
+    if (this.hasUserPromptEditorTarget) {
+      return this.userPromptEditorTarget.value || ''
+    }
+    return ''
+  }
+
+  // Get variables as an object (called by conversation controller via outlet)
+  getVariables() {
+    return this.collectVariables()
+  }
+
+  // Check if there are variables that haven't been filled in
+  hasUnfilledVariables() {
+    const userPrompt = this.hasUserPromptEditorTarget ? this.userPromptEditorTarget.value : ''
+    const systemPrompt = this.hasSystemPromptEditorTarget ? this.systemPromptEditorTarget.value : ''
+
+    // Extract all variables from both prompts
+    const userVariables = this.extractVariables(userPrompt)
+    const systemVariables = this.extractVariables(systemPrompt)
+    const allVariables = [...new Set([...systemVariables, ...userVariables])]
+
+    if (allVariables.length === 0) return false
+
+    // Check if any variable is empty
+    const currentValues = this.collectVariables()
+    return allVariables.some(varName => !currentValues[varName]?.trim())
+  }
+
+  // Get the list of unfilled variable names
+  getUnfilledVariables() {
+    const userPrompt = this.hasUserPromptEditorTarget ? this.userPromptEditorTarget.value : ''
+    const systemPrompt = this.hasSystemPromptEditorTarget ? this.systemPromptEditorTarget.value : ''
+
+    // Extract all variables from both prompts
+    const userVariables = this.extractVariables(userPrompt)
+    const systemVariables = this.extractVariables(systemPrompt)
+    const allVariables = [...new Set([...systemVariables, ...userVariables])]
+
+    if (allVariables.length === 0) return []
+
+    // Return variables that are empty
+    const currentValues = this.collectVariables()
+    return allVariables.filter(varName => !currentValues[varName]?.trim())
   }
 
   // Get response schema from form (parsed JSON or null)

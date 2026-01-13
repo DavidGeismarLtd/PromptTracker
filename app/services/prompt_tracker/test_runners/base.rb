@@ -4,136 +4,114 @@ module PromptTracker
   module TestRunners
     # Base class for all test runners.
     #
-    # Test runners are responsible for executing tests for different testable types
-    # (PromptVersion, Openai::Assistant, etc.). Each testable type has its own runner
-    # that inherits from this base class.
+    # Provides common functionality for running tests on any testable
+    # (PromptVersions, Assistants, etc.)
     #
-    # The job routes to the appropriate runner based on the testable type using
-    # convention-based naming:
-    # - PromptVersion → PromptTracker::TestRunners::PromptVersionRunner
-    # - Openai::Assistant → PromptTracker::TestRunners::Openai::AssistantRunner
+    # Subclasses must implement:
+    # - #run - Execute the test
     #
-    # @example Create a custom runner
-    #   class MyCustomRunner < Base
+    # @example Create a new runner
+    #   class MyRunner < Base
     #     def run
-    #       # Your custom test execution logic
-    #       update_test_run_success(
-    #         test_run: test_run,
-    #         passed: true,
-    #         execution_time_ms: 100
-    #       )
+    #       # Run the test
     #     end
     #   end
     #
     class Base
-      attr_reader :test_run, :test, :testable, :options
+      attr_reader :test_run, :test, :testable, :use_real_llm
 
-      # Initialize a new test runner
+      # Initialize the runner
       #
       # @param test_run [TestRun] the test run to execute
-      # @param test [Test] the test being run
+      # @param test [Test] the test configuration
       # @param testable [Object] the testable object (PromptVersion, Assistant, etc.)
-      # @param options [Hash] additional options (e.g., use_real_llm)
-      def initialize(test_run:, test:, testable:, **options)
+      # @param use_real_llm [Boolean] whether to use real LLM API (default: false)
+      def initialize(test_run:, test:, testable:, use_real_llm: false)
         @test_run = test_run
         @test = test
         @testable = testable
-        @options = options
+        @use_real_llm = use_real_llm
       end
 
-      # Execute the test run
+      # Execute the test - must be implemented by subclasses
       #
-      # This method must be implemented by subclasses
-      #
-      # @return [void]
-      # @raise [NotImplementedError] if not implemented by subclass
+      # @raise [NotImplementedError] if not implemented
       def run
-        raise NotImplementedError, "#{self.class.name} must implement #run"
+        raise NotImplementedError, "Subclasses must implement #run"
       end
 
-      protected
+      private
 
-      # Determine which template variables to use for this test run
+      # Get variables from dataset row or custom variables
       #
-      # @return [Hash] the template variables to use
-      def determine_template_variables
+      # @return [HashWithIndifferentAccess] the variables
+      def variables
         if test_run.dataset_row.present?
-          # Use dataset row data
-          test_run.dataset_row.row_data
-        elsif test_run.metadata["custom_variables"].present?
-          # Use custom variables from modal (for single runs)
-          test_run.metadata["custom_variables"]
+          test_run.dataset_row.row_data.with_indifferent_access
+        elsif test_run.metadata.dig("custom_variables").present?
+          test_run.metadata["custom_variables"].with_indifferent_access
         else
-          # Fallback to empty hash (no variables)
-          {}
+          {}.with_indifferent_access
         end
       end
 
-      # Update test run with success
+      # Run evaluators and return results
       #
-      # @param test_run [TestRun] the test run to update
-      # @param passed [Boolean] whether test passed
-      # @param execution_time_ms [Integer] execution time in milliseconds
-      # @param additional_attributes [Hash] additional attributes to update
-      def update_test_run_success(test_run:, passed:, execution_time_ms:, **additional_attributes)
-        test_run.update!(
-          status: passed ? "passed" : "failed",
-          passed: passed,
-          execution_time_ms: execution_time_ms,
-          **additional_attributes
-        )
-      end
+      # @param evaluated_data [Object] the data to evaluate (conversation_data or llm_response)
+      # @return [Array<Hash>] array of evaluator results
+      def run_evaluators(evaluated_data)
+        evaluator_configs = test.evaluator_configs.enabled.order(:created_at)
+        results = []
 
-      # Extract response text from LLM API response
-      #
-      # @param llm_api_response [RubyLLM::Message, Hash] the LLM API response
-      # @return [String] the response text
-      def extract_response_text(llm_api_response)
-        # Real LLM returns RubyLLM::Message
-        return llm_api_response.content if llm_api_response.respond_to?(:content)
+        evaluator_configs.each do |config|
+          evaluator_key = config.evaluator_key.to_sym
+          evaluator_config = config.config || {}
 
-        # Mock LLM returns Hash
-        llm_api_response.dig("choices", 0, "message", "content") ||
-          llm_api_response.dig(:choices, 0, :message, :content) ||
-          llm_api_response.to_s
-      end
+          # Add evaluator_config_id and test_run to the config
+          evaluator_config = evaluator_config.merge(
+            evaluator_config_id: config.id,
+            evaluation_context: "test_run",
+            test_run: test_run
+          )
 
-      # Extract token usage from LLM API response
-      #
-      # @param llm_api_response [RubyLLM::Message, Hash] the LLM API response
-      # @return [Hash] hash with :prompt, :completion, :total keys
-      def extract_token_usage(llm_api_response)
-        # Real LLM returns RubyLLM::Message
-        if llm_api_response.respond_to?(:input_tokens)
-          return {
-            prompt: llm_api_response.input_tokens,
-            completion: llm_api_response.output_tokens,
-            total: (llm_api_response.input_tokens || 0) + (llm_api_response.output_tokens || 0)
+          # Build and run the evaluator using EvaluatorRegistry
+          evaluator = EvaluatorRegistry.build(
+            evaluator_key,
+            evaluated_data,
+            evaluator_config
+          )
+          evaluation = evaluator.evaluate
+
+          results << {
+            evaluator_type: config.evaluator_type,
+            score: evaluation.score,
+            passed: evaluation.passed,
+            feedback: evaluation.feedback
           }
         end
 
-        # Mock LLM returns Hash (no token usage)
-        { prompt: nil, completion: nil, total: nil }
+        results
       end
 
-      # Calculate cost using RubyLLM's model registry
+      # Update test run with final results
       #
-      # @param llm_api_response [RubyLLM::Message, Hash] the LLM API response
-      # @return [Float, nil] cost in USD or nil if pricing not available
-      def calculate_cost_from_response(llm_api_response)
-        # Mock LLM responses don't have token info
-        return nil unless llm_api_response.respond_to?(:input_tokens)
-        return nil unless llm_api_response.input_tokens && llm_api_response.output_tokens
-
-        # Use RubyLLM's model registry to get pricing information
-        model_info = RubyLLM.models.find(llm_api_response.model_id)
-        return nil unless model_info&.input_price_per_million && model_info&.output_price_per_million
-
-        # Calculate cost: (tokens / 1,000,000) * price_per_million
-        input_cost = llm_api_response.input_tokens * model_info.input_price_per_million / 1_000_000.0
-        output_cost = llm_api_response.output_tokens * model_info.output_price_per_million / 1_000_000.0
-
-        input_cost + output_cost
+      # @param passed [Boolean] whether the test passed
+      # @param execution_time_ms [Integer] execution time in milliseconds
+      # @param evaluator_results [Array<Hash>] evaluator results
+      # @param extra_metadata [Hash] additional metadata to merge
+      # @param cost_usd [BigDecimal, nil] optional cost in USD
+      def update_test_run_results(passed:, execution_time_ms:, evaluator_results:, extra_metadata: {}, cost_usd: nil)
+        update_attrs = {
+          status: passed ? "passed" : "failed",
+          passed: passed,
+          execution_time_ms: execution_time_ms,
+          metadata: test_run.metadata.merge(
+            completed_at: Time.current.iso8601,
+            evaluator_results: evaluator_results
+          ).merge(extra_metadata)
+        }
+        update_attrs[:cost_usd] = cost_usd if cost_usd.present?
+        test_run.update!(update_attrs)
       end
     end
   end

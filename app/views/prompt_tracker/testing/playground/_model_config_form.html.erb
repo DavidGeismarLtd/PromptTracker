@@ -10,22 +10,46 @@
     <%
       # Get available providers for playground context (only those with API keys)
       available_providers_list = providers_for(:playground)
-      all_available_models = models_for(:playground)
       default_provider_value = default_provider_for(:playground)
+      default_api_value = default_api_for(:playground)
       current_provider = @version&.model_config&.dig('provider') || default_provider_value&.to_s || available_providers_list.first.to_s
+      current_api = @version&.model_config&.dig('api') || default_api_value&.to_s || default_api_for_provider(current_provider.to_sym)&.to_s
 
-      # Build JSON data for JavaScript to use when switching providers
-      models_by_provider = {}
+      # Build JSON data for JavaScript cascading selects
+      # Structure: { provider: { apis: [...], models_by_api: { api: [...models] }, tools_by_api: { api: [...tools] } } }
+      provider_data = {}
       available_providers_list.each do |provider_key|
-        provider_models = all_available_models[provider_key] || []
-        models_by_provider[provider_key.to_s] = provider_models.map do |model|
-          {
-            id: model[:id],
-            name: model[:name] || model[:id],
-            category: model[:category]
-          }
+        apis = apis_for(provider_key)
+        models_by_api = {}
+        tools_by_api = {}
+        apis.each do |api|
+          api_models = models_for_api(provider_key, api[:key])
+          models_by_api[api[:key].to_s] = api_models.map do |model|
+            {
+              id: model[:id],
+              name: model[:name] || model[:id],
+              category: model[:category]
+            }
+          end
+          # Get tools for this provider/API from configuration
+          tools_by_api[api[:key].to_s] = PromptTracker.configuration.tools_for_api(provider_key, api[:key])
         end
+        provider_data[provider_key.to_s] = {
+          name: provider_name(provider_key),
+          apis: apis.map { |a| { key: a[:key].to_s, name: a[:name], default: a[:default], description: a[:description], capabilities: a[:capabilities] } },
+          models_by_api: models_by_api,
+          tools_by_api: tools_by_api
+        }
       end
+
+      # Get current models for initial render
+      current_model = @version&.model_config&.dig('model')
+      models = models_for_api(current_provider.to_sym, current_api.to_sym)
+      current_model ||= default_model_for(:playground) || models.first&.dig(:id)
+
+      # Check if current API has special capabilities (for showing tools)
+      current_api_config = apis_for(current_provider.to_sym).find { |a| a[:key].to_s == current_api.to_s }
+      has_response_api_tools = current_api_config&.dig(:capabilities)&.include?(:web_search)
     %>
     <div class="mb-3">
       <label for="model-provider" class="form-label">Provider</label>
@@ -34,27 +58,61 @@
         class="form-select"
         data-playground-target="modelProvider"
         data-action="change->playground#onProviderChange"
-        data-models="<%= models_by_provider.to_json %>"
+        data-provider-data="<%= provider_data.to_json %>"
       >
         <% available_providers_list.each do |provider_key| %>
-          <% provider_name = provider_key.to_s.titleize %>
           <option value="<%= provider_key %>" <%= 'selected' if current_provider == provider_key.to_s %>>
-            <%= provider_name %>
+            <%= provider_name(provider_key) %>
           </option>
         <% end %>
       </select>
       <div class="form-text">LLM provider to use for API calls. Only providers with configured API keys are shown.</div>
     </div>
 
+    <%# API Selection - shown when provider has multiple APIs %>
+    <% provider_apis = apis_for(current_provider.to_sym) %>
+    <div class="mb-3" id="api-select-container"
+         data-playground-target="apiSelectContainer"
+         style="<%= provider_apis.size <= 1 ? 'display: none;' : '' %>">
+      <label for="model-api" class="form-label">API</label>
+      <select
+        id="model-api"
+        class="form-select"
+        data-playground-target="modelApi"
+        data-action="change->playground#onApiChange"
+      >
+        <% provider_apis.each do |api| %>
+          <option value="<%= api[:key] %>"
+                  <%= 'selected' if current_api == api[:key].to_s %>
+                  data-description="<%= api[:description] %>"
+                  data-capabilities="<%= api[:capabilities].to_json %>">
+            <%= api[:name] %>
+          </option>
+        <% end %>
+      </select>
+      <div class="form-text" data-playground-target="apiDescription">
+        <%= current_api_config&.dig(:description) || "Select an API endpoint" %>
+      </div>
+    </div>
+
+    <%# Response API Tools - shown when API has tool capabilities %>
+    <%
+      # Get tools for current provider/API from configuration
+      current_available_tools = PromptTracker.configuration.tools_for_api(
+        current_provider.to_sym,
+        current_api.to_sym
+      )
+    %>
+    <div id="response-api-tools-container"
+         style="<%= has_response_api_tools ? '' : 'display: none;' %>"
+         data-playground-target="responseApiToolsContainer">
+      <%= render "prompt_tracker/testing/playground/response_api_tools",
+                 available_tools: current_available_tools,
+                 enabled_tools: @version&.model_config&.dig('tools') || [] %>
+    </div>
+
     <div class="mb-3">
       <label for="model-name" class="form-label">Model</label>
-      <%
-        provider = @version&.model_config&.dig('provider') || current_provider
-        current_model = @version&.model_config&.dig('model')
-        models = models_for(:playground, provider: provider.to_sym)
-        # If no current model, use default or first available model from the provider
-        current_model ||= default_model_for(:playground) || models.first&.dig(:id)
-      %>
       <select
         id="model-name"
         class="form-select"

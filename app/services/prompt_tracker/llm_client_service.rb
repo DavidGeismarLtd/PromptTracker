@@ -57,6 +57,19 @@ module PromptTracker
     # @return [Hash] response with :text, :usage, :model, :raw keys
     # @raise [ApiError] if API call fails
     def self.call(provider:, model:, prompt:, temperature: 0.7, max_tokens: nil, response_schema: nil, **options)
+      # Route to OpenAI Responses API if provider is openai_responses
+      if provider.to_s == "openai_responses"
+        return OpenaiResponseService.call(
+          model: model,
+          user_prompt: prompt,
+          system_prompt: options[:system_prompt],
+          tools: options[:tools] || [],
+          temperature: temperature,
+          max_tokens: max_tokens,
+          **options.except(:system_prompt, :tools)
+        )
+      end
+
       # Route to OpenAI Assistants API if provider is openai_assistants
       if provider.to_s == "openai_assistants" || model.to_s.start_with?("asst_")
         return OpenaiAssistantService.call(

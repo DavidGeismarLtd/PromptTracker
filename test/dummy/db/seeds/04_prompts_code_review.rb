@@ -35,7 +35,13 @@ code_review_v1 = code_review.prompt_versions.create!(
     { "name" => "language", "type" => "string", "required" => true },
     { "name" => "code", "type" => "string", "required" => true }
   ],
-  model_config: { "temperature" => 0.4, "max_tokens" => 500 },
+  model_config: {
+    "provider" => "openai",
+    "api" => "chat_completion",
+    "model" => "gpt-4o",
+    "temperature" => 0.4,
+    "max_tokens" => 500
+  },
   created_by: "bob@example.com"
 )
 

@@ -99,8 +99,9 @@ module PromptTracker
       # @param execution_time_ms [Integer] execution time in milliseconds
       # @param evaluator_results [Array<Hash>] evaluator results
       # @param extra_metadata [Hash] additional metadata to merge
-      def update_test_run_results(passed:, execution_time_ms:, evaluator_results:, extra_metadata: {})
-        test_run.update!(
+      # @param cost_usd [BigDecimal, nil] optional cost in USD
+      def update_test_run_results(passed:, execution_time_ms:, evaluator_results:, extra_metadata: {}, cost_usd: nil)
+        update_attrs = {
           status: passed ? "passed" : "failed",
           passed: passed,
           execution_time_ms: execution_time_ms,
@@ -108,7 +109,9 @@ module PromptTracker
             completed_at: Time.current.iso8601,
             evaluator_results: evaluator_results
           ).merge(extra_metadata)
-        )
+        }
+        update_attrs[:cost_usd] = cost_usd if cost_usd.present?
+        test_run.update!(update_attrs)
       end
     end
   end

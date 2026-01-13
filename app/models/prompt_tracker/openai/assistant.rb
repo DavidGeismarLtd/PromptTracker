@@ -178,15 +178,13 @@ module PromptTracker
         name
       end
 
-      # Returns the variables schema for assistant datasets
+      # Returns the variables schema for assistant testing
       #
-      # Assistants have no custom variables by default. Conversational fields
-      # (interlocutor_simulation_prompt, max_turns) are automatically added
-      # by Dataset#required_schema when creating conversational datasets.
+      # Assistants don't have intrinsic variables like PromptVersions.
+      # Conversational fields (interlocutor_simulation_prompt, max_turns) are added
+      # by the Dataset when creating conversational datasets.
       #
-      # Override this method in subclasses to add custom variables.
-      #
-      # @return [Array<Hash>] array of variable definitions (empty by default)
+      # @return [Array<Hash>] empty array - no custom variables for assistants
       def variables_schema
         []
       end

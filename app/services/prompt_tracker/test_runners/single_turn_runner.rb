@@ -71,6 +71,7 @@ module PromptTracker
           passed: passed,
           execution_time_ms: execution_time,
           evaluator_results: evaluator_results,
+          cost_usd: llm_response_record.cost_usd,
           extra_metadata: {
             provider: provider,
             model: model,
@@ -125,12 +126,17 @@ module PromptTracker
       # @param provider [String] the provider name
       # @return [LlmResponse] the created record
       def create_llm_response_record(rendered_prompt:, llm_response:, model:, provider:)
+        prompt_tokens = llm_response.dig(:usage, :prompt_tokens)
+        completion_tokens = llm_response.dig(:usage, :completion_tokens)
+        cost = calculate_cost(model, prompt_tokens, completion_tokens)
+
         LlmResponse.create!(
           prompt_version: testable,
           rendered_prompt: rendered_prompt,
           response_text: llm_response[:text],
-          tokens_prompt: llm_response.dig(:usage, :prompt_tokens),
-          tokens_completion: llm_response.dig(:usage, :completion_tokens),
+          tokens_prompt: prompt_tokens,
+          tokens_completion: completion_tokens,
+          cost_usd: cost,
           response_time_ms: 0, # Will be updated by test run
           model: model,
           provider: provider,
@@ -140,6 +146,27 @@ module PromptTracker
             test_run_id: test_run.id
           }
         )
+      end
+
+      # Calculate cost using RubyLLM model registry
+      #
+      # @param model [String] the model name
+      # @param prompt_tokens [Integer] number of input tokens
+      # @param completion_tokens [Integer] number of output tokens
+      # @return [BigDecimal, nil] the calculated cost or nil if pricing unavailable
+      def calculate_cost(model, prompt_tokens, completion_tokens)
+        return nil unless use_real_llm && prompt_tokens && completion_tokens
+
+        model_info = RubyLLM.models.find(model)
+        return nil unless model_info
+
+        input_price = model_info.input_price_per_million
+        output_price = model_info.output_price_per_million
+        return nil unless input_price && output_price
+
+        input_cost = (prompt_tokens * input_price / 1_000_000.0)
+        output_cost = (completion_tokens * output_price / 1_000_000.0)
+        input_cost + output_cost
       end
     end
   end

@@ -134,7 +134,7 @@ module PromptTracker
         end
 
         it "handles missing pricing information gracefully" do
-          allow(RubyLLM.models).to receive(:find).with("gpt-4-0613").and_return(nil)
+          allow(RubyLLM.models).to receive(:find).and_return(nil)
 
           described_class.new.perform(test_run.id, use_real_llm: true)
 
@@ -144,7 +144,7 @@ module PromptTracker
 
         it "handles model info without pricing" do
           model_without_pricing = double("RubyLLM::ModelInfo", input_price_per_million: nil, output_price_per_million: nil)
-          allow(RubyLLM.models).to receive(:find).with("gpt-4-0613").and_return(model_without_pricing)
+          allow(RubyLLM.models).to receive(:find).and_return(model_without_pricing)
 
           described_class.new.perform(test_run.id, use_real_llm: true)
 

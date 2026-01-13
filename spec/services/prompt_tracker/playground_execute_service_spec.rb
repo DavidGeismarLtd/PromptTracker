@@ -70,6 +70,7 @@ RSpec.describe PromptTracker::PlaygroundExecuteService do
           user_prompt: content,
           system_prompt: system_prompt,
           tools: [],
+          tool_config: {},
           temperature: 0.7
         )
       end
@@ -95,6 +96,7 @@ RSpec.describe PromptTracker::PlaygroundExecuteService do
           user_prompt: content,
           system_prompt: expected_instructions,
           tools: [],
+          tool_config: {},
           temperature: 0.7
         )
       end
@@ -120,6 +122,7 @@ RSpec.describe PromptTracker::PlaygroundExecuteService do
           user_prompt: content,
           system_prompt: "Analyze this: Ruby on Rails",
           tools: [],
+          tool_config: {},
           temperature: 0.7
         )
       end
@@ -151,6 +154,7 @@ RSpec.describe PromptTracker::PlaygroundExecuteService do
           user_prompt: content,
           previous_response_id: "resp_previous",
           tools: [],
+          tool_config: {},
           temperature: 0.7
         )
       end

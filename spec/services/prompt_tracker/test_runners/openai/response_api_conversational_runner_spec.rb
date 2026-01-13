@@ -12,20 +12,18 @@ module PromptTracker
             prompt: prompt,
             system_prompt: "You are a helpful assistant for {{company}}.",
             user_prompt: "Help the customer with their issue.",
-            model_config: { "provider" => "openai_responses", "model" => "gpt-4o", "tools" => %w[web_search] }
+            model_config: { "provider" => "openai_responses", "model" => "gpt-4o", "tools" => %w[web_search] },
+            # Schema includes only the variable from the prompt; conversational fields are added by dataset
+            variables_schema: [
+              { "name" => "company", "type" => "string", "required" => true }
+            ]
           )
         end
         let(:test) { create(:test, testable: prompt_version) }
-        # Create dataset with custom schema that includes conversational fields
-        let(:custom_schema) do
-          [
-            { "name" => "company", "type" => "string", "required" => true },
-            { "name" => "interlocutor_simulation_prompt", "type" => "text", "required" => true },
-            { "name" => "max_turns", "type" => "integer", "required" => false }
-          ]
-        end
+        # For conversational datasets, the schema is: prompt variables + conversational fields
+        # The Dataset model adds conversational fields when dataset_type: :conversational
         let(:dataset) do
-          create(:dataset, testable: prompt_version, custom_schema: custom_schema)
+          create(:dataset, testable: prompt_version, dataset_type: :conversational)
         end
         let(:dataset_row) do
           create(:dataset_row, dataset: dataset, row_data: {
@@ -78,6 +76,9 @@ module PromptTracker
           end
 
           it "creates ResponseApiConversationRunner with correct parameters" do
+            mock_runner = instance_double(PromptTracker::Openai::ResponseApiConversationRunner)
+            allow(mock_runner).to receive(:run!).and_return(mock_conversation_result)
+
             expect(PromptTracker::Openai::ResponseApiConversationRunner).to receive(:new).with(
               model: "gpt-4o",
               system_prompt: "You are a helpful assistant for Acme Corp.",
@@ -85,21 +86,16 @@ module PromptTracker
               max_turns: 3,
               tools: [ :web_search ],
               temperature: 0.7
-            ).and_call_original
-
-            # Need to re-mock after the expectation
-            mock_runner = instance_double(PromptTracker::Openai::ResponseApiConversationRunner)
-            allow(PromptTracker::Openai::ResponseApiConversationRunner).to receive(:new).and_return(mock_runner)
-            allow(mock_runner).to receive(:run!).and_return(mock_conversation_result)
+            ).and_return(mock_runner)
 
             runner.run
           end
 
           it "runs evaluators on conversation data" do
-            evaluator_config = create(:evaluator_config, test: test, evaluator_type: "keyword")
+            create(:evaluator_config, :keyword_evaluator, configurable: test)
 
             mock_evaluator = instance_double(Evaluators::KeywordEvaluator)
-            mock_evaluation = Evaluators::Evaluation.new(score: 100, passed: true, feedback: "OK")
+            mock_evaluation = instance_double(PromptTracker::Evaluation, score: 100, passed: true, passed?: true, feedback: "OK")
 
             allow(EvaluatorRegistry).to receive(:build).and_return(mock_evaluator)
             allow(mock_evaluator).to receive(:evaluate).and_return(mock_evaluation)
@@ -119,10 +115,10 @@ module PromptTracker
           end
 
           it "sets failed status when any evaluator fails" do
-            evaluator_config = create(:evaluator_config, test: test, evaluator_type: "keyword")
+            create(:evaluator_config, :keyword_evaluator, configurable: test)
 
             mock_evaluator = instance_double(Evaluators::KeywordEvaluator)
-            mock_evaluation = Evaluators::Evaluation.new(score: 0, passed: false, feedback: "Failed")
+            mock_evaluation = instance_double(PromptTracker::Evaluation, score: 0, passed: false, passed?: false, feedback: "Failed")
 
             allow(EvaluatorRegistry).to receive(:build).and_return(mock_evaluator)
             allow(mock_evaluator).to receive(:evaluate).and_return(mock_evaluation)
@@ -146,7 +142,7 @@ module PromptTracker
 
             test_run.reload
             expect(test_run.metadata["model"]).to eq("gpt-4o")
-            expect(test_run.metadata["tools"]).to eq([ :web_search ])
+            expect(test_run.metadata["tools"]).to eq(%w[web_search])
             expect(test_run.metadata["total_turns"]).to eq(1)
           end
         end

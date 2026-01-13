@@ -127,7 +127,7 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
     it "passes response_text as evaluated_data" do
       evaluator = described_class.build(:length, llm_response.response_text, config)
 
-      expect(evaluator.instance_variable_get(:@response_text)).to eq("Test response text")
+      expect(evaluator.response_text).to eq("Test response text")
     end
 
     it "raises ArgumentError for non-existent evaluator" do

@@ -27,7 +27,8 @@ RSpec.describe PromptTracker::ApiTypes do
         :openai_chat_completion,
         :openai_response_api,
         :openai_assistants_api,
-        :anthropic_messages
+        :anthropic_messages,
+        :google_gemini
       )
     end
   end
@@ -51,7 +52,8 @@ RSpec.describe PromptTracker::ApiTypes do
       expect(described_class.single_response_apis).to contain_exactly(
         :openai_chat_completion,
         :openai_response_api,
-        :anthropic_messages
+        :anthropic_messages,
+        :google_gemini
       )
     end
   end

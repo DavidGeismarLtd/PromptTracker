@@ -94,6 +94,7 @@ module PromptTracker
     scope :conversational_datasets, -> { where(dataset_type: :conversational) }
 
     # Callbacks
+    before_validation :set_dataset_type_from_testable, on: :create
     before_validation :copy_schema_from_testable, on: :create, if: -> { schema.blank? }
 
     # Get row count
@@ -142,6 +143,16 @@ module PromptTracker
     end
 
     private
+
+    # Automatically set dataset_type to conversational for Assistant testables
+    # unless explicitly set otherwise
+    def set_dataset_type_from_testable
+      return unless testable
+      return unless single_turn? # Only change if it's still the default
+
+      # Assistants should use conversational datasets by default
+      self.dataset_type = :conversational if testable.is_a?(PromptTracker::Openai::Assistant)
+    end
 
     # Copy schema from testable on creation
     # Uses required_schema which includes conversational fields if dataset_type is conversational

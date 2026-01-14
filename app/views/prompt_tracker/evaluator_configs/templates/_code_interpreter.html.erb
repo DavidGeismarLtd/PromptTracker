@@ -1,0 +1,70 @@
+<%# Display template for Code Interpreter Evaluator configuration %>
+<% config ||= {} %>
+
+<div class="evaluator-display">
+  <h6 class="mb-2">
+    <i class="bi bi-code-square"></i>
+    Code Interpreter
+  </h6>
+  
+  <% require_code_execution = config.key?('require_code_execution') ? config['require_code_execution'] : (config.key?(:require_code_execution) ? config[:require_code_execution] : true) %>
+  <% expected_language = config['expected_language'] || config[:expected_language] || '' %>
+  <% output_patterns = config['output_patterns'] || config[:output_patterns] || [] %>
+  <% output_patterns = output_patterns.is_a?(Array) ? output_patterns : output_patterns.to_s.split("\n").map(&:strip).reject(&:empty?) %>
+  <% require_all_patterns = config['require_all_patterns'] || config[:require_all_patterns] || false %>
+  <% expect_files_created = config['expect_files_created'] || config[:expect_files_created] || false %>
+  <% min_code_lines = config['min_code_lines'] || config[:min_code_lines] || 0 %>
+  <% threshold_score = config['threshold_score'] || config[:threshold_score] || 100 %>
+  
+  <div class="mb-2">
+    <strong>Code Execution Required:</strong>
+    <span class="badge <%= require_code_execution ? 'bg-success' : 'bg-secondary' %>">
+      <%= require_code_execution ? 'Yes' : 'No' %>
+    </span>
+  </div>
+  
+  <% if expected_language.present? %>
+    <div class="mb-2">
+      <strong>Expected Language:</strong>
+      <span class="badge bg-info-subtle text-info">
+        <i class="bi bi-terminal"></i> <%= expected_language.titleize %>
+      </span>
+    </div>
+  <% end %>
+  
+  <% if output_patterns.any? %>
+    <div class="mb-2">
+      <strong>Output Patterns:</strong>
+      <div class="mt-1">
+        <% output_patterns.each do |pattern| %>
+          <span class="badge bg-warning-subtle text-warning me-1 mb-1">
+            <i class="bi bi-regex"></i> <%= pattern %>
+          </span>
+        <% end %>
+      </div>
+      <span class="badge <%= require_all_patterns ? 'bg-primary' : 'bg-secondary' %> mt-1">
+        <%= require_all_patterns ? 'All patterns required' : 'At least one pattern' %>
+      </span>
+    </div>
+  <% end %>
+  
+  <div class="mb-2">
+    <% if expect_files_created %>
+      <span class="badge bg-success-subtle text-success me-1">
+        <i class="bi bi-file-earmark-plus"></i> Expects files created
+      </span>
+    <% end %>
+    
+    <% if min_code_lines.to_i > 0 %>
+      <span class="badge bg-info-subtle text-info me-1">
+        <i class="bi bi-code-slash"></i> Min <%= min_code_lines %> lines
+      </span>
+    <% end %>
+  </div>
+  
+  <div class="text-muted small">
+    <i class="bi bi-info-circle"></i>
+    Threshold: <%= threshold_score %>%
+  </div>
+</div>
+

@@ -1,0 +1,69 @@
+<%# Display template for Web Search Evaluator configuration %>
+<% config ||= {} %>
+
+<div class="evaluator-display">
+  <h6 class="mb-2">
+    <i class="bi bi-globe"></i>
+    Web Search
+  </h6>
+  
+  <% require_web_search = config.key?('require_web_search') ? config['require_web_search'] : (config.key?(:require_web_search) ? config[:require_web_search] : true) %>
+  <% expected_queries = config['expected_queries'] || config[:expected_queries] || [] %>
+  <% expected_queries = expected_queries.is_a?(Array) ? expected_queries : expected_queries.to_s.split("\n").map(&:strip).reject(&:empty?) %>
+  <% expected_domains = config['expected_domains'] || config[:expected_domains] || [] %>
+  <% expected_domains = expected_domains.is_a?(Array) ? expected_domains : expected_domains.to_s.split("\n").map(&:strip).reject(&:empty?) %>
+  <% require_all_domains = config['require_all_domains'] || config[:require_all_domains] || false %>
+  <% min_sources = config['min_sources'] || config[:min_sources] || 0 %>
+  <% threshold_score = config['threshold_score'] || config[:threshold_score] || 100 %>
+  
+  <div class="mb-2">
+    <strong>Web Search Required:</strong>
+    <span class="badge <%= require_web_search ? 'bg-success' : 'bg-secondary' %>">
+      <%= require_web_search ? 'Yes' : 'No' %>
+    </span>
+  </div>
+  
+  <% if expected_queries.any? %>
+    <div class="mb-2">
+      <strong>Expected Queries:</strong>
+      <div class="mt-1">
+        <% expected_queries.each do |query| %>
+          <span class="badge bg-info-subtle text-info me-1 mb-1">
+            <i class="bi bi-search"></i> <%= query %>
+          </span>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  
+  <% if expected_domains.any? %>
+    <div class="mb-2">
+      <strong>Expected Domains:</strong>
+      <div class="mt-1">
+        <% expected_domains.each do |domain| %>
+          <span class="badge bg-primary-subtle text-primary me-1 mb-1">
+            <i class="bi bi-link"></i> <%= domain %>
+          </span>
+        <% end %>
+      </div>
+      <span class="badge <%= require_all_domains ? 'bg-primary' : 'bg-secondary' %> mt-1">
+        <%= require_all_domains ? 'All domains required' : 'At least one domain' %>
+      </span>
+    </div>
+  <% end %>
+  
+  <% if min_sources.to_i > 0 %>
+    <div class="mb-2">
+      <strong>Minimum Sources:</strong>
+      <span class="badge bg-warning-subtle text-warning">
+        <%= min_sources %> source(s)
+      </span>
+    </div>
+  <% end %>
+  
+  <div class="text-muted small">
+    <i class="bi bi-info-circle"></i>
+    Threshold: <%= threshold_score %>%
+  </div>
+</div>
+

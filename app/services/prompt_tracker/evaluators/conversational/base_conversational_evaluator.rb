@@ -123,6 +123,20 @@ module PromptTracker
           conversation[:file_search_results] || []
         end
 
+        # Get web search results (from Response API)
+        #
+        # @return [Array<Hash>] array of web search result records
+        def web_search_results
+          conversation[:web_search_results] || []
+        end
+
+        # Get code interpreter results (from Response API)
+        #
+        # @return [Array<Hash>] array of code interpreter result records
+        def code_interpreter_results
+          conversation[:code_interpreter_results] || []
+        end
+
         # Evaluate and create an Evaluation record
         #
         # @return [Evaluation] the created evaluation
@@ -151,12 +165,14 @@ module PromptTracker
         # @param input [Hash, nil] raw conversation input
         # @return [Hash] normalized conversation
         def normalize_conversation(input)
-          return { messages: [], tool_usage: [], file_search_results: [] } if input.nil?
+          return { messages: [], tool_usage: [], file_search_results: [], web_search_results: [], code_interpreter_results: [] } if input.nil?
 
           {
             messages: normalize_messages(input[:messages] || input["messages"] || []),
             tool_usage: input[:tool_usage] || input["tool_usage"] || [],
-            file_search_results: input[:file_search_results] || input["file_search_results"] || []
+            file_search_results: input[:file_search_results] || input["file_search_results"] || [],
+            web_search_results: input[:web_search_results] || input["web_search_results"] || [],
+            code_interpreter_results: input[:code_interpreter_results] || input["code_interpreter_results"] || []
           }
         end
 

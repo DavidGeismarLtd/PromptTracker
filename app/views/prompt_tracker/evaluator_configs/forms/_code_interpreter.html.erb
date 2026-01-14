@@ -1,0 +1,151 @@
+<%# Form for Code Interpreter Evaluator - validates that assistant executed code appropriately %>
+<% existing_config ||= nil %>
+<% config = existing_config&.config || {} %>
+<% evaluator_key ||= 'code_interpreter' %>
+<% namespace ||= 'config' %>
+
+<% require_code_execution = config.key?('require_code_execution') ? config['require_code_execution'] : (config.key?(:require_code_execution) ? config[:require_code_execution] : true) %>
+<% expected_language = config['expected_language'] || config[:expected_language] || '' %>
+<% output_patterns = config['output_patterns'] || config[:output_patterns] || [] %>
+<% output_patterns = output_patterns.is_a?(Array) ? output_patterns : output_patterns.to_s.split("\n").map(&:strip).reject(&:empty?) %>
+<% require_all_patterns = config.key?('require_all_patterns') ? config['require_all_patterns'] : (config.key?(:require_all_patterns) ? config[:require_all_patterns] : false) %>
+<% expect_files_created = config['expect_files_created'] || config[:expect_files_created] || false %>
+<% min_code_lines = config['min_code_lines'] || config[:min_code_lines] || 0 %>
+<% threshold_score = config['threshold_score'] || config[:threshold_score] || 100 %>
+
+<div class="alert alert-info mb-3">
+  <i class="bi bi-code-square"></i>
+  <strong>Code Interpreter Evaluator</strong>
+  <p class="mb-0 mt-1">Verifies that the assistant executed code and produced expected outputs.</p>
+</div>
+
+<!-- Hidden fields for evaluator type and context -->
+<input type="hidden" name="evaluation[evaluator_type]" value="automated">
+<input type="hidden" name="evaluation[evaluator_id]" value="<%= evaluator_key %>">
+<input type="hidden" name="evaluation[evaluation_context]" value="manual">
+
+<!-- Require Code Execution -->
+<div class="mb-3">
+  <div class="form-check">
+    <input type="hidden" name="<%= namespace %>[require_code_execution]" value="false">
+    <input type="checkbox"
+           class="form-check-input"
+           name="<%= namespace %>[require_code_execution]"
+           value="true"
+           id="<%= evaluator_key %>_require_code_execution"
+           <%= 'checked' if require_code_execution %>>
+    <label class="form-check-label" for="<%= evaluator_key %>_require_code_execution">
+      Require code execution
+    </label>
+  </div>
+  <small class="form-text text-muted">
+    When checked, the assistant must execute code at least once.
+  </small>
+</div>
+
+<!-- Expected Language -->
+<div class="mb-3">
+  <label class="form-label">Expected Language (optional)</label>
+  <select name="<%= namespace %>[expected_language]"
+          class="form-select"
+          id="<%= evaluator_key %>_expected_language">
+    <option value="">Any language</option>
+    <option value="python" <%= 'selected' if expected_language.downcase == 'python' %>>Python</option>
+    <option value="javascript" <%= 'selected' if expected_language.downcase == 'javascript' %>>JavaScript</option>
+    <option value="r" <%= 'selected' if expected_language.downcase == 'r' %>>R</option>
+  </select>
+  <small class="form-text text-muted">
+    The programming language expected to be used. Leave blank to accept any language.
+  </small>
+</div>
+
+<!-- Output Patterns -->
+<div class="mb-3">
+  <label class="form-label">Expected Output Patterns (optional)</label>
+  <textarea name="<%= namespace %>[output_patterns]"
+            class="form-control"
+            id="<%= evaluator_key %>_output_patterns"
+            rows="3"
+            placeholder="Enter expected output patterns, one per line...&#10;Examples: mean, std, error"><%= output_patterns.join("\n") %></textarea>
+  <small class="form-text text-muted">
+    Text patterns or regex expected in the code output. Leave blank to skip output validation.
+  </small>
+</div>
+
+<!-- Require All Patterns -->
+<div class="mb-3">
+  <div class="form-check">
+    <input type="hidden" name="<%= namespace %>[require_all_patterns]" value="false">
+    <input type="checkbox"
+           class="form-check-input"
+           name="<%= namespace %>[require_all_patterns]"
+           value="true"
+           id="<%= evaluator_key %>_require_all_patterns"
+           <%= 'checked' if require_all_patterns %>>
+    <label class="form-check-label" for="<%= evaluator_key %>_require_all_patterns">
+      Require all patterns to match
+    </label>
+  </div>
+  <small class="form-text text-muted">
+    When checked, all output patterns must be found. When unchecked, at least one pattern is sufficient.
+  </small>
+</div>
+
+<!-- Expect Files Created -->
+<div class="mb-3">
+  <div class="form-check">
+    <input type="hidden" name="<%= namespace %>[expect_files_created]" value="false">
+    <input type="checkbox"
+           class="form-check-input"
+           name="<%= namespace %>[expect_files_created]"
+           value="true"
+           id="<%= evaluator_key %>_expect_files_created"
+           <%= 'checked' if expect_files_created %>>
+    <label class="form-check-label" for="<%= evaluator_key %>_expect_files_created">
+      Expect files to be created
+    </label>
+  </div>
+  <small class="form-text text-muted">
+    When checked, the code execution should produce output files (e.g., charts, CSVs).
+  </small>
+</div>
+
+<!-- Minimum Code Lines -->
+<div class="mb-3">
+  <label class="form-label">Minimum Code Lines</label>
+  <input type="number"
+         name="<%= namespace %>[min_code_lines]"
+         class="form-control"
+         value="<%= min_code_lines %>"
+         min="0"
+         max="500">
+  <small class="form-text text-muted">
+    Minimum total lines of code expected across all executions. Set to 0 to skip this check.
+  </small>
+</div>
+
+<!-- Threshold Score -->
+<div class="mb-3">
+  <label class="form-label">Threshold Score (0-100)</label>
+  <input type="number"
+         name="<%= namespace %>[threshold_score]"
+         class="form-control"
+         value="<%= threshold_score %>"
+         min="0"
+         max="100"
+         required>
+  <small class="form-text text-muted">
+    Minimum score required to pass. Score is calculated based on configured requirements.
+  </small>
+</div>
+
+<div class="alert alert-secondary">
+  <strong>How it works:</strong>
+  <ul class="mb-0 mt-2">
+    <li>The evaluator checks for code_interpreter_call items in the Response API output</li>
+    <li>It validates execution status, language used, output patterns, and file creation</li>
+    <li>Score = weighted average of all configured requirements</li>
+    <li>Pass/fail depends on whether all requirements are met and the threshold score</li>
+  </ul>
+</div>
+

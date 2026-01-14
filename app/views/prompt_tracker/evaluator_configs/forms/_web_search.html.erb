@@ -1,0 +1,130 @@
+<%# Form for Web Search Evaluator - validates that assistant used web search appropriately %>
+<% existing_config ||= nil %>
+<% config = existing_config&.config || {} %>
+<% evaluator_key ||= 'web_search' %>
+<% namespace ||= 'config' %>
+
+<% require_web_search = config.key?('require_web_search') ? config['require_web_search'] : (config.key?(:require_web_search) ? config[:require_web_search] : true) %>
+<% expected_queries = config['expected_queries'] || config[:expected_queries] || [] %>
+<% expected_queries = expected_queries.is_a?(Array) ? expected_queries : expected_queries.to_s.split("\n").map(&:strip).reject(&:empty?) %>
+<% expected_domains = config['expected_domains'] || config[:expected_domains] || [] %>
+<% expected_domains = expected_domains.is_a?(Array) ? expected_domains : expected_domains.to_s.split("\n").map(&:strip).reject(&:empty?) %>
+<% require_all_domains = config.key?('require_all_domains') ? config['require_all_domains'] : (config.key?(:require_all_domains) ? config[:require_all_domains] : false) %>
+<% min_sources = config['min_sources'] || config[:min_sources] || 0 %>
+<% threshold_score = config['threshold_score'] || config[:threshold_score] || 100 %>
+
+<div class="alert alert-info mb-3">
+  <i class="bi bi-globe"></i>
+  <strong>Web Search Evaluator</strong>
+  <p class="mb-0 mt-1">Verifies that the assistant used web search and returned relevant results.</p>
+</div>
+
+<!-- Hidden fields for evaluator type and context -->
+<input type="hidden" name="evaluation[evaluator_type]" value="automated">
+<input type="hidden" name="evaluation[evaluator_id]" value="<%= evaluator_key %>">
+<input type="hidden" name="evaluation[evaluation_context]" value="manual">
+
+<!-- Require Web Search -->
+<div class="mb-3">
+  <div class="form-check">
+    <input type="hidden" name="<%= namespace %>[require_web_search]" value="false">
+    <input type="checkbox"
+           class="form-check-input"
+           name="<%= namespace %>[require_web_search]"
+           value="true"
+           id="<%= evaluator_key %>_require_web_search"
+           <%= 'checked' if require_web_search %>>
+    <label class="form-check-label" for="<%= evaluator_key %>_require_web_search">
+      Require web search to be used
+    </label>
+  </div>
+  <small class="form-text text-muted">
+    When checked, the assistant must use web search at least once.
+  </small>
+</div>
+
+<!-- Expected Queries -->
+<div class="mb-3">
+  <label class="form-label">Expected Search Queries (optional)</label>
+  <textarea name="<%= namespace %>[expected_queries]"
+            class="form-control"
+            id="<%= evaluator_key %>_expected_queries"
+            rows="3"
+            placeholder="Enter expected query terms, one per line..."><%= expected_queries.join("\n") %></textarea>
+  <small class="form-text text-muted">
+    Query terms/phrases expected in the searches (partial matching). Leave blank to skip query validation.
+  </small>
+</div>
+
+<!-- Expected Domains -->
+<div class="mb-3">
+  <label class="form-label">Expected Source Domains (optional)</label>
+  <textarea name="<%= namespace %>[expected_domains]"
+            class="form-control"
+            id="<%= evaluator_key %>_expected_domains"
+            rows="3"
+            placeholder="example.com&#10;wikipedia.org&#10;github.com"><%= expected_domains.join("\n") %></textarea>
+  <small class="form-text text-muted">
+    Domain names expected in search results. Leave blank to skip domain validation.
+  </small>
+</div>
+
+<!-- Require All Domains -->
+<div class="mb-3">
+  <div class="form-check">
+    <input type="hidden" name="<%= namespace %>[require_all_domains]" value="false">
+    <input type="checkbox"
+           class="form-check-input"
+           name="<%= namespace %>[require_all_domains]"
+           value="true"
+           id="<%= evaluator_key %>_require_all_domains"
+           <%= 'checked' if require_all_domains %>>
+    <label class="form-check-label" for="<%= evaluator_key %>_require_all_domains">
+      Require all domains to be found
+    </label>
+  </div>
+  <small class="form-text text-muted">
+    When checked, all expected domains must be found. When unchecked, at least one domain is sufficient.
+  </small>
+</div>
+
+<!-- Minimum Sources -->
+<div class="mb-3">
+  <label class="form-label">Minimum Sources Required</label>
+  <input type="number"
+         name="<%= namespace %>[min_sources]"
+         class="form-control"
+         value="<%= min_sources %>"
+         min="0"
+         max="20">
+  <small class="form-text text-muted">
+    Minimum number of sources (URLs) that must be returned. Set to 0 to skip this check.
+  </small>
+</div>
+
+<!-- Threshold Score -->
+<div class="mb-3">
+  <label class="form-label">Threshold Score (0-100)</label>
+  <input type="number"
+         name="<%= namespace %>[threshold_score]"
+         class="form-control"
+         value="<%= threshold_score %>"
+         min="0"
+         max="100"
+         required>
+  <small class="form-text text-muted">
+    Minimum score required to pass. Score is calculated based on configured requirements.
+  </small>
+</div>
+
+<div class="alert alert-secondary">
+  <strong>How it works:</strong>
+  <ul class="mb-0 mt-2">
+    <li>The evaluator checks for web_search_call items in the Response API output</li>
+    <li>It validates queries against expected query terms (partial, case-insensitive matching)</li>
+    <li>It validates source URLs against expected domains</li>
+    <li>Score = weighted average of: query match, domain match, and source count metrics</li>
+    <li>Pass/fail depends on whether all requirements are met and the threshold score</li>
+  </ul>
+</div>
+

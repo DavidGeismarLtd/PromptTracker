@@ -179,30 +179,10 @@ module PromptTracker
     #
     # @return [Array<Hash>] array of column definitions
     def test_run_table_headers
-      if conversational?
-        conversational_test_run_headers
-      else
-        testable.test_run_table_headers
-      end
+      testable.test_run_table_headers
     end
 
     private
-
-    # Returns table headers for conversational test runs
-    #
-    # @return [Array<Hash>] array of column definitions
-    def conversational_test_run_headers
-      [
-        { key: "run_status", label: "Status", width: "10%" },
-        { key: "run_time", label: "Run Time", width: "12%" },
-        { key: "response_time", label: "Response Time", width: "10%" },
-        { key: "run_cost", label: "Cost", width: "8%" },
-        { key: "conversation", label: "Conversation", width: "30%" },
-        { key: "run_evaluations", label: "Evaluations", width: "10%" },
-        { key: "human_evaluations", label: "Human Evaluations", width: "10%" },
-        { key: "actions", label: "Actions", width: "5%" }
-      ]
-    end
 
     def sync_evaluator_configs_from_json
       return unless @evaluator_configs_json

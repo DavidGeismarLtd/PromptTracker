@@ -106,68 +106,14 @@ module PromptTracker
         end
       end
 
-      context "when provider is openai_assistants (backward compatibility)" do
-        let(:provider) { "openai_assistants" }
-        let(:assistant_id) { "asst_abc123" }
-        let(:assistant_response) do
-          {
-            text: "The weather is sunny.",
-            usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
-            model: assistant_id,
-            raw: { thread_id: "thread_123", run_id: "run_456" }
-          }
-        end
 
-        it "routes to OpenaiAssistantService" do
-          allow(OpenaiAssistantService).to receive(:call).and_return(assistant_response)
 
-          result = described_class.call(
-            provider: provider,
-            model: assistant_id,
-            prompt: prompt
-          )
 
-          expect(OpenaiAssistantService).to have_received(:call).with(
-            assistant_id: assistant_id,
-            prompt: prompt,
-            timeout: 60
-          )
-          expect(result).to eq(assistant_response)
-        end
-      end
-
-      context "when model starts with asst_" do
-        let(:assistant_id) { "asst_xyz789" }
-        let(:assistant_response) do
-          {
-            text: "Assistant response",
-            usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 },
-            model: assistant_id,
-            raw: { thread_id: "thread_abc", run_id: "run_def" }
-          }
-        end
-
-        it "routes to OpenaiAssistantService even with different provider" do
-          allow(OpenaiAssistantService).to receive(:call).and_return(assistant_response)
-
-          result = described_class.call(
-            provider: "openai",  # Different provider
-            model: assistant_id,  # But model starts with asst_
-            prompt: prompt
-          )
-
-          expect(OpenaiAssistantService).to have_received(:call).with(
-            assistant_id: assistant_id,
-            prompt: prompt,
-            timeout: 60
-          )
-          expect(result).to eq(assistant_response)
-        end
-      end
 
       it "calls RubyLLM.chat with model only" do
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -179,6 +125,7 @@ module PromptTracker
       it "applies temperature using with_temperature" do
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -190,6 +137,7 @@ module PromptTracker
       it "calls ask with the prompt" do
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -201,6 +149,7 @@ module PromptTracker
       it "returns formatted response" do
         result = described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -221,6 +170,7 @@ module PromptTracker
 
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature,
@@ -236,6 +186,7 @@ module PromptTracker
         expect do
           described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             temperature: temperature
@@ -250,6 +201,7 @@ module PromptTracker
           expect do
             described_class.call(
               provider: "anthropic",  # Provider is ignored
+              api: "chat",
               model: model,
               prompt: prompt
             )
@@ -292,6 +244,7 @@ module PromptTracker
 
           described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             response_schema: response_schema
@@ -303,6 +256,7 @@ module PromptTracker
         it "uses with_schema on the chat" do
           described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             response_schema: response_schema
@@ -314,6 +268,7 @@ module PromptTracker
         it "returns structured response as JSON" do
           result = described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             response_schema: response_schema

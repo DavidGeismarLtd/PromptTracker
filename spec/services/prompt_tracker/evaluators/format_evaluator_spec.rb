@@ -206,7 +206,7 @@ module PromptTracker
 
         it "creates evaluation record" do
           response = create_response('{"name": "John"}')
-          evaluator = FormatEvaluator.new(response.response_text, { format: :json })
+          evaluator = FormatEvaluator.new(response.response_text, { format: :json, llm_response: response })
 
           evaluation = evaluator.evaluate
 

@@ -422,6 +422,7 @@ module PromptTracker
         Rails.logger.info "🌐 ConversationRunner: Calling LLM (gpt-4o-mini) to generate initial message..."
         response = LlmClientService.call(
           provider: "openai",
+          api: "chat_completions",
           model: "gpt-4o-mini",
           prompt: prompt,
           temperature: 0.8
@@ -449,6 +450,7 @@ module PromptTracker
         Rails.logger.info "🌐 ConversationRunner: Calling LLM (gpt-4o-mini) to generate next message..."
         response = LlmClientService.call(
           provider: "openai",
+          api: "chat_completions",
           model: "gpt-4o-mini",
           prompt: prompt,
           temperature: 0.8

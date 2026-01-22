@@ -1,0 +1,166 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+module PromptTracker
+  RSpec.describe ApiExecutorFactory, type: :service do
+    describe ".build" do
+      context "with OpenAI Response API" do
+        let(:model_config) do
+          {
+            provider: "openai",
+            api: "responses",
+            model: "gpt-4o"
+          }
+        end
+
+        it "returns ResponseApiExecutor" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(executor).to be_a(TestRunners::ApiExecutors::Openai::ResponseApiExecutor)
+        end
+
+        it "passes model_config to executor" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(executor.model_config[:provider]).to eq("openai")
+          expect(executor.model_config[:api]).to eq("responses")
+          expect(executor.model_config[:model]).to eq("gpt-4o")
+        end
+
+        it "passes use_real_llm flag to executor" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: true
+          )
+
+          expect(executor.use_real_llm).to be true
+        end
+      end
+
+      context "with OpenAI Chat Completions API" do
+        let(:model_config) do
+          {
+            provider: "openai",
+            api: "chat_completions",
+            model: "gpt-4o"
+          }
+        end
+
+        it "returns CompletionApiExecutor" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(executor).to be_a(TestRunners::ApiExecutors::Openai::CompletionApiExecutor)
+        end
+      end
+
+      context "with Anthropic Messages API" do
+        let(:model_config) do
+          {
+            provider: "anthropic",
+            api: "messages",
+            model: "claude-3-5-sonnet-20241022"
+          }
+        end
+
+        it "returns CompletionApiExecutor" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(executor).to be_a(TestRunners::ApiExecutors::Openai::CompletionApiExecutor)
+        end
+      end
+
+      context "with Google Gemini API" do
+        let(:model_config) do
+          {
+            provider: "google",
+            api: "gemini",
+            model: "gemini-2.0-flash-exp"
+          }
+        end
+
+        it "returns CompletionApiExecutor" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(executor).to be_a(TestRunners::ApiExecutors::Openai::CompletionApiExecutor)
+        end
+      end
+
+      context "with unknown API type" do
+        let(:model_config) do
+          {
+            provider: "custom_provider",
+            api: "custom_api",
+            model: "custom-model"
+          }
+        end
+
+        it "returns CompletionApiExecutor as fallback" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(executor).to be_a(TestRunners::ApiExecutors::Openai::CompletionApiExecutor)
+        end
+      end
+
+      context "with testable parameter" do
+        let(:model_config) do
+          {
+            provider: "openai",
+            api: "chat_completions",
+            model: "gpt-4o"
+          }
+        end
+
+        let(:testable) { double("PromptVersion") }
+
+        it "passes testable to executor" do
+          executor = described_class.build(
+            model_config: model_config,
+            use_real_llm: false,
+            testable: testable
+          )
+
+          expect(executor.testable).to eq(testable)
+        end
+      end
+
+      context "with invalid model_config" do
+        it "raises ArgumentError when provider is missing" do
+          expect do
+            described_class.build(
+              model_config: { api: "chat_completions", model: "gpt-4o" },
+              use_real_llm: false
+            )
+          end.to raise_error(ArgumentError, /must include :provider/)
+        end
+
+        it "raises ArgumentError when api is missing" do
+          expect do
+            described_class.build(
+              model_config: { provider: "openai", model: "gpt-4o" },
+              use_real_llm: false
+            )
+          end.to raise_error(ArgumentError, /must include :api/)
+        end
+      end
+    end
+  end
+end

@@ -136,18 +136,11 @@ module PromptTracker
 
       # Build the appropriate API executor based on provider
       #
+      # Uses ApiExecutorFactory to encapsulate executor selection logic.
+      #
       # @return [ApiExecutors::Base] the executor instance
       def build_api_executor
-        # there should be a default provider configured
-        executor_class = case testable.api_type
-        when :openai_responses
-          ApiExecutors::Openai::ResponseApiExecutor
-        else
-          # All other providers (openai, anthropic, google, etc.) use completion API
-          ApiExecutors::CompletionApiExecutor
-        end
-
-        executor_class.new(
+        ApiExecutorFactory.build(
           model_config: model_config,
           use_real_llm: use_real_llm,
           testable: testable

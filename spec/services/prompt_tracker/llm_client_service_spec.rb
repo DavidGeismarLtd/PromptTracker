@@ -37,8 +37,46 @@ module PromptTracker
         allow(chat_double).to receive(:ask).and_return(response_double)
       end
 
-      context "when provider is openai_assistants" do
-        let(:provider) { "openai_assistants" }
+      context "when provider is openai and api is responses" do
+        let(:provider) { "openai" }
+        let(:api) { "responses" }
+        let(:response_service_response) do
+          {
+            text: "Search results show...",
+            response_id: "resp_123",
+            usage: { prompt_tokens: 15, completion_tokens: 25, total_tokens: 40 },
+            model: model,
+            tool_calls: [],
+            raw: {}
+          }
+        end
+
+        it "routes to OpenaiResponseService" do
+          allow(OpenaiResponseService).to receive(:call).and_return(response_service_response)
+
+          result = described_class.call(
+            provider: provider,
+            api: api,
+            model: model,
+            prompt: prompt,
+            tools: [ :web_search ]
+          )
+
+          expect(OpenaiResponseService).to have_received(:call).with(
+            model: model,
+            user_prompt: prompt,
+            system_prompt: nil,
+            tools: [ :web_search ],
+            temperature: 0.7,
+            max_tokens: nil
+          )
+          expect(result).to eq(response_service_response)
+        end
+      end
+
+      context "when provider is openai and api is assistants" do
+        let(:provider) { "openai" }
+        let(:api) { "assistants" }
         let(:assistant_id) { "asst_abc123" }
         let(:assistant_response) do
           {
@@ -54,6 +92,7 @@ module PromptTracker
 
           result = described_class.call(
             provider: provider,
+            api: api,
             model: assistant_id,
             prompt: prompt
           )
@@ -67,38 +106,14 @@ module PromptTracker
         end
       end
 
-      context "when model starts with asst_" do
-        let(:assistant_id) { "asst_xyz789" }
-        let(:assistant_response) do
-          {
-            text: "Assistant response",
-            usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 },
-            model: assistant_id,
-            raw: { thread_id: "thread_abc", run_id: "run_def" }
-          }
-        end
 
-        it "routes to OpenaiAssistantService even with different provider" do
-          allow(OpenaiAssistantService).to receive(:call).and_return(assistant_response)
 
-          result = described_class.call(
-            provider: "openai",  # Different provider
-            model: assistant_id,  # But model starts with asst_
-            prompt: prompt
-          )
 
-          expect(OpenaiAssistantService).to have_received(:call).with(
-            assistant_id: assistant_id,
-            prompt: prompt,
-            timeout: 60
-          )
-          expect(result).to eq(assistant_response)
-        end
-      end
 
       it "calls RubyLLM.chat with model only" do
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -110,6 +125,7 @@ module PromptTracker
       it "applies temperature using with_temperature" do
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -121,6 +137,7 @@ module PromptTracker
       it "calls ask with the prompt" do
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -132,6 +149,7 @@ module PromptTracker
       it "returns formatted response" do
         result = described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature
@@ -152,6 +170,7 @@ module PromptTracker
 
         described_class.call(
           provider: provider,
+          api: "chat",
           model: model,
           prompt: prompt,
           temperature: temperature,
@@ -167,6 +186,7 @@ module PromptTracker
         expect do
           described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             temperature: temperature
@@ -181,6 +201,7 @@ module PromptTracker
           expect do
             described_class.call(
               provider: "anthropic",  # Provider is ignored
+              api: "chat",
               model: model,
               prompt: prompt
             )
@@ -223,6 +244,7 @@ module PromptTracker
 
           described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             response_schema: response_schema
@@ -234,6 +256,7 @@ module PromptTracker
         it "uses with_schema on the chat" do
           described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             response_schema: response_schema
@@ -245,6 +268,7 @@ module PromptTracker
         it "returns structured response as JSON" do
           result = described_class.call(
             provider: provider,
+            api: "chat",
             model: model,
             prompt: prompt,
             response_schema: response_schema

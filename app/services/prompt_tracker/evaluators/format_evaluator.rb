@@ -21,7 +21,7 @@ module PromptTracker
     #     require_headers: true
     #   })
     #
-    class FormatEvaluator < SingleResponse::BaseSingleResponseEvaluator
+    class FormatEvaluator < BaseNormalizedEvaluator
       # Supported formats
       FORMATS = %i[json markdown plain_text].freeze
 
@@ -34,6 +34,11 @@ module PromptTracker
         schema: nil,             # For JSON: schema validation (required_keys, optional_keys, types, nested_structure)
         strict: false            # Strict mode: no extra keys allowed in JSON
       }.freeze
+
+      # Compatible API types
+      def self.compatible_with_apis
+        [ :openai_chat_completions, :anthropic_messages ]
+      end
 
       # Parameter schema for form processing
       def self.param_schema
@@ -57,8 +62,8 @@ module PromptTracker
         }
       end
 
-      def initialize(response_text, config = {})
-        super(response_text, DEFAULT_CONFIG.merge(config))
+      def initialize(data, config = {})
+        super(data, DEFAULT_CONFIG.merge(config))
         validate_config!
       end
 

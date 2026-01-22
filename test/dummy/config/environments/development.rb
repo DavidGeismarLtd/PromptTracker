@@ -23,12 +23,20 @@ Rails.application.configure do
     config.action_controller.perform_caching = true
     config.action_controller.enable_fragment_cache_logging = true
 
-    config.cache_store = :memory_store
+    config.cache_store = :redis_cache_store, {
+      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/2"),
+      expires_in: 24.hours
+    }
     config.public_file_server.headers = { "Cache-Control" => "public, max-age=#{2.days.to_i}" }
   else
     config.action_controller.perform_caching = false
 
-    config.cache_store = :null_store
+    # Use Redis cache store even when caching is disabled for session storage
+    # This allows playground conversations to work without cookie overflow
+    config.cache_store = :redis_cache_store, {
+      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/2"),
+      expires_in: 24.hours
+    }
   end
 
   # Store uploaded files on the local file system (see config/storage.yml for options).

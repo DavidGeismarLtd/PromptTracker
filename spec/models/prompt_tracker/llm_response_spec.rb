@@ -8,38 +8,6 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     it { should have_many(:evaluations).dependent(:destroy) }
   end
 
-  describe "is_test_run field" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
-
-    it "defaults to false" do
-      response = described_class.create!(
-        prompt_version: version,
-        rendered_prompt: "Test prompt",
-        provider: "openai",
-        model: "gpt-4",
-        response_text: "Test response",
-        status: "success"
-      )
-
-      expect(response.is_test_run).to be false
-    end
-
-    it "can be set to true for test runs" do
-      response = described_class.create!(
-        prompt_version: version,
-        rendered_prompt: "Test prompt",
-        provider: "openai",
-        model: "gpt-4",
-        response_text: "Test response",
-        status: "success",
-        is_test_run: true
-      )
-
-      expect(response.is_test_run).to be true
-    end
-  end
-
   describe "scopes" do
     let!(:prompt) { create(:prompt) }
     let!(:version) { create(:prompt_version, prompt: prompt) }
@@ -47,24 +15,18 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     let!(:production_response) do
       create(:llm_response,
              prompt_version: version,
-             is_test_run: false)
+             environment: "production")
     end
 
-    let!(:test_response) do
+    let!(:staging_response) do
       create(:llm_response,
              prompt_version: version,
-             is_test_run: true)
+             environment: "staging")
     end
 
     describe ".tracked_calls" do
-      it "returns only non-test responses" do
-        expect(described_class.tracked_calls).to contain_exactly(production_response)
-      end
-    end
-
-    describe ".test_calls" do
-      it "returns only test responses" do
-        expect(described_class.test_calls).to contain_exactly(test_response)
+      it "returns all LlmResponses (all are tracked calls)" do
+        expect(described_class.tracked_calls).to contain_exactly(production_response, staging_response)
       end
     end
   end
@@ -73,37 +35,18 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     let(:prompt) { create(:prompt) }
     let(:version) { create(:prompt_version, prompt: prompt) }
 
-    context "when is_test_run is false" do
-      it "triggers auto-evaluation after create" do
-        expect(PromptTracker::AutoEvaluationService).to receive(:evaluate)
-          .with(instance_of(described_class), context: "tracked_call")
+    it "triggers auto-evaluation after create" do
+      expect(PromptTracker::AutoEvaluationService).to receive(:evaluate)
+        .with(instance_of(described_class), context: "tracked_call")
 
-        described_class.create!(
-          prompt_version: version,
-          rendered_prompt: "Test prompt",
-          provider: "openai",
-          model: "gpt-4",
-          response_text: "Test response",
-          status: "success",
-          is_test_run: false
-        )
-      end
-    end
-
-    context "when is_test_run is true" do
-      it "does not trigger auto-evaluation after create" do
-        expect(PromptTracker::AutoEvaluationService).not_to receive(:evaluate)
-
-        described_class.create!(
-          prompt_version: version,
-          rendered_prompt: "Test prompt",
-          provider: "openai",
-          model: "gpt-4",
-          response_text: "Test response",
-          status: "success",
-          is_test_run: true
-        )
-      end
+      described_class.create!(
+        prompt_version: version,
+        rendered_prompt: "Test prompt",
+        provider: "openai",
+        model: "gpt-4",
+        response_text: "Test response",
+        status: "success"
+      )
     end
   end
 
@@ -117,8 +60,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
         provider: "openai",
         model: "gpt-4",
         response_text: "Test response",
-        status: "success",
-        is_test_run: false
+        status: "success"
       )
     end
 

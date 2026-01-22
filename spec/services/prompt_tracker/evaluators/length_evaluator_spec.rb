@@ -132,7 +132,7 @@ module PromptTracker
       describe "#evaluate" do
         it "creates evaluation record" do
           response = create_response("a" * 100)
-          evaluator = LengthEvaluator.new(response.response_text)
+          evaluator = LengthEvaluator.new(response.response_text, { llm_response: response })
 
           evaluation = evaluator.evaluate
 

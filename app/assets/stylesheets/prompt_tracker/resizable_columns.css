@@ -1,0 +1,68 @@
+/* Resizable Columns Styles */
+
+/* Resize handle positioned on the right edge of each column header */
+.column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+}
+
+/* Visual feedback on hover */
+.column-resize-handle:hover {
+  background-color: rgba(0, 123, 255, 0.2);
+  border-right: 2px solid #007bff;
+}
+
+/* Active state during resize */
+.column-resize-handle:active {
+  background-color: rgba(0, 123, 255, 0.3);
+  border-right: 2px solid #0056b3;
+}
+
+/* Cursor change for the entire document during resize */
+body.resizing-column {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* Prevent text selection during resize */
+body.resizing-column * {
+  user-select: none !important;
+}
+
+/* Ensure table headers have relative positioning for the resize handle */
+table[data-controller*="resizable-columns"] thead th {
+  position: relative;
+  overflow: visible;
+}
+
+/* Prevent column content from wrapping during resize */
+table[data-controller*="resizable-columns"] th,
+table[data-controller*="resizable-columns"] td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure table layout is fixed for better resize control */
+table[data-controller*="resizable-columns"] {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Hide resize handle on hidden columns */
+table[data-controller*="resizable-columns"] thead th.d-none .column-resize-handle {
+  display: none;
+}
+
+/* Improve resize handle visibility on small tables */
+@media (max-width: 768px) {
+  .column-resize-handle {
+    width: 12px;
+  }
+}

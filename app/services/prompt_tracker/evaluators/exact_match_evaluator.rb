@@ -24,12 +24,17 @@ module PromptTracker
     #   })
     #   evaluation = evaluator.evaluate
     #
-    class ExactMatchEvaluator < SingleResponse::BaseSingleResponseEvaluator
+    class ExactMatchEvaluator < BaseNormalizedEvaluator
       DEFAULT_CONFIG = {
         expected_text: "",      # The exact text to match
         case_sensitive: false,  # Whether matching is case-sensitive
         trim_whitespace: true   # Whether to trim whitespace before comparing
       }.freeze
+
+      # Compatible API types
+      def self.compatible_with_apis
+        [ :openai_chat_completions, :anthropic_messages ]
+      end
 
       # Parameter schema for form processing
       def self.param_schema
@@ -50,8 +55,8 @@ module PromptTracker
         }
       end
 
-      def initialize(response_text, config = {})
-        super(response_text, DEFAULT_CONFIG.merge(config))
+      def initialize(data, config = {})
+        super(data, DEFAULT_CONFIG.merge(config))
       end
 
       def evaluate_score

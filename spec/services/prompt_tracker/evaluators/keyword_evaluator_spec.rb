@@ -193,7 +193,8 @@ module PromptTracker
         it "creates evaluation record" do
           response = create_response("This has apple and banana")
           evaluator = KeywordEvaluator.new(response.response_text, {
-            required_keywords: [ "apple", "banana" ]
+            required_keywords: [ "apple", "banana" ],
+            llm_response: response
           })
 
           evaluation = evaluator.evaluate

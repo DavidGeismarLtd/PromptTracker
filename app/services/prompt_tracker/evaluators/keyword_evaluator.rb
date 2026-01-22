@@ -20,13 +20,18 @@ module PromptTracker
     #     case_sensitive: false
     #   })
     #
-    class KeywordEvaluator < SingleResponse::BaseSingleResponseEvaluator
+    class KeywordEvaluator < BaseNormalizedEvaluator
       # Default configuration
       DEFAULT_CONFIG = {
         required_keywords: [],   # Keywords that must be present
         forbidden_keywords: [],  # Keywords that must not be present
         case_sensitive: false    # Whether to match case-sensitively
       }.freeze
+
+      # Compatible API types
+      def self.compatible_with_apis
+        [ :openai_chat_completions, :anthropic_messages ]
+      end
 
       # Parameter schema for form processing
       def self.param_schema
@@ -47,8 +52,8 @@ module PromptTracker
         }
       end
 
-      def initialize(response_text, config = {})
-        super(response_text, DEFAULT_CONFIG.merge(config.deep_symbolize_keys))
+      def initialize(data, config = {})
+        super(data, DEFAULT_CONFIG.merge(config.deep_symbolize_keys))
       end
 
       def evaluate_score

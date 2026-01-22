@@ -4,20 +4,6 @@ module PromptTracker
   # Helper methods for the Playground views.
   # Provides provider detection and tool availability methods.
   module PlaygroundHelper
-    # Check if the current API is a Response API
-    #
-    # @return [Boolean] true if using response_api
-    def response_api_provider?
-      current_api.to_s == "response_api"
-    end
-
-    # Check if the current provider/API supports multi-turn conversations
-    #
-    # @return [Boolean] true if API supports conversations
-    def supports_conversation?
-      response_api_provider?
-    end
-
     # Get available tools for the current provider and API.
     # Reads from configuration based on API capabilities.
     #
@@ -47,7 +33,7 @@ module PromptTracker
       @version&.model_config&.dig("api") ||
         default_api_for(:playground)&.to_s ||
         default_api_for_provider(current_provider.to_sym)&.to_s ||
-        "chat_completion"
+        "chat_completions"
     end
 
     # Get the current model from version config or default

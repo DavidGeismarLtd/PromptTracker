@@ -21,7 +21,7 @@ module PromptTracker
     #   })
     #   evaluation = evaluator.evaluate
     #
-    class LlmJudgeEvaluator < SingleResponse::BaseSingleResponseEvaluator
+    class LlmJudgeEvaluator < BaseNormalizedEvaluator
       # Default configuration
       # Note: Using gpt-4o because it supports structured outputs
       # gpt-4 (non-turbo) does NOT support structured outputs
@@ -29,6 +29,11 @@ module PromptTracker
         judge_model: "gpt-4o",
         custom_instructions: "Evaluate the quality and appropriateness of the response"
       }.freeze
+
+      # Compatible API types
+      def self.compatible_with_apis
+        [ :openai_chat_completions, :anthropic_messages ]
+      end
 
       # Parameter schema for form processing
       def self.param_schema
@@ -55,11 +60,11 @@ module PromptTracker
         }
       end
 
-      def initialize(response_text, config = {})
+      def initialize(data, config = {})
         # Convert string keys to symbol keys to ensure proper merging with DEFAULT_CONFIG
         # Use symbolize_keys to handle nested hashes and ensure clean merge
         symbolized_config = config.is_a?(Hash) ? config.deep_symbolize_keys : {}
-        super(response_text, DEFAULT_CONFIG.merge(symbolized_config))
+        super(data, DEFAULT_CONFIG.merge(symbolized_config))
       end
 
       # Calculate score by calling LLM judge

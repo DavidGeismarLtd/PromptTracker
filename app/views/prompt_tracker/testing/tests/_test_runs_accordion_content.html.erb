@@ -1,8 +1,8 @@
-<% latest_runs = test.test_runs.includes(:human_evaluations, :evaluations, llm_response: :evaluations).order(created_at: :desc).limit(5) %>
+<% latest_runs = test.test_runs.includes(:human_evaluations, :evaluations).order(created_at: :desc).limit(5) %>
 <% total_count = test.test_runs.count %>
 
 <% if latest_runs.any? %>
-  <div class="bg-light p-3" data-controller="column-visibility" data-column-visibility-storage-key-value="testRunsTableColumns_<%= test.id %>">
+  <div class="bg-light p-3" data-controller="column-visibility resizable-columns" data-column-visibility-storage-key-value="testRunsTableColumns_<%= test.id %>" data-resizable-columns-storage-key-value="testRunsColumnWidths_<%= test.id %>">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h6 class="mb-0">
         <i class="bi bi-clock-history"></i>

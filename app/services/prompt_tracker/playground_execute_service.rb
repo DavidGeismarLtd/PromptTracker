@@ -17,7 +17,7 @@ module PromptTracker
   #     content: "What's the weather in Berlin?",
   #     system_prompt: "You are a helpful assistant.",
   #     user_prompt_template: "Answer this question: {{question}}",
-  #     model_config: { provider: "openai_responses", model: "gpt-4o" }
+  #     model_config: { provider: "openai", api: "responses", model: "gpt-4o" }
   #   )
   #
   class PlaygroundExecuteService
@@ -80,12 +80,13 @@ module PromptTracker
     end
 
     def execute_api_call
-      provider = model_config[:provider] || "openai"
+      api = model_config[:api]
 
-      case provider.to_s
-      when "openai_responses"
+      # Route based on API
+      case api.to_s
+      when "responses"
         execute_response_api
-      when "openai_assistants"
+      when "assistants"
         execute_assistant_api
       else
         execute_chat_completion
@@ -95,27 +96,27 @@ module PromptTracker
     def execute_response_api
       previous_response_id = conversation_state[:previous_response_id]
       tools = parse_tools(model_config[:tools])
-      tool_config = model_config[:tool_config] || {}
+      tool_config = model_config[:tool_config]
 
       if previous_response_id.present?
         OpenaiResponseService.call_with_context(
-          model: model_config[:model] || "gpt-4o",
+          model: model_config[:model],
           user_prompt: content,
           previous_response_id: previous_response_id,
           tools: tools,
           tool_config: tool_config,
-          temperature: model_config[:temperature] || 0.7
+          temperature: model_config[:temperature]
         )
       else
         # For first turn: combine system_prompt + user_prompt_template into instructions
         # The content (user's live message) goes to input
         OpenaiResponseService.call(
-          model: model_config[:model] || "gpt-4o",
+          model: model_config[:model],
           user_prompt: content,
           system_prompt: combined_instructions,
           tools: tools,
           tool_config: tool_config,
-          temperature: model_config[:temperature] || 0.7
+          temperature: model_config[:temperature]
         )
       end
     end
@@ -129,10 +130,11 @@ module PromptTracker
 
     def execute_chat_completion
       LlmClientService.call(
-        provider: model_config[:provider] || "openai",
-        model: model_config[:model] || "gpt-4o",
+        provider: model_config[:provider],
+        api: model_config[:api],
+        model: model_config[:model],
         prompt: build_chat_prompt,
-        temperature: model_config[:temperature] || 0.7
+        temperature: model_config[:temperature]
       )
     end
 
@@ -181,7 +183,7 @@ module PromptTracker
       return [] unless response[:tool_calls].present?
 
       response[:tool_calls].map do |tool_call|
-        { type: tool_call[:type] || tool_call["type"] }
+        { type: tool_call[:type] }
       end
     end
 

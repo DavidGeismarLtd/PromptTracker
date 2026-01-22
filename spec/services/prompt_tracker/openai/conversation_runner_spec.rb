@@ -65,6 +65,12 @@ module PromptTracker
 
           # Mock run_steps list to return empty by default
           allow(mock_run_steps).to receive(:list).and_return({ "data" => [] })
+
+          # Stub sleep to avoid delays in tests
+          allow_any_instance_of(described_class).to receive(:sleep)
+
+          # Mock LlmClientService globally to avoid real API calls
+          allow(PromptTracker::LlmClientService).to receive(:call).and_return({ text: "Test message" })
         end
 
         it "creates a thread and runs a conversation" do

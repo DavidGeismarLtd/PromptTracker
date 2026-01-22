@@ -18,12 +18,17 @@ module PromptTracker
     #   })
     #   evaluation = evaluator.evaluate
     #
-    class LengthEvaluator < SingleResponse::BaseSingleResponseEvaluator
+    class LengthEvaluator < BaseNormalizedEvaluator
       # Default configuration
       DEFAULT_CONFIG = {
         min_length: 10,      # Minimum acceptable length
         max_length: 2000     # Maximum acceptable length
       }.freeze
+
+      # Compatible API types
+      def self.compatible_with_apis
+        [ :openai_chat_completions, :anthropic_messages ]
+      end
 
       # Parameter schema for form processing
       def self.param_schema
@@ -43,8 +48,8 @@ module PromptTracker
         }
       end
 
-      def initialize(response_text, config = {})
-        super(response_text, DEFAULT_CONFIG.merge(config))
+      def initialize(data, config = {})
+        super(data, DEFAULT_CONFIG.merge(config))
       end
 
       def evaluate_score

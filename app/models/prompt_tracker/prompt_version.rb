@@ -314,32 +314,38 @@ module PromptTracker
       ]
     end
 
-    # Returns the column headers for the test runs table
-    #
-    # Defines which columns to display in the test runs accordion for this testable type.
-    # PromptVersions show rendered prompt and response instead of conversation data.
-    #
-    # @return [Array<Hash>] array of column definitions
-    def test_run_table_headers
-      [
-        { key: "run_status", label: "Status", width: "10%" },
-        { key: "run_time", label: "Run Time", width: "12%" },
-        { key: "response_time", label: "Response Time", width: "10%" },
-        { key: "run_cost", label: "Cost", width: "8%" },
-        { key: "rendered_prompt", label: "Rendered Prompt", width: "20%" },
-        { key: "run_response", label: "Response", width: "20%" },
-        { key: "run_evaluations", label: "Evaluations", width: "10%" },
-        { key: "human_evaluations", label: "Human Evaluations", width: "10%" },
-        { key: "actions", label: "Actions", width: "5%" }
-      ]
-    end
-
     # Returns the locals hash needed for rendering the test row partial
     #
     # @param test [Test] the test to render
     # @return [Hash] the locals hash with test, version, and prompt
     def test_row_locals(test)
       { test: test, version: self }
+    end
+
+    # Returns the API type for this prompt version based on model_config
+    #
+    # Converts the provider and api from model_config into a standardized API type symbol.
+    #
+    # @return [Symbol, nil] the API type constant from PromptTracker::ApiTypes
+    #
+    # @example OpenAI Chat Completions
+    #   version.api_type # => :openai_chat_completions
+    #
+    # @example OpenAI Responses
+    #   version.api_type # => :openai_responses
+    #
+    # @example Anthropic Messages
+    #   version.api_type # => :anthropic_messages
+    #
+    def api_type
+      return nil if model_config.blank?
+
+      provider = model_config["provider"]&.to_sym
+      api = model_config["api"]&.to_sym
+
+      return nil unless provider && api
+
+      ApiTypes.from_config(provider, api)
     end
 
     private
@@ -429,41 +435,6 @@ module PromptTracker
         model&.include?("claude-3")
       else
         false
-      end
-    end
-
-    # Returns the API type for this PromptVersion based on the model_config provider.
-    #
-    # The API type determines:
-    # - Which evaluators are compatible with this PromptVersion
-    # - How response data should be normalized before evaluation
-    #
-    # @return [Symbol] the API type constant from PromptTracker::ApiTypes
-    #
-    # @example OpenAI Chat Completion provider
-    #   version.api_type # => :openai_chat_completion
-    #
-    # @example OpenAI Responses provider
-    #   version.api_type # => :openai_response_api
-    #
-    # @example Anthropic provider
-    #   version.api_type # => :anthropic_messages
-    #
-    def api_type
-      return ApiTypes::OPENAI_CHAT_COMPLETION if model_config.blank?
-
-      provider = model_config["provider"]&.to_s
-
-      case provider
-      when "openai"
-        ApiTypes::OPENAI_CHAT_COMPLETION
-      when "openai_responses"
-        ApiTypes::OPENAI_RESPONSE_API
-      when "anthropic"
-        ApiTypes::ANTHROPIC_MESSAGES
-      else
-        # Unknown provider - assume Chat Completion style
-        ApiTypes::OPENAI_CHAT_COMPLETION
       end
     end
 

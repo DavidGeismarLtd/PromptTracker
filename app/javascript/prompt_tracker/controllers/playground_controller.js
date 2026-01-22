@@ -69,6 +69,9 @@ export default class extends Controller {
     this.updatePreview() // Initial preview
     this.updateAIButtonState() // Update button visibility based on content
 
+    // Show conversation panel on initial load (all APIs support conversations)
+    this.initializeConversationPanel()
+
     console.log('[PlaygroundController] connect() complete')
   }
 
@@ -315,14 +318,19 @@ export default class extends Controller {
       }
     }
 
-    // Show/hide conversation panel via conversation outlet
-    const isConversationalApi = apiConfig?.key === 'responses' || apiConfig?.key === 'assistants'
+    // Show conversation panel for all API types
+    // All APIs (chat completions, responses, assistants) support conversations
     if (this.hasConversationOutlet) {
-      if (isConversationalApi) {
-        this.conversationOutlet.show()
-      } else {
-        this.conversationOutlet.hide()
-      }
+      this.conversationOutlet.show()
+    }
+  }
+
+  // Initialize conversation panel on page load
+  // All APIs support conversations, so show the panel immediately
+  initializeConversationPanel() {
+    if (this.hasConversationOutlet) {
+      console.log('[PlaygroundController] Showing conversation panel on initial load')
+      this.conversationOutlet.show()
     }
   }
 

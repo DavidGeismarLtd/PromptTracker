@@ -188,5 +188,38 @@ module PromptTracker
     def api_type
       raise NotImplementedError, "#{self.class.name} must implement #api_type"
     end
+
+    # Returns the column headers for the test runs table
+    #
+    # Defines which columns to display in the test runs accordion for this testable type.
+    # Uses unified output_data structure for all test types.
+    #
+    # This is a default implementation that works for all testable types since they
+    # all use the same unified output_data structure. Testable models can override
+    # this method if they need custom columns.
+    #
+    # @return [Array<Hash>] array of column definitions
+    #
+    # @example Default columns
+    #   testable.test_run_table_headers
+    #   # => [
+    #   #   { key: "run_status", label: "Status", width: "10%" },
+    #   #   { key: "run_time", label: "Run Time", width: "12%" },
+    #   #   ...
+    #   # ]
+    #
+    def test_run_table_headers
+      [
+        { key: "run_status", label: "Status", width: "10%" },
+        { key: "run_time", label: "Run Time", width: "12%" },
+        { key: "response_time", label: "Response Time", width: "10%" },
+        { key: "run_cost", label: "Cost", width: "8%" },
+        { key: "rendered_prompt", label: "Rendered Prompt", width: "15%" },
+        { key: "output_messages", label: "Output", width: "25%" },
+        { key: "run_evaluations", label: "Evaluations", width: "10%" },
+        { key: "human_evaluations", label: "Human Evaluations", width: "10%" },
+        { key: "actions", label: "Actions", width: "5%" }
+      ]
+    end
   end
 end

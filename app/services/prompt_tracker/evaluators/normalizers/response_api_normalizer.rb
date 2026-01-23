@@ -153,9 +153,18 @@ module PromptTracker
 
         # Extract web search call results from Response API output
         #
+        # Hybrid approach:
+        # - Extracts queries from web_search_call.action.query or action.queries[0]
+        # - Extracts sources from web_search_call.action.sources (if present via include parameter)
+        # - Extracts citations from message.content[].annotations (always present)
+        #
         # @param output [Array] the output array from Response API
-        # @return [Array<Hash>] array of web search results
+        # @return [Array<Hash>] array of web search results with query, sources, and citations
         def extract_web_search_results(output)
+          # Extract all URL citations from message annotations
+          citations = extract_url_citations(output)
+
+          # Extract web search calls and combine with citations
           output.filter_map do |item|
             next unless (item[:type] || item["type"]) == "web_search_call"
 
@@ -163,25 +172,78 @@ module PromptTracker
               id: item[:id] || item["id"],
               status: item[:status] || item["status"],
               query: extract_web_search_query(item),
-              sources: extract_web_search_sources(item)
+              sources: extract_web_search_sources_from_action(item),
+              citations: citations
             }
           end
         end
 
+        # Extract query from web search call item
+        #
+        # Handles both action.query (string) and action.queries (array)
+        #
+        # @param item [Hash] web_search_call item
+        # @return [String, nil] the query string
         def extract_web_search_query(item)
-          # Query may be nested in action object or at top level
           action = item[:action] || item["action"] || {}
-          action[:query] || action["query"] || item[:query] || item["query"]
+
+          # Try action.query first (single query string)
+          query = action[:query] || action["query"]
+          return query if query.present?
+
+          # Try action.queries (array of queries) - use first one
+          queries = action[:queries] || action["queries"]
+          return queries.first if queries.is_a?(Array) && queries.any?
+
+          # Fallback to top-level query (legacy)
+          item[:query] || item["query"]
         end
 
-        def extract_web_search_sources(item)
-          sources = item[:sources] || item["sources"] || []
+        # Extract sources from web_search_call.action.sources
+        #
+        # This field is only present when the API call includes:
+        # include: ["web_search_call.action.sources"]
+        #
+        # @param item [Hash] web_search_call item
+        # @return [Array<Hash>] array of source objects (empty if not included)
+        def extract_web_search_sources_from_action(item)
+          action = item[:action] || item["action"] || {}
+          sources = action[:sources] || action["sources"] || []
+
           sources.map do |source|
             {
               title: source[:title] || source["title"],
               url: source[:url] || source["url"],
               snippet: source[:snippet] || source["snippet"]
             }
+          end
+        end
+
+        # Extract URL citations from message annotations
+        #
+        # Citations are always present in the response and show which URLs
+        # were actually cited in the response text.
+        #
+        # @param output [Array] the output array from Response API
+        # @return [Array<Hash>] array of citation objects
+        def extract_url_citations(output)
+          output.flat_map do |item|
+            next [] unless (item[:type] || item["type"]) == "message"
+
+            content = item[:content] || item["content"] || []
+            content.flat_map do |c|
+              annotations = c[:annotations] || c["annotations"] || []
+              annotations.filter_map do |ann|
+                next unless (ann[:type] || ann["type"]) == "url_citation"
+
+                {
+                  title: ann[:title] || ann["title"],
+                  url: ann[:url] || ann["url"],
+                  start_index: ann[:start_index] || ann["start_index"],
+                  end_index: ann[:end_index] || ann["end_index"]
+                }
+              end
+            end
           end
         end
 

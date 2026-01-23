@@ -10,13 +10,17 @@
     <% config = metadata['config'] || {} %>
     <% web_search_count = metadata['web_search_count'] || 0 %>
     <% queries = metadata['queries'] || [] %>
-    <% sources = metadata['sources'] || [] %>
+    <% sources_consulted = metadata['sources_consulted'] || 0 %>
+    <% sources_consulted_list = metadata['sources_consulted_list'] || [] %>
+    <% sources_cited = metadata['sources_cited'] || 0 %>
+    <% sources_cited_list = metadata['sources_cited_list'] || [] %>
     <% expected_queries = metadata['expected_queries'] || [] %>
     <% expected_domains = metadata['expected_domains'] || [] %>
     <% matched_queries = metadata['matched_queries'] || [] %>
     <% matched_domains = metadata['matched_domains'] || [] %>
     <% require_web_search = config['require_web_search'] %>
-    <% min_sources = config['min_sources'] || 0 %>
+    <% min_sources_consulted = config['min_sources_consulted'] || 0 %>
+    <% min_sources_cited = config['min_sources_cited'] || 0 %>
     <% threshold_score = config['threshold_score'] || 80 %>
 
     <!-- Overall Score and Status -->
@@ -62,17 +66,48 @@
         <div class="card">
           <div class="card-body">
             <h6 class="card-title"><i class="bi bi-link-45deg"></i> Sources Found</h6>
-            <p class="mb-2"><strong>Total Sources:</strong> <%= sources.count %></p>
-            <% if min_sources > 0 %>
-              <p class="mb-0">
-                <strong>Minimum Required:</strong> <%= min_sources %>
-                <% if sources.count >= min_sources %>
-                  <span class="badge bg-success ms-1"><i class="bi bi-check"></i> Met</span>
-                <% else %>
-                  <span class="badge bg-danger ms-1"><i class="bi bi-x"></i> Not Met</span>
-                <% end %>
+
+            <!-- Sources Consulted -->
+            <div class="mb-3">
+              <p class="mb-1">
+                <i class="bi bi-search text-info"></i>
+                <strong>Sources Consulted:</strong> <%= sources_consulted %>
+                <small class="text-muted">(URLs researched)</small>
               </p>
-            <% end %>
+              <% if min_sources_consulted > 0 %>
+                <p class="mb-0 ms-3">
+                  <small>
+                    <strong>Minimum Required:</strong> <%= min_sources_consulted %>
+                    <% if sources_consulted >= min_sources_consulted %>
+                      <span class="badge bg-success ms-1"><i class="bi bi-check"></i> Met</span>
+                    <% else %>
+                      <span class="badge bg-danger ms-1"><i class="bi bi-x"></i> Not Met</span>
+                    <% end %>
+                  </small>
+                </p>
+              <% end %>
+            </div>
+
+            <!-- Sources Cited -->
+            <div class="mb-0">
+              <p class="mb-1">
+                <i class="bi bi-quote text-warning"></i>
+                <strong>Sources Cited:</strong> <%= sources_cited %>
+                <small class="text-muted">(URLs referenced)</small>
+              </p>
+              <% if min_sources_cited > 0 %>
+                <p class="mb-0 ms-3">
+                  <small>
+                    <strong>Minimum Required:</strong> <%= min_sources_cited %>
+                    <% if sources_cited >= min_sources_cited %>
+                      <span class="badge bg-success ms-1"><i class="bi bi-check"></i> Met</span>
+                    <% else %>
+                      <span class="badge bg-danger ms-1"><i class="bi bi-x"></i> Not Met</span>
+                    <% end %>
+                  </small>
+                </p>
+              <% end %>
+            </div>
           </div>
         </div>
       </div>
@@ -161,48 +196,126 @@
     <% end %>
 
     <!-- Source Details -->
-    <% if sources.any? %>
+    <% if sources_consulted_list.any? || sources_cited_list.any? %>
       <div class="mb-3">
         <h6><i class="bi bi-file-earmark-text"></i> Source Details</h6>
-        <div class="accordion" id="sourcesAccordion">
-          <% sources.first(10).each_with_index do |source, index| %>
-            <div class="accordion-item">
-              <h2 class="accordion-header" id="heading<%= index %>">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<%= index %>" aria-expanded="false" aria-controls="collapse<%= index %>">
-                  <i class="bi bi-link-45deg me-2"></i>
-                  <small><%= truncate(source['title'] || source['url'] || "Source #{index + 1}", length: 80) %></small>
-                </button>
-              </h2>
-              <div id="collapse<%= index %>" class="accordion-collapse collapse" aria-labelledby="heading<%= index %>" data-bs-parent="#sourcesAccordion">
-                <div class="accordion-body">
-                  <% if source['url'].present? %>
-                    <p class="mb-2">
-                      <strong>URL:</strong>
-                      <a href="<%= source['url'] %>" target="_blank" rel="noopener noreferrer" class="text-break">
-                        <%= source['url'] %>
-                        <i class="bi bi-box-arrow-up-right ms-1"></i>
-                      </a>
-                    </p>
-                  <% end %>
-                  <% if source['title'].present? %>
-                    <p class="mb-2"><strong>Title:</strong> <%= source['title'] %></p>
-                  <% end %>
-                  <% if source['snippet'].present? %>
-                    <p class="mb-0">
-                      <strong>Snippet:</strong><br>
-                      <small class="text-muted"><%= source['snippet'] %></small>
-                    </p>
-                  <% end %>
-                </div>
+
+        <!-- Nav tabs for consulted vs cited -->
+        <ul class="nav nav-tabs" id="sourceTabs" role="tablist">
+          <% if sources_consulted_list.any? %>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="consulted-tab" data-bs-toggle="tab" data-bs-target="#consulted" type="button" role="tab" aria-controls="consulted" aria-selected="true">
+                <i class="bi bi-search"></i> Sources Consulted (<%= sources_consulted %>)
+              </button>
+            </li>
+          <% end %>
+          <% if sources_cited_list.any? %>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link <%= sources_consulted_list.empty? ? 'active' : '' %>" id="cited-tab" data-bs-toggle="tab" data-bs-target="#cited" type="button" role="tab" aria-controls="cited" aria-selected="<%= sources_consulted_list.empty? %>">
+                <i class="bi bi-quote"></i> Sources Cited (<%= sources_cited %>)
+              </button>
+            </li>
+          <% end %>
+        </ul>
+
+        <!-- Tab content -->
+        <div class="tab-content border border-top-0 p-3" id="sourceTabContent">
+          <!-- Sources Consulted Tab -->
+          <% if sources_consulted_list.any? %>
+            <div class="tab-pane fade show active" id="consulted" role="tabpanel" aria-labelledby="consulted-tab">
+              <p class="text-muted mb-3">
+                <small><i class="bi bi-info-circle"></i> These are all URLs the model researched during web search.</small>
+              </p>
+              <div class="accordion" id="consultedAccordion">
+                <% sources_consulted_list.first(10).each_with_index do |source, index| %>
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="consultedHeading<%= index %>">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#consultedCollapse<%= index %>" aria-expanded="false" aria-controls="consultedCollapse<%= index %>">
+                        <i class="bi bi-link-45deg me-2"></i>
+                        <small><%= truncate(source['title'] || source['url'] || "Source #{index + 1}", length: 80) %></small>
+                      </button>
+                    </h2>
+                    <div id="consultedCollapse<%= index %>" class="accordion-collapse collapse" aria-labelledby="consultedHeading<%= index %>" data-bs-parent="#consultedAccordion">
+                      <div class="accordion-body">
+                        <% if source['url'].present? %>
+                          <p class="mb-2">
+                            <strong>URL:</strong>
+                            <a href="<%= source['url'] %>" target="_blank" rel="noopener noreferrer" class="text-break">
+                              <%= source['url'] %>
+                              <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                          </p>
+                        <% end %>
+                        <% if source['title'].present? %>
+                          <p class="mb-2"><strong>Title:</strong> <%= source['title'] %></p>
+                        <% end %>
+                        <% if source['snippet'].present? %>
+                          <p class="mb-0">
+                            <strong>Snippet:</strong><br>
+                            <small class="text-muted"><%= source['snippet'] %></small>
+                          </p>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
               </div>
+              <% if sources_consulted_list.count > 10 %>
+                <div class="alert alert-info mt-2 mb-0">
+                  <i class="bi bi-info-circle"></i> Showing first 10 of <%= sources_consulted_list.count %> sources consulted
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <!-- Sources Cited Tab -->
+          <% if sources_cited_list.any? %>
+            <div class="tab-pane fade <%= sources_consulted_list.empty? ? 'show active' : '' %>" id="cited" role="tabpanel" aria-labelledby="cited-tab">
+              <p class="text-muted mb-3">
+                <small><i class="bi bi-info-circle"></i> These are URLs the model actually referenced in its response.</small>
+              </p>
+              <div class="accordion" id="citedAccordion">
+                <% sources_cited_list.first(10).each_with_index do |source, index| %>
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="citedHeading<%= index %>">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#citedCollapse<%= index %>" aria-expanded="false" aria-controls="citedCollapse<%= index %>">
+                        <i class="bi bi-link-45deg me-2"></i>
+                        <small><%= truncate(source['title'] || source['url'] || "Source #{index + 1}", length: 80) %></small>
+                      </button>
+                    </h2>
+                    <div id="citedCollapse<%= index %>" class="accordion-collapse collapse" aria-labelledby="citedHeading<%= index %>" data-bs-parent="#citedAccordion">
+                      <div class="accordion-body">
+                        <% if source['url'].present? %>
+                          <p class="mb-2">
+                            <strong>URL:</strong>
+                            <a href="<%= source['url'] %>" target="_blank" rel="noopener noreferrer" class="text-break">
+                              <%= source['url'] %>
+                              <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                          </p>
+                        <% end %>
+                        <% if source['title'].present? %>
+                          <p class="mb-2"><strong>Title:</strong> <%= source['title'] %></p>
+                        <% end %>
+                        <% if source['snippet'].present? %>
+                          <p class="mb-0">
+                            <strong>Snippet:</strong><br>
+                            <small class="text-muted"><%= source['snippet'] %></small>
+                          </p>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+              <% if sources_cited_list.count > 10 %>
+                <div class="alert alert-info mt-2 mb-0">
+                  <i class="bi bi-info-circle"></i> Showing first 10 of <%= sources_cited_list.count %> sources cited
+                </div>
+              <% end %>
             </div>
           <% end %>
         </div>
-        <% if sources.count > 10 %>
-          <div class="alert alert-info mt-2 mb-0">
-            <i class="bi bi-info-circle"></i> Showing first 10 of <%= sources.count %> sources
-          </div>
-        <% end %>
       </div>
     <% end %>
 

@@ -11,7 +11,7 @@ RSpec.describe PromptTracker::GenerateDatasetRowsJob, type: :job do
     before do
       # Stub Turbo Stream broadcasts
       allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
-      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_append_to)
 
       # Stub DatasetRow broadcasts to avoid route helper issues in tests
       allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_prepend_to_dataset)

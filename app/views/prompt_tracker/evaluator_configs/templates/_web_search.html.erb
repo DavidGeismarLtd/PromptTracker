@@ -6,23 +6,24 @@
     <i class="bi bi-globe"></i>
     Web Search
   </h6>
-  
+
   <% require_web_search = config.key?('require_web_search') ? config['require_web_search'] : (config.key?(:require_web_search) ? config[:require_web_search] : true) %>
   <% expected_queries = config['expected_queries'] || config[:expected_queries] || [] %>
   <% expected_queries = expected_queries.is_a?(Array) ? expected_queries : expected_queries.to_s.split("\n").map(&:strip).reject(&:empty?) %>
   <% expected_domains = config['expected_domains'] || config[:expected_domains] || [] %>
   <% expected_domains = expected_domains.is_a?(Array) ? expected_domains : expected_domains.to_s.split("\n").map(&:strip).reject(&:empty?) %>
   <% require_all_domains = config['require_all_domains'] || config[:require_all_domains] || false %>
-  <% min_sources = config['min_sources'] || config[:min_sources] || 0 %>
+  <% min_sources_consulted = config['min_sources_consulted'] || config[:min_sources_consulted] || 0 %>
+  <% min_sources_cited = config['min_sources_cited'] || config[:min_sources_cited] || 0 %>
   <% threshold_score = config['threshold_score'] || config[:threshold_score] || 100 %>
-  
+
   <div class="mb-2">
     <strong>Web Search Required:</strong>
     <span class="badge <%= require_web_search ? 'bg-success' : 'bg-secondary' %>">
       <%= require_web_search ? 'Yes' : 'No' %>
     </span>
   </div>
-  
+
   <% if expected_queries.any? %>
     <div class="mb-2">
       <strong>Expected Queries:</strong>
@@ -35,7 +36,7 @@
       </div>
     </div>
   <% end %>
-  
+
   <% if expected_domains.any? %>
     <div class="mb-2">
       <strong>Expected Domains:</strong>
@@ -51,19 +52,27 @@
       </span>
     </div>
   <% end %>
-  
-  <% if min_sources.to_i > 0 %>
+
+  <% if min_sources_consulted.to_i > 0 %>
     <div class="mb-2">
-      <strong>Minimum Sources:</strong>
-      <span class="badge bg-warning-subtle text-warning">
-        <%= min_sources %> source(s)
+      <strong>Min Sources Consulted:</strong>
+      <span class="badge bg-info-subtle text-info">
+        <i class="bi bi-search"></i> <%= min_sources_consulted %> URL(s)
       </span>
     </div>
   <% end %>
-  
+
+  <% if min_sources_cited.to_i > 0 %>
+    <div class="mb-2">
+      <strong>Min Sources Cited:</strong>
+      <span class="badge bg-warning-subtle text-warning">
+        <i class="bi bi-quote"></i> <%= min_sources_cited %> URL(s)
+      </span>
+    </div>
+  <% end %>
+
   <div class="text-muted small">
     <i class="bi bi-info-circle"></i>
     Threshold: <%= threshold_score %>%
   </div>
 </div>
-

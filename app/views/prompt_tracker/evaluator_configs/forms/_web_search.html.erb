@@ -10,7 +10,8 @@
 <% expected_domains = config['expected_domains'] || config[:expected_domains] || [] %>
 <% expected_domains = expected_domains.is_a?(Array) ? expected_domains : expected_domains.to_s.split("\n").map(&:strip).reject(&:empty?) %>
 <% require_all_domains = config.key?('require_all_domains') ? config['require_all_domains'] : (config.key?(:require_all_domains) ? config[:require_all_domains] : false) %>
-<% min_sources = config['min_sources'] || config[:min_sources] || 0 %>
+<% min_sources_consulted = config['min_sources_consulted'] || config[:min_sources_consulted] || 0 %>
+<% min_sources_cited = config['min_sources_cited'] || config[:min_sources_cited] || 0 %>
 <% threshold_score = config['threshold_score'] || config[:threshold_score] || 100 %>
 
 <div class="alert alert-info mb-3">
@@ -88,17 +89,49 @@
   </small>
 </div>
 
-<!-- Minimum Sources -->
+<!-- Sources vs Citations Explanation -->
+<div class="alert alert-secondary mb-3">
+  <i class="bi bi-info-circle"></i>
+  <strong>Understanding Sources vs Citations</strong>
+  <p class="mb-1 mt-2">
+    <strong><i class="bi bi-search"></i> Sources Consulted:</strong> All URLs the model researched (comprehensive list).
+    Requires the API to be called with <code>include: ["web_search_call.action.sources"]</code>.
+  </p>
+  <p class="mb-0">
+    <strong><i class="bi bi-quote"></i> Sources Cited:</strong> URLs the model actually referenced in its response (selective list).
+    Always available in the response annotations.
+  </p>
+</div>
+
+<!-- Minimum Sources Consulted -->
 <div class="mb-3">
-  <label class="form-label">Minimum Sources Required</label>
+  <label class="form-label">
+    <i class="bi bi-search"></i> Minimum Sources Consulted
+  </label>
   <input type="number"
-         name="<%= namespace %>[min_sources]"
+         name="<%= namespace %>[min_sources_consulted]"
          class="form-control"
-         value="<%= min_sources %>"
+         value="<%= min_sources_consulted %>"
          min="0"
          max="20">
   <small class="form-text text-muted">
-    Minimum number of sources (URLs) that must be returned. Set to 0 to skip this check.
+    Minimum number of URLs the model should research. Measures research breadth. Set to 0 to skip this check.
+  </small>
+</div>
+
+<!-- Minimum Sources Cited -->
+<div class="mb-3">
+  <label class="form-label">
+    <i class="bi bi-quote"></i> Minimum Sources Cited
+  </label>
+  <input type="number"
+         name="<%= namespace %>[min_sources_cited]"
+         class="form-control"
+         value="<%= min_sources_cited %>"
+         min="0"
+         max="20">
+  <small class="form-text text-muted">
+    Minimum number of URLs the model should cite in its response. Measures source attribution. Set to 0 to skip this check.
   </small>
 </div>
 
@@ -122,9 +155,14 @@
   <ul class="mb-0 mt-2">
     <li>The evaluator checks for web_search_call items in the Response API output</li>
     <li>It validates queries against expected query terms (partial, case-insensitive matching)</li>
-    <li>It validates source URLs against expected domains</li>
-    <li>Score = weighted average of: query match, domain match, and source count metrics</li>
+    <li>It validates source URLs against expected domains (checks both consulted and cited sources)</li>
+    <li>It tracks two distinct metrics:
+      <ul>
+        <li><strong>Sources Consulted:</strong> Comprehensive research (requires <code>include</code> parameter)</li>
+        <li><strong>Sources Cited:</strong> Selective attribution (always available)</li>
+      </ul>
+    </li>
+    <li>Score = weighted average of: base (40pts), query match (30pts), domain match (20pts), sources consulted (5pts), sources cited (5pts)</li>
     <li>Pass/fail depends on whether all requirements are met and the threshold score</li>
   </ul>
 </div>
-

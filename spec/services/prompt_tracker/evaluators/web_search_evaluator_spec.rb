@@ -74,7 +74,8 @@ module PromptTracker
           expect(schema).to have_key(:require_web_search)
           expect(schema).to have_key(:expected_queries)
           expect(schema).to have_key(:expected_domains)
-          expect(schema).to have_key(:min_sources)
+          expect(schema).to have_key(:min_sources_consulted)
+          expect(schema).to have_key(:min_sources_cited)
           expect(schema).to have_key(:threshold_score)
         end
       end
@@ -171,7 +172,10 @@ module PromptTracker
 
           expect(metadata["web_search_count"]).to eq(1)
           expect(metadata["queries"]).to include("Ruby on Rails web framework features 2024")
-          expect(metadata["sources"].length).to eq(2)
+          expect(metadata["sources_consulted"]).to eq(2)
+          expect(metadata["sources_consulted_list"].length).to eq(2)
+          expect(metadata["sources_cited"]).to eq(0)
+          expect(metadata["sources_cited_list"].length).to eq(0)
         end
       end
 
@@ -241,16 +245,25 @@ module PromptTracker
       end
 
       describe "min_sources requirement" do
-        context "when enough sources" do
-          let(:config) { { require_web_search: true, min_sources: 2 } }
+        context "when enough sources consulted" do
+          let(:config) { { require_web_search: true, min_sources_consulted: 2 } }
 
           it "passes" do
             expect(evaluator.passed?).to be true
           end
         end
 
-        context "when not enough sources" do
-          let(:config) { { require_web_search: true, min_sources: 5 } }
+        context "when not enough sources consulted" do
+          let(:config) { { require_web_search: true, min_sources_consulted: 5 } }
+
+          it "reduces score" do
+            score = evaluator.evaluate_score
+            expect(score).to be < 100
+          end
+        end
+
+        context "when not enough sources cited" do
+          let(:config) { { require_web_search: true, min_sources_cited: 5 } }
 
           it "reduces score" do
             score = evaluator.evaluate_score

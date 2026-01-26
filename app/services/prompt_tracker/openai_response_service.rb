@@ -152,11 +152,14 @@ module PromptTracker
 
     # Check if web search tool is enabled
     #
+    # Tools are always passed as symbols (e.g., :web_search) or hashes with symbol keys
+    # (e.g., { type: "web_search_preview" }). Callers convert from database strings to symbols.
+    #
     # @return [Boolean] true if web search tool is present
     def has_web_search_tool?
       tools.any? do |tool|
-        tool.is_a?(Symbol) && [ :web_search, :web_search_preview ].include?(tool.to_sym) ||
-        tool.is_a?(Hash) && [ "web_search", "web_search_preview" ].include?(tool[:type] || tool["type"])
+        tool.is_a?(Symbol) && [ :web_search, :web_search_preview ].include?(tool) ||
+        tool.is_a?(Hash) && [ "web_search", "web_search_preview" ].include?(tool[:type])
       end
     end
 
@@ -194,10 +197,12 @@ module PromptTracker
 
     # Format file_search tool with optional vector_store_ids
     #
+    # tool_config comes from database JSONB and always uses string keys
+    #
     # @return [Hash] formatted file_search tool
     def format_file_search_tool
-      file_search_config = tool_config.dig("file_search") || tool_config.dig(:file_search) || {}
-      vector_store_ids = file_search_config["vector_store_ids"] || file_search_config[:vector_store_ids] || []
+      file_search_config = tool_config["file_search"] || {}
+      vector_store_ids = file_search_config["vector_store_ids"] || []
 
       tool_hash = { type: "file_search" }
       tool_hash[:vector_store_ids] = vector_store_ids if vector_store_ids.any?
@@ -206,17 +211,19 @@ module PromptTracker
 
     # Format custom function definitions into API format
     #
+    # tool_config and function hashes come from database JSONB and always use string keys
+    #
     # @return [Array<Hash>] formatted function tools
     def format_function_tools
-      functions = tool_config.dig("functions") || tool_config.dig(:functions) || []
+      functions = tool_config["functions"] || []
 
       functions.map do |func|
         {
           type: "function",
-          name: func["name"] || func[:name],
-          description: func["description"] || func[:description] || "",
-          parameters: func["parameters"] || func[:parameters] || {},
-          strict: func["strict"] || func[:strict] || false
+          name: func["name"],
+          description: func["description"] || "",
+          parameters: func["parameters"] || {},
+          strict: func["strict"] || false
         }
       end
     end

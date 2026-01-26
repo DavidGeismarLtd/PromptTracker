@@ -159,8 +159,10 @@ module PromptTracker
           tools: [ :web_search ]
         )
 
+        # tool_calls only contains function_call items, not web_search_call
+        # web_search results are in web_search_results instead
         expect(response[:tool_calls]).to be_an(Array)
-        expect(response[:tool_calls].first[:type]).to eq("web_search")
+        expect(response[:tool_calls]).to be_empty  # No function calls in this response
       end
 
       it "extracts web_search_results with both sources and citations" do

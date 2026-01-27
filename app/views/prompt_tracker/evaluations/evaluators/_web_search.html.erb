@@ -201,17 +201,17 @@
         <h6><i class="bi bi-file-earmark-text"></i> Source Details</h6>
 
         <!-- Nav tabs for consulted vs cited -->
-        <ul class="nav nav-tabs" id="sourceTabs" role="tablist">
+        <ul class="nav nav-tabs" id="sourceTabs-<%= evaluation.id %>" role="tablist">
           <% if sources_consulted_list.any? %>
             <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="consulted-tab" data-bs-toggle="tab" data-bs-target="#consulted" type="button" role="tab" aria-controls="consulted" aria-selected="true">
+              <button class="nav-link active" id="consulted-tab-<%= evaluation.id %>" data-bs-toggle="tab" data-bs-target="#consulted-<%= evaluation.id %>" type="button" role="tab" aria-controls="consulted-<%= evaluation.id %>" aria-selected="true">
                 <i class="bi bi-search"></i> Sources Consulted (<%= sources_consulted %>)
               </button>
             </li>
           <% end %>
           <% if sources_cited_list.any? %>
             <li class="nav-item" role="presentation">
-              <button class="nav-link <%= sources_consulted_list.empty? ? 'active' : '' %>" id="cited-tab" data-bs-toggle="tab" data-bs-target="#cited" type="button" role="tab" aria-controls="cited" aria-selected="<%= sources_consulted_list.empty? %>">
+              <button class="nav-link <%= sources_consulted_list.empty? ? 'active' : '' %>" id="cited-tab-<%= evaluation.id %>" data-bs-toggle="tab" data-bs-target="#cited-<%= evaluation.id %>" type="button" role="tab" aria-controls="cited-<%= evaluation.id %>" aria-selected="<%= sources_consulted_list.empty? %>">
                 <i class="bi bi-quote"></i> Sources Cited (<%= sources_cited %>)
               </button>
             </li>
@@ -219,23 +219,23 @@
         </ul>
 
         <!-- Tab content -->
-        <div class="tab-content border border-top-0 p-3" id="sourceTabContent">
+        <div class="tab-content border border-top-0 p-3" id="sourceTabContent-<%= evaluation.id %>">
           <!-- Sources Consulted Tab -->
           <% if sources_consulted_list.any? %>
-            <div class="tab-pane fade show active" id="consulted" role="tabpanel" aria-labelledby="consulted-tab">
+            <div class="tab-pane fade show active" id="consulted-<%= evaluation.id %>" role="tabpanel" aria-labelledby="consulted-tab-<%= evaluation.id %>">
               <p class="text-muted mb-3">
                 <small><i class="bi bi-info-circle"></i> These are all URLs the model researched during web search.</small>
               </p>
-              <div class="accordion" id="consultedAccordion">
+              <div class="accordion" id="consultedAccordion-<%= evaluation.id %>">
                 <% sources_consulted_list.first(10).each_with_index do |source, index| %>
                   <div class="accordion-item">
-                    <h2 class="accordion-header" id="consultedHeading<%= index %>">
-                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#consultedCollapse<%= index %>" aria-expanded="false" aria-controls="consultedCollapse<%= index %>">
+                    <h2 class="accordion-header" id="consultedHeading-<%= evaluation.id %>-<%= index %>">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#consultedCollapse-<%= evaluation.id %>-<%= index %>" aria-expanded="false" aria-controls="consultedCollapse-<%= evaluation.id %>-<%= index %>">
                         <i class="bi bi-link-45deg me-2"></i>
                         <small><%= truncate(source['title'] || source['url'] || "Source #{index + 1}", length: 80) %></small>
                       </button>
                     </h2>
-                    <div id="consultedCollapse<%= index %>" class="accordion-collapse collapse" aria-labelledby="consultedHeading<%= index %>" data-bs-parent="#consultedAccordion">
+                    <div id="consultedCollapse-<%= evaluation.id %>-<%= index %>" class="accordion-collapse collapse" aria-labelledby="consultedHeading-<%= evaluation.id %>-<%= index %>" data-bs-parent="#consultedAccordion-<%= evaluation.id %>">
                       <div class="accordion-body">
                         <% if source['url'].present? %>
                           <p class="mb-2">
@@ -270,20 +270,20 @@
 
           <!-- Sources Cited Tab -->
           <% if sources_cited_list.any? %>
-            <div class="tab-pane fade <%= sources_consulted_list.empty? ? 'show active' : '' %>" id="cited" role="tabpanel" aria-labelledby="cited-tab">
+            <div class="tab-pane fade <%= sources_consulted_list.empty? ? 'show active' : '' %>" id="cited-<%= evaluation.id %>" role="tabpanel" aria-labelledby="cited-tab-<%= evaluation.id %>">
               <p class="text-muted mb-3">
                 <small><i class="bi bi-info-circle"></i> These are URLs the model actually referenced in its response.</small>
               </p>
-              <div class="accordion" id="citedAccordion">
+              <div class="accordion" id="citedAccordion-<%= evaluation.id %>">
                 <% sources_cited_list.first(10).each_with_index do |source, index| %>
                   <div class="accordion-item">
-                    <h2 class="accordion-header" id="citedHeading<%= index %>">
-                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#citedCollapse<%= index %>" aria-expanded="false" aria-controls="citedCollapse<%= index %>">
+                    <h2 class="accordion-header" id="citedHeading-<%= evaluation.id %>-<%= index %>">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#citedCollapse-<%= evaluation.id %>-<%= index %>" aria-expanded="false" aria-controls="citedCollapse-<%= evaluation.id %>-<%= index %>">
                         <i class="bi bi-link-45deg me-2"></i>
                         <small><%= truncate(source['title'] || source['url'] || "Source #{index + 1}", length: 80) %></small>
                       </button>
                     </h2>
-                    <div id="citedCollapse<%= index %>" class="accordion-collapse collapse" aria-labelledby="citedHeading<%= index %>" data-bs-parent="#citedAccordion">
+                    <div id="citedCollapse-<%= evaluation.id %>-<%= index %>" class="accordion-collapse collapse" aria-labelledby="citedHeading-<%= evaluation.id %>-<%= index %>" data-bs-parent="#citedAccordion-<%= evaluation.id %>">
                       <div class="accordion-body">
                         <% if source['url'].present? %>
                           <p class="mb-2">

@@ -84,11 +84,13 @@ module PromptTracker
 
     private
 
-    # Broadcast prepend to dataset rows table
+    # Broadcast append to dataset rows table
+    # Uses append instead of prepend to maintain ascending ID order (1, 2, 3...)
+    # matching the initial table render and pagination order
     def broadcast_prepend_to_dataset
       partial_path, locals = row_partial_and_locals
 
-      broadcast_prepend_to(
+      broadcast_append_to(
         "dataset_#{dataset_id}_rows",
         target: "dataset-rows",
         partial: partial_path,

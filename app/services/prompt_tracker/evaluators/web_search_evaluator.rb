@@ -28,7 +28,8 @@ module PromptTracker
         require_all_queries: false,      # If true, ALL query terms must be found
         expected_domains: [],            # Optional: domains that should appear in results
         require_all_domains: false,      # If true, ALL domains must be found
-        min_sources: 0,                  # Minimum number of sources returned
+        min_sources_consulted: 0,        # Minimum URLs the model should research (from action.sources)
+        min_sources_cited: 0,            # Minimum URLs the model should cite (from annotations)
         threshold_score: 80
       }.freeze
 
@@ -40,7 +41,8 @@ module PromptTracker
           require_all_queries: { type: :boolean },
           expected_domains: { type: :array },
           require_all_domains: { type: :boolean },
-          min_sources: { type: :integer },
+          min_sources_consulted: { type: :integer },
+          min_sources_cited: { type: :integer },
           threshold_score: { type: :integer }
         }
       end
@@ -73,10 +75,10 @@ module PromptTracker
 
         score_components = []
 
-        # Base score for using web search
+        # Base score for using web search (40 points)
         score_components << 40
 
-        # Score for queries matched
+        # Score for queries matched (30 points)
         if expected_queries.any?
           query_score = calculate_query_match_score
           score_components << (query_score * 0.3)
@@ -84,21 +86,28 @@ module PromptTracker
           score_components << 30
         end
 
-        # Score for domains matched
+        # Score for domains matched (20 points)
         if expected_domains.any?
           domain_score = calculate_domain_match_score
           score_components << (domain_score * 0.2)
         else
           score_components << 20
-
         end
 
-        # Score for minimum sources
-        if config[:min_sources].to_i > 0
-          sources_score = calculate_sources_score
-          score_components << (sources_score * 0.1)
+        # Score for sources consulted (5 points)
+        if config[:min_sources_consulted].to_i > 0
+          consulted_score = calculate_sources_consulted_score
+          score_components << (consulted_score * 0.05)
         else
-          score_components << 10
+          score_components << 5
+        end
+
+        # Score for sources cited (5 points)
+        if config[:min_sources_cited].to_i > 0
+          cited_score = calculate_sources_cited_score
+          score_components << (cited_score * 0.05)
+        else
+          score_components << 5
         end
 
         score_components.sum.round(2)
@@ -116,7 +125,8 @@ module PromptTracker
           "Web Search Evaluation Results:",
           "Searches performed: #{web_search_results.count}",
           "Queries: #{all_queries.any? ? all_queries.join(', ') : 'None detected'}",
-          "Total sources: #{all_sources.count}"
+          "Sources consulted: #{sources_consulted_count} (URLs researched)",
+          "Sources cited: #{sources_cited_count} (URLs referenced in response)"
         ]
 
         if expected_queries.any?
@@ -131,6 +141,14 @@ module PromptTracker
           feedback_parts << "Matched domains: #{matched.any? ? matched.join(', ') : 'None'}"
         end
 
+        if config[:min_sources_consulted].to_i > 0
+          feedback_parts << "Min sources consulted required: #{config[:min_sources_consulted]}"
+        end
+
+        if config[:min_sources_cited].to_i > 0
+          feedback_parts << "Min sources cited required: #{config[:min_sources_cited]}"
+        end
+
         feedback_parts << (passed? ? "✓ Web search requirements met." : "✗ Some requirements not met.")
         feedback_parts.join("\n")
       end
@@ -142,7 +160,10 @@ module PromptTracker
         super.merge(
           "web_search_count" => web_search_results.count,
           "queries" => all_queries,
-          "sources" => all_sources,
+          "sources_consulted" => sources_consulted_count,
+          "sources_consulted_list" => all_sources_consulted,
+          "sources_cited" => sources_cited_count,
+          "sources_cited_list" => all_sources_cited,
           "matched_queries" => matched_queries,
           "matched_domains" => matched_domains,
           "expected_queries" => expected_queries,
@@ -180,11 +201,58 @@ module PromptTracker
         @all_queries ||= web_search_results.filter_map { |ws| ws[:query] }.uniq
       end
 
-      # Get all sources from web search results
+      # Get all sources consulted (from action.sources)
       #
-      # @return [Array<Hash>] all sources returned
+      # These are the comprehensive list of URLs the model researched.
+      # Only available when API is called with include: ["web_search_call.action.sources"]
+      #
+      # Deduplicates by URL to prevent counting the same source multiple times
+      # when multiple web_search_call items share the same source pool.
+      #
+      # @return [Array<Hash>] all sources consulted (deduplicated by URL)
+      def all_sources_consulted
+        @all_sources_consulted ||= web_search_results
+          .flat_map { |ws| ws[:sources] || [] }
+          .uniq { |source| source[:url] }
+      end
+
+      # Get all sources cited (from annotations)
+      #
+      # These are the URLs the model actually referenced in its response.
+      # Always available in the response annotations.
+      #
+      # Deduplicates by URL to prevent counting the same citation multiple times
+      # when multiple web_search_call items share the same citation pool.
+      #
+      # @return [Array<Hash>] all sources cited (deduplicated by URL)
+      def all_sources_cited
+        @all_sources_cited ||= web_search_results
+          .flat_map { |ws| ws[:citations] || [] }
+          .uniq { |citation| citation[:url] }
+      end
+
+      # Get count of sources consulted (from action.sources)
+      #
+      # @return [Integer] number of sources consulted
+      def sources_consulted_count
+        @sources_consulted_count ||= all_sources_consulted.length
+      end
+
+      # Get count of sources cited (from annotations)
+      #
+      # @return [Integer] number of sources cited
+      def sources_cited_count
+        @sources_cited_count ||= all_sources_cited.length
+      end
+
+      # Get all sources (hybrid fallback for backward compatibility)
+      #
+      # Prefer sources consulted, fall back to sources cited.
+      # This maintains backward compatibility with existing code.
+      #
+      # @return [Array<Hash>] all sources
       def all_sources
-        @all_sources ||= web_search_results.flat_map { |ws| ws[:sources] || [] }
+        @all_sources ||= all_sources_consulted.any? ? all_sources_consulted : all_sources_cited
       end
 
       # Find which expected queries were matched
@@ -198,12 +266,18 @@ module PromptTracker
 
       # Find which expected domains were found in sources
       #
+      # Checks both sources consulted and sources cited
+      #
       # @return [Array<String>] matched domains
       def matched_domains
         @matched_domains ||= begin
-          source_domains = all_sources.filter_map { |s| extract_domain(s[:url]) }
+          # Combine domains from both consulted and cited sources
+          consulted_domains = all_sources_consulted.filter_map { |s| extract_domain(s[:url]) }
+          cited_domains = all_sources_cited.filter_map { |s| extract_domain(s[:url]) }
+          all_domains = (consulted_domains + cited_domains).uniq
+
           expected_domains.select do |expected|
-            source_domains.any? { |domain| domain_matches?(domain, expected) }
+            all_domains.any? { |domain| domain_matches?(domain, expected) }
           end
         end
       end
@@ -274,14 +348,25 @@ module PromptTracker
         end
       end
 
-      # Calculate score for minimum sources requirement
+      # Calculate score for minimum sources consulted requirement
       #
       # @return [Float] score 0-100
-      def calculate_sources_score
-        min_required = config[:min_sources].to_i
+      def calculate_sources_consulted_score
+        min_required = config[:min_sources_consulted].to_i
         return 100 if min_required <= 0
 
-        actual = all_sources.count
+        actual = sources_consulted_count
+        actual >= min_required ? 100 : (actual.to_f / min_required * 100)
+      end
+
+      # Calculate score for minimum sources cited requirement
+      #
+      # @return [Float] score 0-100
+      def calculate_sources_cited_score
+        min_required = config[:min_sources_cited].to_i
+        return 100 if min_required <= 0
+
+        actual = sources_cited_count
         actual >= min_required ? 100 : (actual.to_f / min_required * 100)
       end
     end

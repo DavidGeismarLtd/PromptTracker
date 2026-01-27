@@ -74,7 +74,8 @@ module PromptTracker
           expect(schema).to have_key(:require_web_search)
           expect(schema).to have_key(:expected_queries)
           expect(schema).to have_key(:expected_domains)
-          expect(schema).to have_key(:min_sources)
+          expect(schema).to have_key(:min_sources_consulted)
+          expect(schema).to have_key(:min_sources_cited)
           expect(schema).to have_key(:threshold_score)
         end
       end
@@ -171,7 +172,10 @@ module PromptTracker
 
           expect(metadata["web_search_count"]).to eq(1)
           expect(metadata["queries"]).to include("Ruby on Rails web framework features 2024")
-          expect(metadata["sources"].length).to eq(2)
+          expect(metadata["sources_consulted"]).to eq(2)
+          expect(metadata["sources_consulted_list"].length).to eq(2)
+          expect(metadata["sources_cited"]).to eq(0)
+          expect(metadata["sources_cited_list"].length).to eq(0)
         end
       end
 
@@ -241,18 +245,170 @@ module PromptTracker
       end
 
       describe "min_sources requirement" do
-        context "when enough sources" do
-          let(:config) { { require_web_search: true, min_sources: 2 } }
+        context "when enough sources consulted" do
+          let(:config) { { require_web_search: true, min_sources_consulted: 2 } }
 
           it "passes" do
             expect(evaluator.passed?).to be true
           end
         end
 
-        context "when not enough sources" do
-          let(:config) { { require_web_search: true, min_sources: 5 } }
+        context "when not enough sources consulted" do
+          let(:config) { { require_web_search: true, min_sources_consulted: 5 } }
 
           it "reduces score" do
+            score = evaluator.evaluate_score
+            expect(score).to be < 100
+          end
+        end
+
+        context "when not enough sources cited" do
+          let(:config) { { require_web_search: true, min_sources_cited: 5 } }
+
+          it "reduces score" do
+            score = evaluator.evaluate_score
+            expect(score).to be < 100
+          end
+        end
+      end
+
+      describe "multiple web searches with shared citations" do
+        # This tests the fix for the citation duplication bug where
+        # extract_web_search_results assigns the full citations array to every web_search_call
+        let(:web_search_results) do
+          [
+            {
+              id: "ws-1",
+              status: "completed",
+              query: "Ruby programming",
+              sources: [
+                { title: "Ruby Lang", url: "https://ruby-lang.org", snippet: "Ruby is..." },
+                { title: "GitHub", url: "https://github.com", snippet: "GitHub is..." }
+              ],
+              citations: [
+                { title: "Ruby Lang", url: "https://ruby-lang.org", start_index: 0, end_index: 20 },
+                { title: "GitHub", url: "https://github.com", start_index: 21, end_index: 40 },
+                { title: "Stack Overflow", url: "https://stackoverflow.com", start_index: 41, end_index: 60 }
+              ]
+            },
+            {
+              id: "ws-2",
+              status: "completed",
+              query: "Python programming",
+              sources: [
+                { title: "Ruby Lang", url: "https://ruby-lang.org", snippet: "Ruby is..." },
+                { title: "Python Org", url: "https://python.org", snippet: "Python is..." }
+              ],
+              citations: [
+                { title: "Ruby Lang", url: "https://ruby-lang.org", start_index: 0, end_index: 20 },
+                { title: "GitHub", url: "https://github.com", start_index: 21, end_index: 40 },
+                { title: "Stack Overflow", url: "https://stackoverflow.com", start_index: 41, end_index: 60 }
+              ]
+            }
+          ]
+        end
+
+        let(:conversation_data) do
+          {
+            messages: [
+              { role: "user", content: "Compare Ruby and Python", turn: 1 },
+              { role: "assistant", content: "Based on my research...", turn: 1 }
+            ],
+            web_search_results: web_search_results
+          }
+        end
+
+        let(:config) { { require_web_search: true } }
+
+        it "deduplicates citations by URL to prevent multiplication" do
+          # Should count 3 unique citations, not 6 (3 citations × 2 web searches)
+          expect(evaluator.send(:all_sources_cited).length).to eq(3)
+        end
+
+        it "returns unique citation objects" do
+          cited = evaluator.send(:all_sources_cited)
+          urls = cited.map { |c| c[:url] }
+          expect(urls).to contain_exactly(
+            "https://ruby-lang.org",
+            "https://github.com",
+            "https://stackoverflow.com"
+          )
+        end
+
+        it "reports correct sources_cited_count in metadata" do
+          metadata = evaluator.metadata
+          expect(metadata["sources_cited"]).to eq(3)
+        end
+
+        it "includes deduplicated sources_cited_list in metadata" do
+          metadata = evaluator.metadata
+          expect(metadata["sources_cited_list"].length).to eq(3)
+        end
+
+        it "generates correct feedback with deduplicated count" do
+          feedback = evaluator.generate_feedback
+          expect(feedback).to include("Sources cited: 3")
+        end
+
+        context "with min_sources_cited requirement" do
+          let(:config) { { require_web_search: true, min_sources_cited: 3 } }
+
+          it "passes when deduplicated count meets requirement" do
+            expect(evaluator.passed?).to be true
+          end
+        end
+
+        context "with min_sources_cited requirement not met" do
+          let(:config) { { require_web_search: true, min_sources_cited: 5 } }
+
+          it "fails when deduplicated count does not meet requirement" do
+            score = evaluator.evaluate_score
+            expect(score).to be < 100
+          end
+        end
+
+        it "deduplicates sources consulted by URL to prevent multiplication" do
+          # Should count 3 unique sources, not 4 (2 sources in ws-1 + 2 sources in ws-2, with 1 duplicate)
+          expect(evaluator.send(:all_sources_consulted).length).to eq(3)
+        end
+
+        it "returns unique sources consulted objects" do
+          consulted = evaluator.send(:all_sources_consulted)
+          urls = consulted.map { |s| s[:url] }
+          expect(urls).to contain_exactly(
+            "https://ruby-lang.org",
+            "https://github.com",
+            "https://python.org"
+          )
+        end
+
+        it "reports correct sources_consulted_count in metadata" do
+          metadata = evaluator.metadata
+          expect(metadata["sources_consulted"]).to eq(3)
+        end
+
+        it "includes deduplicated sources_consulted_list in metadata" do
+          metadata = evaluator.metadata
+          expect(metadata["sources_consulted_list"].length).to eq(3)
+        end
+
+        it "generates correct feedback with deduplicated sources consulted count" do
+          feedback = evaluator.generate_feedback
+          expect(feedback).to include("Sources consulted: 3")
+        end
+
+        context "with min_sources_consulted requirement" do
+          let(:config) { { require_web_search: true, min_sources_consulted: 3 } }
+
+          it "passes when deduplicated count meets requirement" do
+            expect(evaluator.passed?).to be true
+          end
+        end
+
+        context "with min_sources_consulted requirement not met" do
+          let(:config) { { require_web_search: true, min_sources_consulted: 5 } }
+
+          it "fails when deduplicated count does not meet requirement" do
             score = evaluator.evaluate_score
             expect(score).to be < 100
           end

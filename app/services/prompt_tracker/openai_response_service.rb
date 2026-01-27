@@ -104,6 +104,7 @@ module PromptTracker
     # @return [Hash] normalized response
     def call
       response = client.responses.create(parameters: build_parameters)
+
       normalize_response(response)
     end
 
@@ -137,10 +138,33 @@ module PromptTracker
       params[:max_output_tokens] = max_tokens if max_tokens
       params[:tools] = format_tools(tools) if tools.any?
 
-      # Merge any additional options
-      params.merge!(options.except(:timeout))
+      # Include web search sources if web search tool is enabled
+      # This adds action.sources to web_search_call items in the response
+      if has_web_search_tool?
+        params[:include] = [ "web_search_call.action.sources" ]
+      end
+
+      # Merge any additional options, combining include arrays to prevent overwriting
+      if options[:include].present?
+        params[:include] = (params[:include] || []) + Array(options[:include])
+        params[:include].uniq!
+      end
+      params.merge!(options.except(:timeout, :include))
 
       params
+    end
+
+    # Check if web search tool is enabled
+    #
+    # Tools are always passed as symbols (e.g., :web_search) or hashes with symbol keys
+    # (e.g., { type: "web_search_preview" }). Callers convert from database strings to symbols.
+    #
+    # @return [Boolean] true if web search tool is present
+    def has_web_search_tool?
+      tools.any? do |tool|
+        tool.is_a?(Symbol) && [ :web_search, :web_search_preview ].include?(tool) ||
+        tool.is_a?(Hash) && [ "web_search", "web_search_preview" ].include?(tool[:type])
+      end
     end
 
     # Format tool symbols into API format
@@ -177,10 +201,12 @@ module PromptTracker
 
     # Format file_search tool with optional vector_store_ids
     #
+    # tool_config comes from database JSONB and always uses string keys
+    #
     # @return [Hash] formatted file_search tool
     def format_file_search_tool
-      file_search_config = tool_config.dig("file_search") || tool_config.dig(:file_search) || {}
-      vector_store_ids = file_search_config["vector_store_ids"] || file_search_config[:vector_store_ids] || []
+      file_search_config = tool_config["file_search"] || {}
+      vector_store_ids = file_search_config["vector_store_ids"] || []
 
       tool_hash = { type: "file_search" }
       tool_hash[:vector_store_ids] = vector_store_ids if vector_store_ids.any?
@@ -189,54 +215,60 @@ module PromptTracker
 
     # Format custom function definitions into API format
     #
+    # tool_config and function hashes come from database JSONB and always use string keys
+    #
     # @return [Array<Hash>] formatted function tools
     def format_function_tools
-      functions = tool_config.dig("functions") || tool_config.dig(:functions) || []
+      functions = tool_config["functions"] || []
 
       functions.map do |func|
         {
           type: "function",
-          name: func["name"] || func[:name],
-          description: func["description"] || func[:description] || "",
-          parameters: func["parameters"] || func[:parameters] || {},
-          strict: func["strict"] || func[:strict] || false
+          name: func["name"],
+          description: func["description"] || "",
+          parameters: func["parameters"] || {},
+          strict: func["strict"] || false
         }
       end
     end
 
-    # Normalize Response API response to standard format
+    # Normalize Response API response to standard format using ResponseApiNormalizer
+    #
+    # This delegates to ResponseApiNormalizer to ensure consistent normalization
+    # across the application and proper extraction of tool results (web_search_results,
+    # code_interpreter_results, file_search_results).
     #
     # @param response [Hash] raw API response
-    # @return [Hash] normalized response
+    # @return [Hash] normalized response with:
+    #   - :text [String] extracted text content
+    #   - :response_id [String] the response ID for conversation continuity
+    #   - :usage [Hash] token usage information
+    #   - :model [String] the model used
+    #   - :tool_calls [Array<Hash>] all tool calls (mixed types)
+    #   - :web_search_results [Array<Hash>] web search tool calls
+    #   - :code_interpreter_results [Array<Hash>] code interpreter tool calls
+    #   - :file_search_results [Array<Hash>] file search tool calls
+    #   - :raw [Hash] the original API response
     def normalize_response(response)
+      # Use ResponseApiNormalizer to extract tool results properly
+      normalizer = Evaluators::Normalizers::ResponseApiNormalizer.new
+      normalized = normalizer.normalize_single_response(response)
+
+      # Extract usage information (not handled by normalizer)
+      usage = extract_usage(response)
+
+      # Combine normalizer output with additional fields needed by executors
       {
-        text: extract_text(response),
+        text: normalized[:text],
         response_id: response["id"],
-        usage: extract_usage(response),
+        usage: usage,
         model: response["model"],
-        tool_calls: extract_tool_calls(response),
+        tool_calls: normalized[:tool_calls],
+        web_search_results: extract_web_search_results(response),
+        code_interpreter_results: extract_code_interpreter_results(response),
+        file_search_results: extract_file_search_results(response),
         raw: response
       }
-    end
-
-    # Extract text content from response output
-    #
-    # @param response [Hash] raw API response
-    # @return [String] extracted text
-    def extract_text(response)
-      output = response["output"] || []
-
-      # Find message output items and extract text content
-      text_parts = output.flat_map do |item|
-        next [] unless item["type"] == "message"
-
-        content = item["content"] || []
-        content.filter_map do |content_item|
-          content_item.dig("text") if content_item["type"] == "output_text"
-        end
-      end
-
-      text_parts.join("\n")
     end
 
     # Extract usage information
@@ -252,16 +284,31 @@ module PromptTracker
       }
     end
 
-    # Extract tool calls from response output
+    # Extract web search results from response output
     #
     # @param response [Hash] raw API response
-    # @return [Array<Hash>] tool calls
-    def extract_tool_calls(response)
-      output = response["output"] || []
+    # @return [Array<Hash>] web search results
+    def extract_web_search_results(response)
+      normalizer = Evaluators::Normalizers::ResponseApiNormalizer.new
+      normalizer.send(:extract_web_search_results, response["output"] || [])
+    end
 
-      output.select do |item|
-        %w[function_call web_search_call file_search_call code_interpreter_call].include?(item["type"])
-      end
+    # Extract code interpreter results from response output
+    #
+    # @param response [Hash] raw API response
+    # @return [Array<Hash>] code interpreter results
+    def extract_code_interpreter_results(response)
+      normalizer = Evaluators::Normalizers::ResponseApiNormalizer.new
+      normalizer.send(:extract_code_interpreter_results, response["output"] || [])
+    end
+
+    # Extract file search results from response output
+    #
+    # @param response [Hash] raw API response
+    # @return [Array<Hash>] file search results
+    def extract_file_search_results(response)
+      normalizer = Evaluators::Normalizers::ResponseApiNormalizer.new
+      normalizer.send(:extract_file_search_results, response["output"] || [])
     end
   end
 end

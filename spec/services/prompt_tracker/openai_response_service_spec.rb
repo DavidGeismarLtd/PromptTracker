@@ -51,6 +51,9 @@ module PromptTracker
         expect(response[:usage][:prompt_tokens]).to eq(25)
         expect(response[:usage][:completion_tokens]).to eq(15)
         expect(response[:usage][:total_tokens]).to eq(40)
+        expect(response[:web_search_results]).to eq([])
+        expect(response[:code_interpreter_results]).to eq([])
+        expect(response[:file_search_results]).to eq([])
         expect(response[:raw]).to eq(api_response)
       end
 
@@ -98,11 +101,33 @@ module PromptTracker
           "id" => "resp_xyz789",
           "model" => "gpt-4o-2024-08-06",
           "output" => [
-            { "type" => "web_search_call", "id" => "ws_123", "status" => "completed" },
+            {
+              "type" => "web_search_call",
+              "id" => "ws_123",
+              "status" => "completed",
+              "action" => {
+                "query" => "weather in Berlin",
+                "sources" => [
+                  { "title" => "Berlin Weather", "url" => "https://example.com", "snippet" => "Sunny" }
+                ]
+              }
+            },
             {
               "type" => "message",
               "content" => [
-                { "type" => "output_text", "text" => "Based on my search, the weather in Berlin is sunny." }
+                {
+                  "type" => "output_text",
+                  "text" => "Based on my search, the weather in Berlin is sunny.",
+                  "annotations" => [
+                    {
+                      "type" => "url_citation",
+                      "title" => "Berlin Weather",
+                      "url" => "https://example.com",
+                      "start_index" => 0,
+                      "end_index" => 50
+                    }
+                  ]
+                }
               ]
             }
           ],
@@ -110,10 +135,11 @@ module PromptTracker
         }
       end
 
-      it "formats web_search tool correctly" do
+      it "formats web_search tool correctly and includes sources parameter" do
         expect(mock_responses).to receive(:create).with(
           parameters: hash_including(
-            tools: [ { type: "web_search_preview" } ]
+            tools: [ { type: "web_search_preview" } ],
+            include: [ "web_search_call.action.sources" ]
           )
         ).and_return(api_response_with_tool)
 
@@ -133,8 +159,62 @@ module PromptTracker
           tools: [ :web_search ]
         )
 
+        # tool_calls only contains function_call items, not web_search_call
+        # web_search results are in web_search_results instead
         expect(response[:tool_calls]).to be_an(Array)
-        expect(response[:tool_calls].first["type"]).to eq("web_search_call")
+        expect(response[:tool_calls]).to be_empty  # No function calls in this response
+      end
+
+      it "extracts web_search_results with both sources and citations" do
+        allow(mock_responses).to receive(:create).and_return(api_response_with_tool)
+
+        response = described_class.call(
+          model: model,
+          user_prompt: user_prompt,
+          tools: [ :web_search ]
+        )
+
+        expect(response[:web_search_results]).to be_an(Array)
+        expect(response[:web_search_results].length).to eq(1)
+        expect(response[:web_search_results].first[:id]).to eq("ws_123")
+        expect(response[:web_search_results].first[:status]).to eq("completed")
+        expect(response[:web_search_results].first[:query]).to eq("weather in Berlin")
+        expect(response[:web_search_results].first[:sources].length).to eq(1)
+        expect(response[:web_search_results].first[:citations].length).to eq(1)
+      end
+
+      it "merges caller-provided include options with web_search include" do
+        expect(mock_responses).to receive(:create).with(
+          parameters: hash_including(
+            tools: [ { type: "web_search_preview" } ],
+            include: array_including(
+              "web_search_call.action.sources",
+              "some_other_field"
+            )
+          )
+        ).and_return(api_response_with_tool)
+
+        described_class.call(
+          model: model,
+          user_prompt: user_prompt,
+          tools: [ :web_search ],
+          include: [ "some_other_field" ]
+        )
+      end
+
+      it "does not duplicate include values when merging" do
+        expect(mock_responses).to receive(:create).with(
+          parameters: hash_including(
+            include: [ "web_search_call.action.sources" ]
+          )
+        ).and_return(api_response_with_tool)
+
+        described_class.call(
+          model: model,
+          user_prompt: user_prompt,
+          tools: [ :web_search ],
+          include: [ "web_search_call.action.sources" ]  # Same as auto-added
+        )
       end
     end
 

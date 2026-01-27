@@ -40,6 +40,7 @@ module PromptTracker
           def execute(params)
             messages = []
             @previous_response_id = nil
+            @all_responses = []  # Track all raw responses for tool result extraction
             start_time = Time.current
             messages = execute_conversation(params)
 
@@ -51,7 +52,10 @@ module PromptTracker
               response_time_ms: response_time_ms,
               tokens: calculate_tokens(messages),
               previous_response_id: @previous_response_id,
-              tools_used: tools.map(&:to_s)
+              tools_used: tools.map(&:to_s),
+              web_search_results: extract_all_web_search_results,
+              code_interpreter_results: extract_all_code_interpreter_results,
+              file_search_results: extract_all_file_search_results
             )
           end
 
@@ -87,6 +91,7 @@ module PromptTracker
               )
 
               @previous_response_id = response[:response_id]
+              @all_responses << response  # Track for tool result extraction
 
               messages << {
                 "role" => "assistant",
@@ -147,6 +152,9 @@ module PromptTracker
               usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
               model: model,
               tool_calls: [],
+              web_search_results: [],
+              code_interpreter_results: [],
+              file_search_results: [],
               raw: {}
             }
           end
@@ -202,6 +210,27 @@ module PromptTracker
               "completion_tokens" => assistant_messages.sum { |m| m.dig("usage", :completion_tokens) || 0 },
               "total_tokens" => assistant_messages.sum { |m| m.dig("usage", :total_tokens) || 0 }
             }
+          end
+
+          # Extract all web search results from all responses in the conversation
+          #
+          # @return [Array<Hash>] aggregated web search results
+          def extract_all_web_search_results
+            @all_responses.flat_map { |r| r[:web_search_results] || [] }
+          end
+
+          # Extract all code interpreter results from all responses in the conversation
+          #
+          # @return [Array<Hash>] aggregated code interpreter results
+          def extract_all_code_interpreter_results
+            @all_responses.flat_map { |r| r[:code_interpreter_results] || [] }
+          end
+
+          # Extract all file search results from all responses in the conversation
+          #
+          # @return [Array<Hash>] aggregated file search results
+          def extract_all_file_search_results
+            @all_responses.flat_map { |r| r[:file_search_results] || [] }
           end
         end
       end

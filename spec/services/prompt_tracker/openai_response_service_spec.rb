@@ -182,6 +182,40 @@ module PromptTracker
         expect(response[:web_search_results].first[:sources].length).to eq(1)
         expect(response[:web_search_results].first[:citations].length).to eq(1)
       end
+
+      it "merges caller-provided include options with web_search include" do
+        expect(mock_responses).to receive(:create).with(
+          parameters: hash_including(
+            tools: [ { type: "web_search_preview" } ],
+            include: array_including(
+              "web_search_call.action.sources",
+              "some_other_field"
+            )
+          )
+        ).and_return(api_response_with_tool)
+
+        described_class.call(
+          model: model,
+          user_prompt: user_prompt,
+          tools: [ :web_search ],
+          include: [ "some_other_field" ]
+        )
+      end
+
+      it "does not duplicate include values when merging" do
+        expect(mock_responses).to receive(:create).with(
+          parameters: hash_including(
+            include: [ "web_search_call.action.sources" ]
+          )
+        ).and_return(api_response_with_tool)
+
+        described_class.call(
+          model: model,
+          user_prompt: user_prompt,
+          tools: [ :web_search ],
+          include: [ "web_search_call.action.sources" ]  # Same as auto-added
+        )
+      end
     end
 
     describe ".call_with_context" do

@@ -144,8 +144,12 @@ module PromptTracker
         params[:include] = [ "web_search_call.action.sources" ]
       end
 
-      # Merge any additional options
-      params.merge!(options.except(:timeout))
+      # Merge any additional options, combining include arrays to prevent overwriting
+      if options[:include].present?
+        params[:include] = (params[:include] || []) + Array(options[:include])
+        params[:include].uniq!
+      end
+      params.merge!(options.except(:timeout, :include))
 
       params
     end

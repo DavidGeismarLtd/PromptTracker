@@ -106,6 +106,12 @@ module PromptTracker
       response = client.responses.create(parameters: build_parameters)
 
       normalize_response(response)
+    rescue Faraday::BadRequestError => e
+      # Extract error details from the response body
+      error_body = JSON.parse(e.response[:body]) rescue {}
+      error_message = error_body.dig("error", "message") || e.message
+
+      raise ResponseApiError, "OpenAI Responses API error: #{error_message}\nRequest parameters: #{redact_sensitive_params(build_parameters).inspect}"
     end
 
     private
@@ -132,15 +138,25 @@ module PromptTracker
         input: user_prompt
       }
 
-      params[:instructions] = system_prompt if system_prompt.present?
-      params[:previous_response_id] = previous_response_id if previous_response_id.present?
-      params[:temperature] = temperature if temperature
-      params[:max_output_tokens] = max_tokens if max_tokens
-      params[:tools] = format_tools(tools) if tools.any?
+      # When using previous_response_id for multi-turn conversations:
+      # - Tools are inherited from the first call (don't pass again)
+      # - Temperature and other sampling parameters are inherited (don't pass again)
+      # - Instructions can be passed to override the previous instructions
+      if previous_response_id.present?
+        params[:previous_response_id] = previous_response_id
+        # Only add instructions if explicitly provided (to override previous instructions)
+        params[:instructions] = system_prompt if system_prompt.present?
+      else
+        # First call: include all parameters
+        params[:instructions] = system_prompt if system_prompt.present?
+        params[:temperature] = temperature if temperature
+        params[:max_output_tokens] = max_tokens if max_tokens
+        params[:tools] = format_tools(tools) if tools.any?
+      end
 
       # Include web search sources if web search tool is enabled
       # This adds action.sources to web_search_call items in the response
-      if has_web_search_tool?
+      if has_web_search_tool? && previous_response_id.nil?
         params[:include] = [ "web_search_call.action.sources" ]
       end
 
@@ -309,6 +325,54 @@ module PromptTracker
     def extract_file_search_results(response)
       normalizer = Evaluators::Normalizers::ResponseApiNormalizer.new
       normalizer.send(:extract_file_search_results, response["output"] || [])
+    end
+
+    # Redact sensitive fields from parameters before logging
+    #
+    # This prevents leaking full prompts, tool definitions, and other sensitive
+    # data into logs and error tracking systems.
+    #
+    # @param params [Hash] the request parameters
+    # @return [Hash] redacted parameters safe for logging
+    def redact_sensitive_params(params)
+      redacted = params.dup
+
+      # Truncate long text fields to prevent log bloat
+      if redacted[:input].present?
+        redacted[:input] = truncate_text(redacted[:input], max_length: 100)
+      end
+
+      if redacted[:instructions].present?
+        redacted[:instructions] = truncate_text(redacted[:instructions], max_length: 100)
+      end
+
+      # Redact tool definitions (can be very large and contain sensitive logic)
+      if redacted[:tools].present?
+        redacted[:tools] = redacted[:tools].map do |tool|
+          if tool.is_a?(Hash)
+            # Keep tool type but redact function definitions
+            if tool[:type] == "function" || tool["type"] == "function"
+              { type: "function", name: tool[:name] || tool["name"], definition: "[REDACTED]" }
+            else
+              { type: tool[:type] || tool["type"] }
+            end
+          else
+            tool # Keep simple symbols like :web_search
+          end
+        end
+      end
+
+      redacted
+    end
+
+    # Truncate text to a maximum length with ellipsis
+    #
+    # @param text [String] the text to truncate
+    # @param max_length [Integer] maximum length before truncation
+    # @return [String] truncated text
+    def truncate_text(text, max_length: 100)
+      return text if text.length <= max_length
+      "#{text[0...max_length]}... [truncated, total length: #{text.length}]"
     end
   end
 end

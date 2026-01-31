@@ -313,11 +313,42 @@ module PromptTracker
         expect(response[:response_id]).to eq("resp_followup456")
       end
 
-      it "does not pass tools or temperature when previous_response_id is present" do
-        # Tools and temperature are inherited from the first call, so they should NOT be passed again
+      it "passes tools but not temperature when previous_response_id is present" do
+        # Tools MUST be passed on every request (not inherited)
+        # Temperature and other sampling parameters are inherited (not passed again)
+        function_definitions = [
+          {
+            "name" => "get_weather",
+            "description" => "Get weather for a location",
+            "parameters" => {
+              "type" => "object",
+              "properties" => {
+                "location" => { "type" => "string" }
+              },
+              "required" => [ "location" ]
+            }
+          }
+        ]
+
         expect(mock_responses).to receive(:create) do |params|
           expect(params[:parameters]).to include(previous_response_id: previous_response_id)
-          expect(params[:parameters]).not_to have_key(:tools)
+          expect(params[:parameters]).to have_key(:tools)
+          expect(params[:parameters][:tools]).to eq([
+            { type: "web_search_preview" },
+            {
+              type: "function",
+              name: "get_weather",
+              description: "Get weather for a location",
+              parameters: {
+                "type" => "object",
+                "properties" => {
+                  "location" => { "type" => "string" }
+                },
+                "required" => [ "location" ]
+              },
+              strict: false
+            }
+          ])
           expect(params[:parameters]).not_to have_key(:temperature)
           api_response
         end
@@ -326,9 +357,9 @@ module PromptTracker
           model: model,
           user_prompt: "What's my name?",
           previous_response_id: previous_response_id,
-          tools: [ :web_search, :functions ],  # These should be ignored
-          tool_config: { "functions" => [] },   # This should also be ignored
-          temperature: 0.7  # This should also be ignored
+          tools: [ :web_search, :functions ],
+          tool_config: { "functions" => function_definitions },
+          temperature: 0.7  # This should be ignored (inherited)
         )
       end
     end

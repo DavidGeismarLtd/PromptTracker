@@ -139,13 +139,15 @@ module PromptTracker
       }
 
       # When using previous_response_id for multi-turn conversations:
-      # - Tools are inherited from the first call (don't pass again)
       # - Temperature and other sampling parameters are inherited (don't pass again)
       # - Instructions can be passed to override the previous instructions
+      # - Tools MUST be passed on every request (not inherited)
       if previous_response_id.present?
         params[:previous_response_id] = previous_response_id
         # Only add instructions if explicitly provided (to override previous instructions)
         params[:instructions] = system_prompt if system_prompt.present?
+        # Tools must be passed on all requests, not just the first one
+        params[:tools] = format_tools(tools) if tools.any?
       else
         # First call: include all parameters
         params[:instructions] = system_prompt if system_prompt.present?

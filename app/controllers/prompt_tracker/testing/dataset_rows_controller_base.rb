@@ -108,22 +108,12 @@ module PromptTracker
       def row_params
         permitted = params.require(:dataset_row).permit(:source, row_data: {}, metadata: {})
 
-        # Handle mock_function_outputs - can come as JSON string (legacy) or nested hash (new per-function inputs)
+        # Handle mock_function_outputs - comes as nested hash from per-function input fields
         if permitted[:row_data] && permitted[:row_data][:mock_function_outputs].present?
           mock_outputs = permitted[:row_data][:mock_function_outputs]
 
-          # If it's a string, parse it as JSON (legacy textarea input)
-          if mock_outputs.is_a?(String)
-            begin
-              parsed = JSON.parse(mock_outputs)
-              # Set to nil if empty hash, otherwise use parsed value
-              permitted[:row_data][:mock_function_outputs] = parsed.present? ? parsed : nil
-            rescue JSON::ParserError
-              # If parsing fails, set to nil to ignore invalid JSON
-              permitted[:row_data][:mock_function_outputs] = nil
-            end
-          elsif mock_outputs.is_a?(ActionController::Parameters) || mock_outputs.is_a?(Hash)
-            # If it's a hash/params (new per-function inputs), convert to hash and filter out empty values
+          # Convert to hash and filter out empty values
+          if mock_outputs.is_a?(ActionController::Parameters) || mock_outputs.is_a?(Hash)
             filtered = mock_outputs.to_h.reject { |_k, v| v.blank? }
             # Set to nil if all values were empty, otherwise use filtered hash
             permitted[:row_data][:mock_function_outputs] = filtered.present? ? filtered : nil

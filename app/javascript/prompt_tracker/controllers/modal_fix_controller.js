@@ -17,6 +17,21 @@ export default class extends Controller {
   }
 
   /**
+   * Stimulus lifecycle callback: called when a new modal target is connected
+   * This handles modals added dynamically via Turbo Stream broadcasts
+   */
+  modalTargetConnected(modal) {
+    // Move the newly-added modal to document.body
+    if (!modal.hasAttribute('data-moved')) {
+      document.body.appendChild(modal)
+      modal.setAttribute('data-moved', 'true')
+    }
+
+    // Attach event listeners to the new modal
+    this.ensureModalOnTop(modal)
+  }
+
+  /**
    * Move all modal targets to the end of document.body
    * This ensures they are rendered after any backdrops
    */

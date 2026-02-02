@@ -295,6 +295,17 @@ module PromptTracker
           custom_vars = params[:custom_variables] || {}
           execution_mode = (params[:execution_mode].presence || "single").to_s
 
+          # Parse mock_function_outputs if present (it comes as JSON string from textarea)
+          if custom_vars[:mock_function_outputs].present?
+            begin
+              custom_vars[:mock_function_outputs] = JSON.parse(custom_vars[:mock_function_outputs])
+            rescue JSON::ParserError => e
+              redirect_to testable_path,
+                          alert: "Invalid JSON in mock_function_outputs: #{e.message}"
+              return
+            end
+          end
+
           # Validate required variables based on testable type and execution mode
           required_vars = required_custom_run_variables(execution_mode: execution_mode)
           missing_vars = required_vars.select { |var| custom_vars[var].blank? }
@@ -367,6 +378,17 @@ module PromptTracker
         def run_all_with_custom_variables(tests)
           custom_vars = params[:custom_variables] || {}
           execution_mode = (params[:execution_mode].presence || "single").to_s
+
+          # Parse mock_function_outputs if present (it comes as JSON string from textarea)
+          if custom_vars[:mock_function_outputs].present?
+            begin
+              custom_vars[:mock_function_outputs] = JSON.parse(custom_vars[:mock_function_outputs])
+            rescue JSON::ParserError => e
+              redirect_to testable_path,
+                          alert: "Invalid JSON in mock_function_outputs: #{e.message}"
+              return
+            end
+          end
 
           # Validate required variables based on testable type and execution mode
           required_vars = required_custom_run_variables(execution_mode: execution_mode)

@@ -131,6 +131,83 @@ module PromptTracker
             expect(execution_params[:interlocutor_prompt]).to be_nil
           end
         end
+
+        context "when mock_function_outputs is present in custom_variables" do
+          let(:metadata) do
+            {
+              "custom_variables" => {
+                "name" => "John",
+                "mock_function_outputs" => {
+                  "get_weather" => {
+                    "temperature" => 72,
+                    "condition" => "Sunny"
+                  }
+                }
+              }
+            }
+          end
+
+          it "includes mock_function_outputs in execution params" do
+            expect(execution_params[:mock_function_outputs]).to eq({
+              "get_weather" => {
+                "temperature" => 72,
+                "condition" => "Sunny"
+              }
+            })
+          end
+        end
+
+        context "when mock_function_outputs is present in dataset row" do
+          let(:dataset_row) do
+            create(:dataset_row,
+                   row_data: {
+                     "name" => "Jane",
+                     "mock_function_outputs" => {
+                       "search_flights" => {
+                         "flights" => [ { "airline" => "AA", "price" => 299 } ]
+                       }
+                     }
+                   })
+          end
+
+          let(:test_run_with_dataset) do
+            create(:test_run,
+                   test: test,
+                   dataset_row: dataset_row,
+                   status: "running",
+                   metadata: {})
+          end
+
+          let(:runner_with_dataset) do
+            described_class.new(
+              test_run: test_run_with_dataset,
+              test: test,
+              testable: prompt_version,
+              use_real_llm: false
+            )
+          end
+
+          it "includes mock_function_outputs from dataset row in execution params" do
+            params = runner_with_dataset.send(:build_execution_params)
+            expect(params[:mock_function_outputs]).to eq({
+              "search_flights" => {
+                "flights" => [ { "airline" => "AA", "price" => 299 } ]
+              }
+            })
+          end
+        end
+
+        context "when mock_function_outputs is not present" do
+          let(:metadata) do
+            {
+              "custom_variables" => { "name" => "John" }
+            }
+          end
+
+          it "does not include mock_function_outputs in execution params" do
+            expect(execution_params[:mock_function_outputs]).to be_nil
+          end
+        end
       end
     end
   end

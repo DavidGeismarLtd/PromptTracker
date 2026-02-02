@@ -90,7 +90,7 @@
               data-pattern-match-form-target="patternsInput"
               data-action="input->pattern-match-form#validatePatterns"
               placeholder="Enter regex patterns, one per line&#10;Example:&#10;/Hello/&#10;/world/i&#10;/\d{3}-\d{4}/"
-              style="font-size: 13px; line-height: 1.6;"><%= (config['patterns'] || config[:patterns] || []).join("\n") %></textarea>
+              style="font-size: 13px; line-height: 1.6;"><%= (config['patterns'] || []).join("\n") %></textarea>
 
     <!-- Validation feedback -->
     <div class="mt-2" data-pattern-match-form-target="validationFeedback"></div>
@@ -137,7 +137,7 @@
                  class="form-check-input"
                  id="<%= evaluator_key %>_match_all"
                  value="true"
-                 <%= 'checked' if (config['match_all'] || config[:match_all]).nil? || (config['match_all'] || config[:match_all]) %>>
+                 <%= 'checked' if config['match_all'].nil? || config['match_all'] %>>
           <label class="form-check-label" for="<%= evaluator_key %>_match_all">
             <strong>All patterns must match</strong>
           </label>

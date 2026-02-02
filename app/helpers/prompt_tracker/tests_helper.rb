@@ -63,5 +63,8 @@ module PromptTracker
         raise ArgumentError, "Unknown testable type: #{testable.class}"
       end
     end
+
+    # NOTE: build_mock_function_outputs_placeholder has been moved to the Testable concern
+    # as mock_function_outputs_placeholder to make it available in all contexts (including broadcasts)
   end
 end

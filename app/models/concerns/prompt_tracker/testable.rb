@@ -50,6 +50,35 @@ module PromptTracker
                class_name: "PromptTracker::TestRun"
     end
 
+    # Build a placeholder example for mock_function_outputs based on testable's functions
+    #
+    # This method generates a JSON placeholder showing the expected structure for
+    # mock function outputs. It's used in forms to help users understand the format.
+    #
+    # @return [String] JSON placeholder example
+    def mock_function_outputs_placeholder
+      return "{}" unless respond_to?(:model_config)
+
+      config = model_config&.with_indifferent_access
+      return "{}" unless config
+
+      functions = config.dig(:tool_config, :functions) || config.dig("tool_config", "functions")
+      return "{}" unless functions.present?
+
+      # Build example mock outputs for each function
+      examples = {}
+      functions.first(2).each do |func| # Show max 2 examples to keep placeholder concise
+        function_name = func["name"] || func[:name]
+        examples[function_name] = {
+          "success" => true,
+          "result" => "Example mock result for #{function_name}",
+          "data" => {}
+        }
+      end
+
+      JSON.pretty_generate(examples)
+    end
+
     # Interface documentation for methods that all testables must implement
     #
     # Including classes must provide these methods:

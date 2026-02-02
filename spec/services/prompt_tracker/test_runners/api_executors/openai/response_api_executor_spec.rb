@@ -355,6 +355,102 @@ module PromptTracker
               end
             end
           end
+
+          describe "custom mock_function_outputs" do
+            let(:mock_function_outputs) do
+              {
+                "get_weather" => {
+                  "location" => "San Francisco, CA",
+                  "temperature" => 68,
+                  "condition" => "Foggy",
+                  "humidity" => 75
+                }
+              }
+            end
+
+            context "when mock_function_outputs is provided in params" do
+              let(:params) do
+                {
+                  mode: :single_turn,
+                  system_prompt: "You are helpful.",
+                  max_turns: 1,
+                  first_user_message: "What's the weather?",
+                  mock_function_outputs: mock_function_outputs
+                }
+              end
+
+              it "stores mock_function_outputs in instance variable" do
+                executor.execute(params)
+                expect(executor.instance_variable_get(:@mock_function_outputs)).to eq(mock_function_outputs)
+              end
+
+              it "passes mock_function_outputs to function_call_handler" do
+                # Mock the function call handler to verify it receives mock_function_outputs
+                mock_handler = instance_double(Helpers::FunctionCallHandler)
+                allow(Helpers::FunctionCallHandler).to receive(:new).with(
+                  hash_including(mock_function_outputs: mock_function_outputs)
+                ).and_return(mock_handler)
+
+                allow(mock_handler).to receive(:process_with_function_handling).and_return(
+                  {
+                    final_response: {
+                      text: "It's foggy",
+                      response_id: "resp_123",
+                      usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+                      tool_calls: []
+                    },
+                    all_tool_calls: [],
+                    all_responses: []
+                  }
+                )
+
+                executor.execute(params)
+
+                expect(Helpers::FunctionCallHandler).to have_received(:new).with(
+                  hash_including(mock_function_outputs: mock_function_outputs)
+                )
+              end
+            end
+
+            context "when mock_function_outputs is nil" do
+              let(:params) do
+                {
+                  mode: :single_turn,
+                  system_prompt: "You are helpful.",
+                  max_turns: 1,
+                  first_user_message: "What's the weather?",
+                  mock_function_outputs: nil
+                }
+              end
+
+              it "passes nil mock_function_outputs to function_call_handler" do
+                # Mock the function call handler to verify it receives nil
+                mock_handler = instance_double(Helpers::FunctionCallHandler)
+                allow(Helpers::FunctionCallHandler).to receive(:new).with(
+                  hash_including(mock_function_outputs: nil)
+                ).and_return(mock_handler)
+
+                allow(mock_handler).to receive(:process_with_function_handling).and_return(
+                  {
+                    final_response: {
+                      text: "Generic response",
+                      response_id: "resp_123",
+                      usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+                      tool_calls: []
+                    },
+                    all_tool_calls: [],
+                    all_responses: []
+                  }
+                )
+
+                executor.execute(params)
+
+                expect(Helpers::FunctionCallHandler).to have_received(:new).with(
+                  hash_including(mock_function_outputs: nil)
+                )
+              end
+            end
+          end
         end
       end
     end

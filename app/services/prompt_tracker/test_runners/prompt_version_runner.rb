@@ -99,7 +99,8 @@ module PromptTracker
           system_prompt: testable.system_prompt,
           max_turns: 1,
           interlocutor_prompt: nil,
-          first_user_message: render_prompt
+          first_user_message: render_prompt,
+          mock_function_outputs: variables[:mock_function_outputs]
         }
       end
 
@@ -119,7 +120,8 @@ module PromptTracker
           system_prompt: render_system_prompt,
           max_turns: max_turns.to_i,
           interlocutor_prompt: interlocutor_prompt,
-          first_user_message: render_prompt
+          first_user_message: render_prompt,
+          mock_function_outputs: vars[:mock_function_outputs]
         }
       end
 

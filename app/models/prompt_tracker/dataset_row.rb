@@ -35,6 +35,10 @@ module PromptTracker
     # Constants
     SOURCES = %w[manual llm_generated imported].freeze
 
+    # Reserved fields that can exist in row_data but are not part of the dataset schema
+    # These fields have special purposes and should not be validated against the schema
+    RESERVED_FIELDS = %w[mock_function_outputs].freeze
+
     # Associations
     belongs_to :dataset,
                class_name: "PromptTracker::Dataset",
@@ -179,8 +183,9 @@ module PromptTracker
         errors.add(:row_data, "missing required variables: #{missing_vars.join(', ')}")
       end
 
-      # Check for extra variables not in schema
-      extra_vars = row_variable_names - schema_variable_names
+      # Check for extra variables not in schema (excluding reserved fields)
+      # Reserved fields like mock_function_outputs have special purposes and don't need to be in the schema
+      extra_vars = row_variable_names - schema_variable_names - RESERVED_FIELDS
 
       if extra_vars.any?
         errors.add(:row_data, "contains unknown variables: #{extra_vars.join(', ')}")

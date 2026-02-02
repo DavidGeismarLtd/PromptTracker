@@ -217,6 +217,7 @@ travel_prompt.prompt_versions.create!(
         {
           "name" => "search_flights",
           "description" => "Search for available flights between two airports",
+          "output_description" => "Returns a JSON array of flight objects with fields: flight_id (string), airline (string), departure_time (ISO 8601 datetime), arrival_time (ISO 8601 datetime), price (number), currency (string), available_seats (number), duration_minutes (number)",
           "parameters" => {
             "type" => "object",
             "properties" => {
@@ -231,6 +232,7 @@ travel_prompt.prompt_versions.create!(
         {
           "name" => "search_hotels",
           "description" => "Search for available hotels in a city",
+          "output_description" => "Returns a JSON array of hotel objects with fields: hotel_id (string), name (string), address (string), star_rating (number 1-5), price_per_night (number), currency (string), available_rooms (number), amenities (array of strings), distance_from_center_km (number)",
           "parameters" => {
             "type" => "object",
             "properties" => {
@@ -245,6 +247,7 @@ travel_prompt.prompt_versions.create!(
         {
           "name" => "get_weather",
           "description" => "Get weather forecast for a location",
+          "output_description" => "Returns a JSON object with fields: temperature_celsius (number), temperature_fahrenheit (number), condition (string like 'sunny', 'cloudy', 'rainy'), humidity_percent (number), wind_speed_kmh (number), forecast (string description), precipitation_chance_percent (number)",
           "parameters" => {
             "type" => "object",
             "properties" => {
@@ -257,6 +260,7 @@ travel_prompt.prompt_versions.create!(
         {
           "name" => "book_flight",
           "description" => "Book a specific flight",
+          "output_description" => "Returns a JSON object with fields: booking_id (string), confirmation_code (string), status (string like 'confirmed', 'pending'), total_price (number), currency (string), booking_date (ISO 8601 datetime), passenger_details (object with name and seat assignment)",
           "parameters" => {
             "type" => "object",
             "properties" => {
@@ -317,6 +321,7 @@ ecommerce_prompt.prompt_versions.create!(
         {
           "name" => "search_products",
           "description" => "Search for products in the catalog",
+          "output_description" => "Returns a JSON array of product objects with fields: product_id (string), name (string), description (string), price (number), currency (string), category (string), in_stock (boolean), stock_quantity (number), rating (number 1-5), image_url (string)",
           "parameters" => {
             "type" => "object",
             "properties" => {
@@ -331,6 +336,7 @@ ecommerce_prompt.prompt_versions.create!(
         {
           "name" => "get_order_status",
           "description" => "Get the status of an order",
+          "output_description" => "Returns a JSON object with fields: order_id (string), status (string like 'processing', 'shipped', 'delivered'), order_date (ISO 8601 datetime), estimated_delivery (ISO 8601 datetime), tracking_number (string), carrier (string), items (array of objects with product_id, name, quantity, price)",
           "parameters" => {
             "type" => "object",
             "properties" => {
@@ -342,6 +348,7 @@ ecommerce_prompt.prompt_versions.create!(
         {
           "name" => "initiate_return",
           "description" => "Start a return process for an order",
+          "output_description" => "Returns a JSON object with fields: return_id (string), status (string like 'initiated', 'approved'), return_label_url (string), refund_amount (number), currency (string), estimated_refund_date (ISO 8601 datetime), instructions (string)",
           "parameters" => {
             "type" => "object",
             "properties" => {
@@ -355,6 +362,7 @@ ecommerce_prompt.prompt_versions.create!(
         {
           "name" => "get_product_details",
           "description" => "Get detailed information about a specific product",
+          "output_description" => "Returns a JSON object with fields: product_id (string), name (string), full_description (string), price (number), currency (string), category (string), brand (string), specifications (object), in_stock (boolean), stock_quantity (number), rating (number), review_count (number), images (array of URLs), related_products (array of product_ids)",
           "parameters" => {
             "type" => "object",
             "properties" => {

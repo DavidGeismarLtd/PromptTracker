@@ -41,6 +41,8 @@ module PromptTracker
           @previous_response_id = nil
           @all_responses = []  # Track all raw responses for tool result extraction
           @tool_result_extractor = nil  # Clear memoized extractor when resetting responses
+          @mock_function_outputs = params[:mock_function_outputs]  # Store custom mock configurations
+          @function_call_handler = nil  # Clear memoized handler to pick up new mock_function_outputs
           start_time = Time.current
           messages = execute_conversation(params)
 
@@ -235,7 +237,8 @@ module PromptTracker
             model: model,
             tools: tools,
             tool_config: tool_config,
-            use_real_llm: use_real_llm
+            use_real_llm: use_real_llm,
+            mock_function_outputs: @mock_function_outputs
           )
         end
 

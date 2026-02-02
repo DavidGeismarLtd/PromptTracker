@@ -331,14 +331,40 @@ module PromptTracker
       defaults[:prompt_generator_model] = value
     end
 
-    # @deprecated Use {#defaults[:dataset_generator_model]} instead
+    # Get the dataset generator model (with fallback to gpt-4o)
+    # @return [String] the model to use for dataset generation
     def dataset_generator_model
-      defaults[:dataset_generator_model]
+      defaults[:dataset_generator_model] || "gpt-4o"
     end
 
-    # @deprecated Use {#defaults=} instead
+    # Set the dataset generator model
+    # @param value [String] the model to use
     def dataset_generator_model=(value)
       defaults[:dataset_generator_model] = value
+    end
+
+    # Get the dataset generator provider (with fallback to openai)
+    # @return [String] the provider to use for dataset generation
+    def dataset_generator_provider
+      defaults[:dataset_generator_provider] || "openai"
+    end
+
+    # Set the dataset generator provider
+    # @param value [String] the provider to use
+    def dataset_generator_provider=(value)
+      defaults[:dataset_generator_provider] = value
+    end
+
+    # Get the dataset generator API (with fallback to chat_completions)
+    # @return [String] the API to use for dataset generation
+    def dataset_generator_api
+      defaults[:dataset_generator_api] || "chat_completions"
+    end
+
+    # Set the dataset generator API
+    # @param value [String] the API to use
+    def dataset_generator_api=(value)
+      defaults[:dataset_generator_api] = value
     end
 
     # @deprecated Use {#defaults[:llm_judge_model]} instead

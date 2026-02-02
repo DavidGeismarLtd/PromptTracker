@@ -29,6 +29,23 @@
             <% dataset.variable_names.each do |var_name| %>
               <th><%= var_name %></th>
             <% end %>
+            <%# Add function columns if testable has function calling configured %>
+            <% testable = dataset.testable %>
+            <% if testable.respond_to?(:model_config) && testable.model_config&.dig("tool_config", "functions").present? %>
+              <% functions = testable.model_config.dig("tool_config", "functions") %>
+              <% functions.each do |func| %>
+                <th>
+                  <i class="bi bi-gear text-primary"></i>
+                  <%= func["name"] %>
+                  <% if func["description"].present? %>
+                    <i class="bi bi-info-circle text-muted"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="top"
+                       title="<%= func["description"] %>"></i>
+                  <% end %>
+                </th>
+              <% end %>
+            <% end %>
             <th style="width: 100px;">Source</th>
             <th style="width: 120px;">Actions</th>
           </tr>
@@ -59,6 +76,23 @@
             <th style="width: 50px;">#</th>
             <% dataset.variable_names.each do |var_name| %>
               <th><%= var_name %></th>
+            <% end %>
+            <%# Add function columns if testable has function calling configured %>
+            <% testable = dataset.testable %>
+            <% if testable.respond_to?(:model_config) && testable.model_config&.dig("tool_config", "functions").present? %>
+              <% functions = testable.model_config.dig("tool_config", "functions") %>
+              <% functions.each do |func| %>
+                <th>
+                  <i class="bi bi-gear text-primary"></i>
+                  <%= func["name"] %>
+                  <% if func["description"].present? %>
+                    <i class="bi bi-info-circle text-muted"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="top"
+                       title="<%= func["description"] %>"></i>
+                  <% end %>
+                </th>
+              <% end %>
             <% end %>
             <th style="width: 100px;">Source</th>
             <th style="width: 120px;">Actions</th>

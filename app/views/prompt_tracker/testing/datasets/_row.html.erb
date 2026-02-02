@@ -35,6 +35,26 @@
       <% end %>
     </td>
   <% end %>
+  <%# Add function mock output columns if testable has function calling configured %>
+  <% testable = dataset.testable %>
+  <% if testable.respond_to?(:model_config) && testable.model_config&.dig("tool_config", "functions").present? %>
+    <% functions = testable.model_config.dig("tool_config", "functions") %>
+    <% mock_outputs = row.row_data["mock_function_outputs"] %>
+    <% mock_outputs = {} unless mock_outputs.is_a?(Hash) %>
+    <% functions.each do |func| %>
+      <% function_name = func["name"] %>
+      <% mock_value = mock_outputs[function_name] %>
+      <td>
+        <% if mock_value.present? %>
+          <span class="text-truncate d-inline-block font-monospace small" style="max-width: 200px;" title="<%= mock_value %>">
+            <%= mock_value %>
+          </span>
+        <% else %>
+          <span class="text-muted fst-italic">—</span>
+        <% end %>
+      </td>
+    <% end %>
+  <% end %>
   <td>
     <% case row.source %>
     <% when "manual" %>
@@ -101,6 +121,39 @@
 
               <% if var_schema['description'].present? %>
                 <div class="form-text"><%= var_schema['description'] %></div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%# Function calling mock outputs (only shown when functions are configured) %>
+          <% testable = dataset.testable %>
+          <% if testable.respond_to?(:model_config) && testable.model_config&.dig("tool_config", "functions").present? %>
+            <div class="mb-3 p-3 bg-light rounded border">
+              <h6 class="mb-3"><i class="bi bi-gear"></i> Function Calling Mock Outputs (Optional)</h6>
+
+              <p class="text-muted small mb-3">
+                This testable has function calling enabled. You can optionally provide custom mock responses for function calls.
+              </p>
+
+              <% functions = testable.model_config.dig("tool_config", "functions") %>
+              <% current_mock_outputs = row.row_data["mock_function_outputs"] %>
+              <% current_mock_outputs = {} unless current_mock_outputs.is_a?(Hash) %>
+              <% functions.each do |func| %>
+                <% function_name = func["name"] %>
+                <% function_desc = func["description"] %>
+                <div class="mb-3">
+                  <%= label_tag "dataset_row[row_data][mock_function_outputs][#{function_name}]",
+                                "Mock Output for #{function_name}",
+                                class: "form-label" %>
+                  <%= text_area_tag "dataset_row[row_data][mock_function_outputs][#{function_name}]",
+                      current_mock_outputs[function_name],
+                      class: "form-control font-monospace",
+                      rows: 3,
+                      placeholder: "Mock response data for #{function_name}..." %>
+                  <% if function_desc.present? %>
+                    <small class="form-text text-muted"><%= function_desc %></small>
+                  <% end %>
+                </div>
               <% end %>
             </div>
           <% end %>

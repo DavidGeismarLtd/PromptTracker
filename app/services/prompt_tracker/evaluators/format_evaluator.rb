@@ -211,9 +211,9 @@ module PromptTracker
         # Check types
         if schema["types"].present?
           schema["types"].each do |key, expected_type|
-            next unless data.key?(key) || data.key?(key.to_sym)
+            next unless data.key?(key)
 
-            value = data[key] || data[key.to_sym]
+            value = data[key]
             unless value_matches_type?(value, expected_type)
               errors << "Key '#{key}' has wrong type (expected #{expected_type}, got #{value.class.name.downcase})"
               score -= 10
@@ -224,9 +224,9 @@ module PromptTracker
         # Check nested structures
         if schema["nested_structure"].present?
           schema["nested_structure"].each do |key, nested_schema|
-            next unless data.key?(key) || data.key?(key.to_sym)
+            next unless data.key?(key)
 
-            nested_data = data[key] || data[key.to_sym]
+            nested_data = data[key]
             if nested_data.is_a?(Hash)
               nested_score = evaluate_json_schema(nested_data, nested_schema)
               score = [ score, nested_score ].min
@@ -282,9 +282,9 @@ module PromptTracker
         # Check types
         if schema["types"].present?
           schema["types"].each do |key, expected_type|
-            next unless data.key?(key) || data.key?(key.to_sym)
+            next unless data.key?(key)
 
-            value = data[key] || data[key.to_sym]
+            value = data[key]
             unless value_matches_type?(value, expected_type)
               errors << "'#{key}' has wrong type (expected #{expected_type})"
             end

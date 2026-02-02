@@ -1,0 +1,24 @@
+<%# Close the modal %>
+<%= turbo_stream.update "addRowModal" do %>
+  <script>
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addRowModal'));
+    if (modal) {
+      modal.hide();
+    }
+    
+    // Reset the form
+    document.querySelector('#addRowModal form')?.reset();
+  </script>
+<% end %>
+
+<%# Display flash message %>
+<%= turbo_stream.update "flash-messages" do %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <%= flash[:notice] %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% end %>
+
+<%# The row itself will be added via the broadcast_prepend_to_dataset callback %>
+

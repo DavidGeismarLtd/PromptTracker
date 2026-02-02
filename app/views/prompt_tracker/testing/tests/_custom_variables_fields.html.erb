@@ -134,3 +134,34 @@
     This <%= testable.class.name.demodulize.underscore.humanize.downcase %> has no variables defined.
   </div>
 <% end %>
+
+<%# Function calling mock outputs (only shown when functions are configured) %>
+<% if testable.respond_to?(:model_config) && testable.model_config&.dig("tool_config", "functions").present? %>
+  <div class="mb-4 p-3 bg-light rounded border">
+    <h6 class="mb-3"><i class="bi bi-gear"></i> Function Calling Mock Outputs (Optional)</h6>
+
+    <p class="text-muted small mb-3">
+      This testable has function calling enabled. You can optionally provide custom mock responses for function calls.
+      If not provided, generic mock responses will be used.
+    </p>
+
+    <% functions = testable.model_config.dig("tool_config", "functions") %>
+    <% functions.each do |func| %>
+      <% function_name = func["name"] %>
+      <% function_desc = func["description"] %>
+      <div class="mb-3">
+        <%= label_tag "custom_variables[mock_function_outputs][#{function_name}]",
+                      "Mock Output for #{function_name}",
+                      class: "form-label" %>
+        <%= text_area_tag "custom_variables[mock_function_outputs][#{function_name}]",
+            nil,
+            class: "form-control font-monospace",
+            rows: 3,
+            placeholder: "Mock response data for #{function_name}..." %>
+        <% if function_desc.present? %>
+          <small class="form-text text-muted"><%= function_desc %></small>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

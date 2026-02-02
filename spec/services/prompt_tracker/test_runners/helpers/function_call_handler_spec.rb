@@ -182,6 +182,125 @@ module PromptTracker
             end
           end
         end
+
+        describe "#execute_function_call" do
+          context "when custom mock_function_outputs is provided" do
+            let(:mock_function_outputs) do
+              {
+                "get_weather" => {
+                  "location" => "New York, NY",
+                  "temperature" => 72,
+                  "condition" => "Sunny",
+                  "humidity" => 45
+                },
+                "search_flights" => {
+                  "flights" => [
+                    { "airline" => "AA", "price" => 299 },
+                    { "airline" => "UA", "price" => 315 }
+                  ]
+                }
+              }
+            end
+
+            let(:handler_with_mocks) do
+              described_class.new(
+                model: model,
+                tools: tools,
+                tool_config: tool_config,
+                use_real_llm: use_real_llm,
+                mock_function_outputs: mock_function_outputs
+              )
+            end
+
+            it "uses custom mock for configured function" do
+              tool_call = {
+                id: "call_1",
+                function_name: "get_weather",
+                arguments: { location: "NYC" }
+              }
+
+              result = handler_with_mocks.send(:execute_function_call, tool_call)
+              parsed_result = JSON.parse(result)
+
+              expect(parsed_result["location"]).to eq("New York, NY")
+              expect(parsed_result["temperature"]).to eq(72)
+              expect(parsed_result["condition"]).to eq("Sunny")
+            end
+
+            it "uses custom mock for different function" do
+              tool_call = {
+                id: "call_2",
+                function_name: "search_flights",
+                arguments: { from: "NYC", to: "LAX" }
+              }
+
+              result = handler_with_mocks.send(:execute_function_call, tool_call)
+              parsed_result = JSON.parse(result)
+
+              expect(parsed_result["flights"]).to be_an(Array)
+              expect(parsed_result["flights"].length).to eq(2)
+              expect(parsed_result["flights"][0]["airline"]).to eq("AA")
+            end
+
+            it "falls back to generic mock for unconfigured function" do
+              tool_call = {
+                id: "call_3",
+                function_name: "unknown_function",
+                arguments: { test: "data" }
+              }
+
+              result = handler_with_mocks.send(:execute_function_call, tool_call)
+              parsed_result = JSON.parse(result)
+
+              expect(parsed_result["success"]).to eq(true)
+              expect(parsed_result["message"]).to eq("Mock result for unknown_function")
+              expect(parsed_result["data"]).to eq({ "test" => "data" })
+            end
+          end
+
+          context "when mock_function_outputs is nil" do
+            it "uses generic mock response" do
+              tool_call = {
+                id: "call_1",
+                function_name: "get_weather",
+                arguments: { location: "NYC" }
+              }
+
+              result = handler.send(:execute_function_call, tool_call)
+              parsed_result = JSON.parse(result)
+
+              expect(parsed_result["success"]).to eq(true)
+              expect(parsed_result["message"]).to eq("Mock result for get_weather")
+              expect(parsed_result["data"]).to eq({ "location" => "NYC" })
+            end
+          end
+
+          context "when mock_function_outputs is empty hash" do
+            let(:handler_with_empty_mocks) do
+              described_class.new(
+                model: model,
+                tools: tools,
+                tool_config: tool_config,
+                use_real_llm: use_real_llm,
+                mock_function_outputs: {}
+              )
+            end
+
+            it "falls back to generic mock" do
+              tool_call = {
+                id: "call_1",
+                function_name: "get_weather",
+                arguments: { location: "NYC" }
+              }
+
+              result = handler_with_empty_mocks.send(:execute_function_call, tool_call)
+              parsed_result = JSON.parse(result)
+
+              expect(parsed_result["success"]).to eq(true)
+              expect(parsed_result["message"]).to eq("Mock result for get_weather")
+            end
+          end
+        end
       end
     end
   end

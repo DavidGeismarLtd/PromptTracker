@@ -46,6 +46,7 @@ module PromptTracker
             messages = []
             @previous_response_id = nil
             @all_responses = []  # Track all raw responses for tool result extraction
+            @mock_function_outputs = params[:mock_function_outputs]  # Store custom mock configurations
             start_time = Time.current
             messages = execute_conversation(params)
 
@@ -273,18 +274,26 @@ module PromptTracker
           #   - :arguments [Hash] parsed arguments
           # @return [String] function execution result (JSON string)
           def execute_function_call(tool_call)
-            # For testing purposes, return a mock result
-            # In a real implementation, this would call the actual function
             function_name = tool_call[:function_name]
             arguments = tool_call[:arguments]
 
-            # Return a JSON string as the function output
-            # The Response API expects function outputs to be strings
-            {
-              success: true,
-              message: "Mock result for #{function_name}",
-              data: arguments
-            }.to_json
+            # Check if custom mock is configured for this function
+            custom_mock = @mock_function_outputs&.dig(function_name)
+
+            if custom_mock
+              # Use custom mock response
+              # Custom mock should already be a hash/object, convert to JSON string
+              custom_mock.to_json
+            else
+              # Fall back to generic mock
+              # Return a JSON string as the function output
+              # The Response API expects function outputs to be strings
+              {
+                success: true,
+                message: "Mock result for #{function_name}",
+                data: arguments
+              }.to_json
+            end
           end
 
           # Call the real OpenAI Response API

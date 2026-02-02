@@ -88,13 +88,12 @@ module PromptTracker
 
     private
 
-    # Broadcast append to dataset rows table
-    # Uses append instead of prepend to maintain ascending ID order (1, 2, 3...)
-    # matching the initial table render and pagination order
+    # Broadcast prepend to dataset rows table
+    # Uses prepend to show newest rows first (most recent at top)
     def broadcast_prepend_to_dataset
       partial_path, locals = row_partial_and_locals
 
-      broadcast_append_to(
+      broadcast_prepend_to(
         "dataset_#{dataset_id}_rows",
         target: "dataset-rows",
         partial: partial_path,
@@ -118,6 +117,7 @@ module PromptTracker
     end
 
     # Broadcast replace to dataset rows table
+    # Skip modal rendering to avoid duplicates (modal stays in DOM, only row content updates)
     def broadcast_replace_to_dataset
       partial_path, locals = row_partial_and_locals
 
@@ -125,7 +125,7 @@ module PromptTracker
         "dataset_#{dataset_id}_rows",
         target: "dataset-row-#{id}",
         partial: partial_path,
-        locals: locals
+        locals: locals.merge(skip_modal: true)
       )
     end
 

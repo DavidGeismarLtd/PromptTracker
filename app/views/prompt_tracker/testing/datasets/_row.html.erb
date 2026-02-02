@@ -84,8 +84,10 @@
 </tr>
 
 <!-- Edit Row Modal -->
-<% if update_path.present? %>
-  <div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-modal-fix-target="modal">
+<%# Only render modal on initial load and prepend, not on replace (to avoid duplicates) %>
+<% unless local_assigns[:skip_modal] %>
+  <% if update_path.present? %>
+    <div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-modal-fix-target="modal">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
@@ -166,4 +168,5 @@
       </div>
     </div>
   </div>
+  <% end %>
 <% end %>

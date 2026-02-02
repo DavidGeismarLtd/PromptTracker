@@ -1,16 +1,6 @@
-<%# Close the modal %>
-<%= turbo_stream.update "addRowModal" do %>
-  <script>
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('addRowModal'));
-    if (modal) {
-      modal.hide();
-    }
-    
-    // Reset the form
-    document.querySelector('#addRowModal form')?.reset();
-  </script>
-<% end %>
+<%# Close the modal using custom Turbo Stream action %>
+<%# This properly handles Bootstrap modal cleanup (backdrop, scroll lock, etc.) %>
+<%= turbo_stream.action(:close_modal, "addRowModal") %>
 
 <%# Display flash message %>
 <%= turbo_stream.update "flash-messages" do %>
@@ -21,4 +11,3 @@
 <% end %>
 
 <%# The row itself will be added via the broadcast_prepend_to_dataset callback %>
-

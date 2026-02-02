@@ -1,13 +1,6 @@
-<%# Close the edit modal %>
-<%= turbo_stream.update "editRowModal-#{@row.id}" do %>
-  <script>
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('editRowModal-<%= @row.id %>'));
-    if (modal) {
-      modal.hide();
-    }
-  </script>
-<% end %>
+<%# Close the edit modal using custom Turbo Stream action %>
+<%# This properly handles Bootstrap modal cleanup (backdrop, scroll lock, etc.) %>
+<%= turbo_stream.action(:close_modal, "editRowModal-#{@row.id}") %>
 
 <%# Display flash message %>
 <%= turbo_stream.update "flash-messages" do %>
@@ -18,4 +11,3 @@
 <% end %>
 
 <%# The row itself will be updated via the broadcast_replace_to_dataset callback %>
-

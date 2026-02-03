@@ -1,0 +1,41 @@
+<%
+  # Edit Row Modal Partial
+  #
+  # Required locals:
+  #   - row: The DatasetRow object to edit
+  #   - index: The row index/number for display
+  #   - dataset: The Dataset object
+  #   - update_path: The URL path for the update action
+  #
+  # This partial renders the edit modal for a dataset row.
+  # It's extracted to avoid duplication and ensure proper form structure.
+%>
+
+<div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-modal-fix-target="modal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Row #<%= index %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <%= form_with(model: row,
+                    url: update_path,
+                    method: :patch,
+                    html: { id: "edit-row-form-#{row.id}" }) do |f| %>
+        <div class="modal-body" id="edit-row-form-body-<%= row.id %>">
+          <%= f.hidden_field :source, value: row.source %>
+
+          <%# Render shared form fields partial %>
+          <%= render "prompt_tracker/testing/datasets/row_form_fields", dataset: dataset, row: row %>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <%= f.submit "Update Row", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+

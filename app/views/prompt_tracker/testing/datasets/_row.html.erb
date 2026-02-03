@@ -87,30 +87,10 @@
 <%# Only render modal on initial load and prepend, not on replace (to avoid duplicates) %>
 <% unless local_assigns[:skip_modal] %>
   <% if update_path.present? %>
-    <div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-modal-fix-target="modal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Edit Row #<%= index %></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <%= form_with(model: row,
-                      url: update_path,
-                      method: :patch,
-                      html: { id: "edit-row-form-#{row.id}" }) do |f| %>
-        <div class="modal-body" id="edit-row-form-body-<%= row.id %>">
-          <%= f.hidden_field :source, value: row.source %>
-
-          <%# Render shared form fields partial %>
-          <%= render "prompt_tracker/testing/datasets/row_form_fields", dataset: dataset, row: row %>
-        </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <%= f.submit "Update Row", class: "btn btn-primary" %>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  </div>
+    <%= render "prompt_tracker/testing/datasets/edit_row_modal",
+               row: row,
+               index: index,
+               dataset: dataset,
+               update_path: update_path %>
   <% end %>
 <% end %>

@@ -1,0 +1,13 @@
+<%# Close the modal using custom Turbo Stream action %>
+<%# This properly handles Bootstrap modal cleanup (backdrop, scroll lock, etc.) %>
+<%= turbo_stream.action(:close_modal, "addRowModal") %>
+
+<%# Display flash message %>
+<%= turbo_stream.update "flash-messages" do %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <%= flash[:notice] %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% end %>
+
+<%# The row itself will be added via the broadcast_prepend_to_dataset callback %>

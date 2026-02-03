@@ -30,11 +30,13 @@ module PromptTracker
         # @param tools [Array] enabled tools
         # @param tool_config [Hash] tool configuration
         # @param use_real_llm [Boolean] whether to use real LLM
-        def initialize(model:, tools:, tool_config:, use_real_llm:)
+        # @param mock_function_outputs [Hash] custom mock responses per function name
+        def initialize(model:, tools:, tool_config:, use_real_llm:, mock_function_outputs: nil)
           @model = model
           @tools = tools
           @tool_config = tool_config
           @use_real_llm = use_real_llm
+          @mock_function_outputs = mock_function_outputs
         end
 
         # Process an API response and handle any function calls
@@ -107,11 +109,21 @@ module PromptTracker
           function_name = tool_call[:function_name]
           arguments = tool_call[:arguments]
 
-          {
-            success: true,
-            message: "Mock result for #{function_name}",
-            data: arguments
-          }.to_json
+          # Check if custom mock is configured for this function
+          custom_mock = @mock_function_outputs&.dig(function_name)
+
+          if custom_mock
+            # Use custom mock response
+            # Convert to JSON string if it's a Hash, otherwise use as-is (already a string)
+            custom_mock.is_a?(Hash) ? custom_mock.to_json : custom_mock
+          else
+            # Fall back to generic mock
+            {
+              success: true,
+              message: "Mock result for #{function_name}",
+              data: arguments
+            }.to_json
+          end
         end
 
         # Call the Response API with function outputs

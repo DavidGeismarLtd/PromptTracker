@@ -419,19 +419,30 @@ travel_dataset = PromptTracker::Dataset.create!(
 travel_dataset.dataset_rows.create!([
   {
     row_data: {
-      "request" => "I need to fly from New York to San Francisco next Tuesday for a business meeting"
+      "request" => "I need to fly from New York to San Francisco next Tuesday for a business meeting",
+      "mock_function_outputs" => {
+        "search_flights" => '{"flights": [{"flight_id": "UA1234", "airline": "United Airlines", "departure_time": "2026-02-10T08:00:00Z", "arrival_time": "2026-02-10T11:30:00Z", "price": 289.99, "currency": "USD", "available_seats": 12, "duration_minutes": 330}, {"flight_id": "AA5678", "airline": "American Airlines", "departure_time": "2026-02-10T10:15:00Z", "arrival_time": "2026-02-10T13:45:00Z", "price": 315.50, "currency": "USD", "available_seats": 8, "duration_minutes": 330}]}',
+        "get_weather" => '{"temperature_celsius": 14, "temperature_fahrenheit": 57, "condition": "partly cloudy", "humidity_percent": 65, "wind_speed_kmh": 18, "forecast": "Mild temperatures with occasional clouds throughout the day", "precipitation_chance_percent": 20}'
+      }
     },
     source: "manual"
   },
   {
     row_data: {
-      "request" => "Find me a hotel in Paris for 3 nights starting March 15th, near the Eiffel Tower"
+      "request" => "Find me a hotel in Paris for 3 nights starting March 15th, near the Eiffel Tower",
+      "mock_function_outputs" => {
+        "search_hotels" => '{"hotels": [{"hotel_id": "HTL001", "name": "Hotel Eiffel Trocadéro", "address": "35 Rue Benjamin Franklin, 75016 Paris", "star_rating": 4, "price_per_night": 185.00, "currency": "EUR", "available_rooms": 3, "amenities": ["WiFi", "Breakfast", "Air Conditioning", "Eiffel Tower View"], "distance_from_center_km": 0.8}, {"hotel_id": "HTL002", "name": "Pullman Paris Tour Eiffel", "address": "18 Avenue de Suffren, 75015 Paris", "star_rating": 4, "price_per_night": 245.00, "currency": "EUR", "available_rooms": 5, "amenities": ["WiFi", "Restaurant", "Bar", "Gym", "Eiffel Tower View"], "distance_from_center_km": 0.5}]}',
+        "get_weather" => '{"temperature_celsius": 12, "temperature_fahrenheit": 54, "condition": "light rain", "humidity_percent": 78, "wind_speed_kmh": 15, "forecast": "Cool spring weather with intermittent light showers", "precipitation_chance_percent": 60}'
+      }
     },
     source: "manual"
   },
   {
     row_data: {
-      "request" => "What's the weather like in Tokyo next week? I'm planning a trip"
+      "request" => "What's the weather like in Tokyo next week? I'm planning a trip",
+      "mock_function_outputs" => {
+        "get_weather" => '{"temperature_celsius": 18, "temperature_fahrenheit": 64, "condition": "sunny", "humidity_percent": 55, "wind_speed_kmh": 12, "forecast": "Pleasant spring weather with clear skies and comfortable temperatures", "precipitation_chance_percent": 10}'
+      }
     },
     source: "manual"
   }
@@ -457,19 +468,29 @@ ecommerce_dataset = PromptTracker::Dataset.create!(
 ecommerce_dataset.dataset_rows.create!([
   {
     row_data: {
-      "inquiry" => "I'm looking for wireless headphones under $100 with good battery life"
+      "inquiry" => "I'm looking for wireless headphones under $100 with good battery life",
+      "mock_function_outputs" => {
+        "search_products" => '{"products": [{"product_id": "WH-1000XM4", "name": "Sony WH-1000XM4 Wireless Headphones", "description": "Industry-leading noise canceling with 30-hour battery life", "price": 89.99, "currency": "USD", "category": "Electronics", "in_stock": true, "stock_quantity": 15, "rating": 4.8, "image_url": "https://example.com/sony-wh1000xm4.jpg"}, {"product_id": "QC35-II", "name": "Bose QuietComfort 35 II", "description": "Wireless Bluetooth headphones with Alexa voice control", "price": 95.00, "currency": "USD", "category": "Electronics", "in_stock": true, "stock_quantity": 8, "rating": 4.6, "image_url": "https://example.com/bose-qc35.jpg"}]}'
+      }
     },
     source: "manual"
   },
   {
     row_data: {
-      "inquiry" => "What's the status of my order #12345? It was supposed to arrive yesterday"
+      "inquiry" => "What's the status of my order #12345? It was supposed to arrive yesterday",
+      "mock_function_outputs" => {
+        "get_order_status" => '{"order_id": "12345", "status": "delayed", "order_date": "2026-01-25T10:30:00Z", "estimated_delivery": "2026-02-03T18:00:00Z", "tracking_number": "1Z999AA10123456784", "carrier": "UPS", "items": [{"product_id": "TSHIRT-BLU-M", "name": "Blue Cotton T-Shirt (Medium)", "quantity": 2, "price": 24.99}, {"product_id": "JEANS-BLK-32", "name": "Black Denim Jeans (32W)", "quantity": 1, "price": 59.99}]}'
+      }
     },
     source: "manual"
   },
   {
     row_data: {
-      "inquiry" => "I need to return the blue sweater from order #67890, it doesn't fit"
+      "inquiry" => "I need to return the blue sweater from order #67890, it doesn't fit",
+      "mock_function_outputs" => {
+        "get_order_status" => '{"order_id": "67890", "status": "delivered", "order_date": "2026-01-20T14:15:00Z", "estimated_delivery": "2026-01-28T12:00:00Z", "tracking_number": "1Z999AA10987654321", "carrier": "FedEx", "items": [{"product_id": "SWT-BLU-L", "name": "Blue Wool Sweater (Large)", "quantity": 1, "price": 79.99}]}',
+        "initiate_return" => '{"return_id": "RET-67890-001", "status": "initiated", "return_label_url": "https://example.com/returns/label/RET-67890-001.pdf", "refund_amount": 79.99, "currency": "USD", "estimated_refund_date": "2026-02-10T00:00:00Z", "instructions": "Print the return label and drop off the package at any FedEx location. Refund will be processed within 5-7 business days after we receive the item."}'
+      }
     },
     source: "manual"
   }

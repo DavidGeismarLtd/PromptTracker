@@ -328,10 +328,18 @@ export default class extends Controller {
                      data-tools-config-target="functionName"
                      data-action="input->tools-config#onFunctionChange">
               <input type="text"
-                     class="form-control form-control-sm"
+                     class="form-control form-control-sm mb-2"
                      placeholder="Description"
                      data-tools-config-target="functionDescription"
                      data-action="input->tools-config#onFunctionChange">
+              <textarea class="form-control form-control-sm"
+                        rows="2"
+                        placeholder="Output description (e.g., Returns a JSON object with temperature, condition, and humidity fields)"
+                        data-tools-config-target="functionOutputDescription"
+                        data-action="input->tools-config#onFunctionChange"></textarea>
+              <div class="form-text small">
+                Describe what this function returns to help generate better mock outputs
+              </div>
             </div>
             <button type="button"
                     class="btn btn-sm btn-outline-danger"
@@ -422,6 +430,7 @@ export default class extends Controller {
     this.functionItemTargets.forEach(item => {
       const nameInput = item.querySelector('[data-tools-config-target="functionName"]')
       const descInput = item.querySelector('[data-tools-config-target="functionDescription"]')
+      const outputDescInput = item.querySelector('[data-tools-config-target="functionOutputDescription"]')
       const paramsInput = item.querySelector('[data-tools-config-target="functionParameters"]')
       const strictInput = item.querySelector('[data-tools-config-target="functionStrict"]')
 
@@ -438,12 +447,20 @@ export default class extends Controller {
         console.warn("Invalid JSON in function parameters:", e)
       }
 
-      functions.push({
+      const func = {
         name: name,
         description: descInput?.value?.trim() || "",
         parameters: parameters,
         strict: strictInput?.checked || false
-      })
+      }
+
+      // Add output_description if present
+      const outputDesc = outputDescInput?.value?.trim()
+      if (outputDesc) {
+        func.output_description = outputDesc
+      }
+
+      functions.push(func)
     })
 
     if (functions.length > 0) {

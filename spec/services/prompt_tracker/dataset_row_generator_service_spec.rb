@@ -202,5 +202,187 @@ RSpec.describe PromptTracker::DatasetRowGeneratorService do
         end.to raise_error(/did not include 'rows' array/)
       end
     end
+
+    context "when testable has function calling configured" do
+      let(:version_with_functions) do
+        create(:prompt_version,
+               prompt: prompt,
+               variables_schema: [
+                 { "name" => "user_query", "type" => "string", "required" => true, "description" => "User's question" }
+               ],
+               model_config: {
+                 "provider" => "openai",
+                 "model" => "gpt-4o",
+                 "tool_config" => {
+                   "functions" => [
+                     {
+                       "name" => "get_weather",
+                       "description" => "Get weather for a location",
+                       "parameters" => {
+                         "type" => "object",
+                         "properties" => {
+                           "location" => { "type" => "string" }
+                         }
+                       }
+                     },
+                     {
+                       "name" => "search_flights",
+                       "description" => "Search for flights",
+                       "parameters" => {
+                         "type" => "object",
+                         "properties" => {
+                           "from" => { "type" => "string" },
+                           "to" => { "type" => "string" }
+                         }
+                       }
+                     }
+                   ]
+                 }
+               })
+      end
+
+      let(:dataset_with_functions) { create(:dataset, testable: version_with_functions) }
+
+      let(:mock_llm_response_with_functions) do
+        {
+          text: {
+            rows: [
+              {
+                "user_query" => "What's the weather in NYC?",
+                "mock_function_outputs" => {
+                  "get_weather" => {
+                    "location" => "New York, NY",
+                    "temperature" => 72,
+                    "condition" => "Sunny"
+                  }
+                }
+              },
+              {
+                "user_query" => "Find flights from NYC to LAX",
+                "mock_function_outputs" => {
+                  "search_flights" => {
+                    "flights" => [
+                      { "airline" => "AA", "price" => 299 },
+                      { "airline" => "UA", "price" => 315 }
+                    ]
+                  }
+                }
+              }
+            ]
+          }.to_json
+        }
+      end
+
+      before do
+        allow(PromptTracker::LlmClientService).to receive(:call_with_schema)
+          .and_return(mock_llm_response_with_functions)
+
+        # Disable Turbo Stream broadcasts
+        allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_prepend_to_dataset)
+        allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_replace_to_dataset)
+        allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_remove_to_dataset)
+      end
+
+      it "includes function context in the generation prompt" do
+        expect(PromptTracker::LlmClientService).to receive(:call_with_schema) do |args|
+          expect(args[:prompt]).to include("FUNCTION CALLING")
+          expect(args[:prompt]).to include("get_weather")
+          expect(args[:prompt]).to include("search_flights")
+          mock_llm_response_with_functions
+        end
+
+        described_class.generate(
+          dataset: dataset_with_functions,
+          count: 2,
+          model: "gpt-4o"
+        )
+      end
+
+      it "generates rows with mock_function_outputs" do
+        rows = described_class.generate(
+          dataset: dataset_with_functions,
+          count: 2,
+          model: "gpt-4o"
+        )
+
+        first_row = rows.first
+        expect(first_row.row_data["mock_function_outputs"]).to be_present
+        expect(first_row.row_data["mock_function_outputs"]["get_weather"]).to eq({
+          "location" => "New York, NY",
+          "temperature" => 72,
+          "condition" => "Sunny"
+        })
+
+        second_row = rows.second
+        expect(second_row.row_data["mock_function_outputs"]).to be_present
+        expect(second_row.row_data["mock_function_outputs"]["search_flights"]).to be_present
+        expect(second_row.row_data["mock_function_outputs"]["search_flights"]["flights"]).to be_an(Array)
+      end
+
+      it "includes mock_function_outputs field in schema" do
+        expect(PromptTracker::LlmClientService).to receive(:call_with_schema) do |args|
+          # The schema should be a RubyLLM::Schema class
+          schema_class = args[:schema]
+          expect(schema_class).to be < RubyLLM::Schema
+
+          # Verify the schema can be instantiated (validates structure)
+          expect { schema_class.new }.not_to raise_error
+
+          mock_llm_response_with_functions
+        end
+
+        described_class.generate(
+          dataset: dataset_with_functions,
+          count: 2,
+          model: "gpt-4o"
+        )
+      end
+    end
+
+    context "when testable has no function calling configured" do
+      let(:mock_llm_response_without_functions) do
+        {
+          text: {
+            rows: [
+              { "customer_name" => "Alice Smith", "issue_type" => "billing", "priority" => 1 }
+            ]
+          }.to_json
+        }
+      end
+
+      before do
+        allow(PromptTracker::LlmClientService).to receive(:call_with_schema)
+          .and_return(mock_llm_response_without_functions)
+
+        # Disable Turbo Stream broadcasts
+        allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_prepend_to_dataset)
+        allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_replace_to_dataset)
+        allow_any_instance_of(PromptTracker::DatasetRow).to receive(:broadcast_remove_to_dataset)
+      end
+
+      it "does not include function context in the generation prompt" do
+        expect(PromptTracker::LlmClientService).to receive(:call_with_schema) do |args|
+          expect(args[:prompt]).not_to include("FUNCTION CALLING")
+          mock_llm_response_without_functions
+        end
+
+        described_class.generate(
+          dataset: dataset,
+          count: 1,
+          model: "gpt-4o"
+        )
+      end
+
+      it "generates rows without mock_function_outputs" do
+        rows = described_class.generate(
+          dataset: dataset,
+          count: 1,
+          model: "gpt-4o"
+        )
+
+        first_row = rows.first
+        expect(first_row.row_data["mock_function_outputs"]).to be_nil
+      end
+    end
   end
 end

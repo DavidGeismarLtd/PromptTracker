@@ -97,7 +97,7 @@ module PromptTracker
         "dataset_#{dataset_id}_rows",
         target: "dataset-rows",
         partial: partial_path,
-        locals: locals
+        locals: locals.merge(skip_modal: true)  # Don't render modal in broadcast - it breaks form structure
       )
 
       # Update row count

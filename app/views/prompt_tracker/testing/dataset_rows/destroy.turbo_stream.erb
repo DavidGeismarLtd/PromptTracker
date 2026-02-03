@@ -1,0 +1,10 @@
+<%# Display flash message %>
+<%= turbo_stream.update "flash-messages" do %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <%= flash[:notice] %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% end %>
+
+<%# The row itself will be removed via the broadcast_remove_to_dataset callback %>
+

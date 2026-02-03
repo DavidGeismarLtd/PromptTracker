@@ -35,6 +35,10 @@ module PromptTracker
     # Constants
     SOURCES = %w[manual llm_generated imported].freeze
 
+    # Reserved fields that can exist in row_data but are not part of the dataset schema
+    # These fields have special purposes and should not be validated against the schema
+    RESERVED_FIELDS = %w[mock_function_outputs].freeze
+
     # Associations
     belongs_to :dataset,
                class_name: "PromptTracker::Dataset",
@@ -84,17 +88,16 @@ module PromptTracker
 
     private
 
-    # Broadcast append to dataset rows table
-    # Uses append instead of prepend to maintain ascending ID order (1, 2, 3...)
-    # matching the initial table render and pagination order
+    # Broadcast prepend to dataset rows table
+    # Uses prepend to show newest rows first (most recent at top)
     def broadcast_prepend_to_dataset
       partial_path, locals = row_partial_and_locals
 
-      broadcast_append_to(
+      broadcast_prepend_to(
         "dataset_#{dataset_id}_rows",
         target: "dataset-rows",
         partial: partial_path,
-        locals: locals
+        locals: locals.merge(skip_modal: true)  # Don't render modal in broadcast - it breaks form structure
       )
 
       # Update row count
@@ -114,14 +117,18 @@ module PromptTracker
     end
 
     # Broadcast replace to dataset rows table
+    # Skip modal rendering to avoid duplicates (modal stays in DOM, only row content updates)
     def broadcast_replace_to_dataset
+      # Reload to get fresh data from database (self may have stale data in after_update_commit)
+      reload
+
       partial_path, locals = row_partial_and_locals
 
       broadcast_replace_to(
         "dataset_#{dataset_id}_rows",
         target: "dataset-row-#{id}",
         partial: partial_path,
-        locals: locals
+        locals: locals.merge(skip_modal: true)
       )
     end
 
@@ -179,8 +186,9 @@ module PromptTracker
         errors.add(:row_data, "missing required variables: #{missing_vars.join(', ')}")
       end
 
-      # Check for extra variables not in schema
-      extra_vars = row_variable_names - schema_variable_names
+      # Check for extra variables not in schema (excluding reserved fields)
+      # Reserved fields like mock_function_outputs have special purposes and don't need to be in the schema
+      extra_vars = row_variable_names - schema_variable_names - RESERVED_FIELDS
 
       if extra_vars.any?
         errors.add(:row_data, "contains unknown variables: #{extra_vars.join(', ')}")

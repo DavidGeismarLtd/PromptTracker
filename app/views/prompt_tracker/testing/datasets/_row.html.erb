@@ -35,6 +35,26 @@
       <% end %>
     </td>
   <% end %>
+  <%# Add function mock output columns if testable has function calling configured %>
+  <% testable = dataset.testable %>
+  <% if testable.respond_to?(:model_config) && testable.model_config&.dig("tool_config", "functions").present? %>
+    <% functions = testable.model_config.dig("tool_config", "functions") %>
+    <% mock_outputs = row.row_data["mock_function_outputs"] %>
+    <% mock_outputs = {} unless mock_outputs.is_a?(Hash) %>
+    <% functions.each do |func| %>
+      <% function_name = func["name"] %>
+      <% mock_value = mock_outputs[function_name] %>
+      <td>
+        <% if mock_value.present? %>
+          <span class="text-truncate d-inline-block font-monospace small" style="max-width: 200px;" title="<%= mock_value %>">
+            <%= mock_value %>
+          </span>
+        <% else %>
+          <span class="text-muted fst-italic">—</span>
+        <% end %>
+      </td>
+    <% end %>
+  <% end %>
   <td>
     <% case row.source %>
     <% when "manual" %>
@@ -47,7 +67,14 @@
   </td>
   <td>
     <div class="btn-group btn-group-sm">
-      <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editRowModal-<%= row.id %>" title="Edit">
+      <button type="button"
+              class="btn btn-outline-secondary"
+              data-controller="lazy-edit-modal"
+              data-lazy-edit-modal-row-id-value="<%= row.id %>"
+              data-lazy-edit-modal-index-value="<%= index %>"
+              data-lazy-edit-modal-update-path-value="<%= update_path %>"
+              data-action="click->lazy-edit-modal#openOrLoad"
+              title="Edit">
         <i class="bi bi-pencil"></i>
       </button>
       <% if delete_path.present? %>
@@ -64,53 +91,13 @@
 </tr>
 
 <!-- Edit Row Modal -->
-<% if update_path.present? %>
-  <div class="modal fade" id="editRowModal-<%= row.id %>" tabindex="-1" data-controller="modal-fix" data-modal-fix-target="modal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Edit Row #<%= index %></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <%= form_with(model: row,
-                      url: update_path,
-                      method: :patch) do |f| %>
-        <div class="modal-body">
-          <%= f.hidden_field :source, value: row.source %>
-
-          <% dataset.schema.each do |var_schema| %>
-            <div class="mb-3">
-              <%= label_tag "dataset_row[row_data][#{var_schema['name']}]", var_schema['name'], class: "form-label" %>
-              <% if var_schema['required'] %>
-                <span class="text-danger">*</span>
-              <% end %>
-
-              <% case var_schema['type'] %>
-              <% when 'text' %>
-                <%= text_area_tag "dataset_row[row_data][#{var_schema['name']}]",
-                                  row.get_variable(var_schema['name']),
-                                  class: "form-control",
-                                  rows: 3,
-                                  required: var_schema['required'] %>
-              <% else %>
-                <%= text_field_tag "dataset_row[row_data][#{var_schema['name']}]",
-                                   row.get_variable(var_schema['name']),
-                                   class: "form-control",
-                                   required: var_schema['required'] %>
-              <% end %>
-
-              <% if var_schema['description'].present? %>
-                <div class="form-text"><%= var_schema['description'] %></div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <%= f.submit "Update Row", class: "btn btn-primary" %>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  </div>
+<%# Only render modal on initial load and prepend, not on replace (to avoid duplicates) %>
+<% unless local_assigns[:skip_modal] %>
+  <% if update_path.present? %>
+    <%= render "prompt_tracker/testing/datasets/edit_row_modal",
+               row: row,
+               index: index,
+               dataset: dataset,
+               update_path: update_path %>
+  <% end %>
 <% end %>

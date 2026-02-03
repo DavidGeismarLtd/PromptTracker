@@ -55,7 +55,7 @@
   <textarea name="<%= namespace %>[schema]"
             class="form-control font-monospace"
             rows="8"
-            placeholder='{"required_keys": ["status", "data"], "types": {"status": "string"}}'><%= (config['schema'] || config[:schema]).is_a?(Hash) ? JSON.pretty_generate(config['schema'] || config[:schema]) : (config['schema'] || config[:schema] || '') %></textarea>
+            placeholder='{"required_keys": ["status", "data"], "types": {"status": "string"}}'><%= config['schema'].is_a?(Hash) ? JSON.pretty_generate(config['schema']) : (config['schema'] || '') %></textarea>
   <small class="form-text text-muted">
     Define the expected JSON schema with required keys, optional keys, and types.
   </small>

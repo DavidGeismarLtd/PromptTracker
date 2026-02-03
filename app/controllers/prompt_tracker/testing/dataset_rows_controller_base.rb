@@ -17,7 +17,27 @@ module PromptTracker
       include DatasetsHelper
 
       before_action :set_dataset
-      before_action :set_row, only: [ :update, :destroy ]
+      before_action :set_row, only: [ :update, :destroy, :edit_modal ]
+
+      # GET /datasets/:dataset_id/rows/:id/edit_modal
+      # Returns just the edit modal HTML for lazy-loading
+      def edit_modal
+        index = @dataset.dataset_rows.where("id <= ?", @row.id).count
+
+        # Determine update path based on testable type
+        if @dataset.testable.is_a?(PromptTracker::PromptVersion)
+          prompt_version = @dataset.testable
+          prompt = prompt_version.prompt
+          update_path = PromptTracker::Engine.routes.url_helpers.testing_prompt_prompt_version_dataset_dataset_row_path(prompt, prompt_version, @dataset, @row)
+        elsif @dataset.testable.is_a?(PromptTracker::Openai::Assistant)
+          assistant = @dataset.testable
+          update_path = PromptTracker::Engine.routes.url_helpers.testing_openai_assistant_dataset_dataset_row_path(assistant, @dataset, @row)
+        end
+
+        render partial: "prompt_tracker/testing/datasets/edit_row_modal",
+               locals: { row: @row, index: index, dataset: @dataset, update_path: update_path },
+               layout: false
+      end
 
       # POST /datasets/:dataset_id/rows
       def create
@@ -82,6 +102,13 @@ module PromptTracker
 
       private
 
+      # Override view lookup to use shared dataset_rows views
+      # This makes both DatasetRowsController and Openai::DatasetRowsController
+      # look for views in app/views/prompt_tracker/testing/dataset_rows/
+      def _prefixes
+        @_prefixes ||= super + [ "prompt_tracker/testing/dataset_rows" ]
+      end
+
       # Abstract method to be implemented by subclasses
       # Must set @dataset instance variable and any related resources
       def set_dataset
@@ -99,7 +126,21 @@ module PromptTracker
       end
 
       def row_params
-        params.require(:dataset_row).permit(:source, row_data: {}, metadata: {})
+        permitted = params.require(:dataset_row).permit(:source, row_data: {}, metadata: {})
+
+        # Handle mock_function_outputs - comes as nested hash from per-function input fields
+        if permitted[:row_data] && permitted[:row_data][:mock_function_outputs].present?
+          mock_outputs = permitted[:row_data][:mock_function_outputs]
+
+          # Convert to hash and filter out empty values
+          if mock_outputs.is_a?(ActionController::Parameters) || mock_outputs.is_a?(Hash)
+            filtered = mock_outputs.to_h.reject { |_k, v| v.blank? }
+            # Set to nil if all values were empty, otherwise use filtered hash
+            permitted[:row_data][:mock_function_outputs] = filtered.present? ? filtered : nil
+          end
+        end
+
+        permitted
       end
 
       def render_error_turbo_stream(message)

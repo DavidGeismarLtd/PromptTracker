@@ -36,6 +36,8 @@ module PromptTracker
         prompt_tracker/controllers/test_mode_controller.js
         prompt_tracker/controllers/tools_config_controller.js
         prompt_tracker/controllers/resizable_columns_controller.js
+        prompt_tracker/controllers/lazy_edit_modal_controller.js
+
       ]
     end
     # # Make engine JS available to Sprockets (so importmap can find it)

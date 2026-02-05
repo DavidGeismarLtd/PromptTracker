@@ -52,7 +52,7 @@ module PromptTracker
       # All normalized evaluators work with all testables
       # @return [Array<Class>] array of compatible testable classes
       def self.compatible_with
-        [ PromptTracker::PromptVersion, PromptTracker::Openai::Assistant ]
+        [ PromptTracker::PromptVersion ]
       end
 
       # Initialize the evaluator with normalized data

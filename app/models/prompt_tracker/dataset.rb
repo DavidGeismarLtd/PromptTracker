@@ -89,7 +89,6 @@ module PromptTracker
     scope :recent, -> { order(created_at: :desc) }
     scope :by_name, -> { order(:name) }
     scope :for_prompt_versions, -> { where(testable_type: "PromptTracker::PromptVersion") }
-    scope :for_assistants, -> { where(testable_type: "PromptTracker::Openai::Assistant") }
     scope :single_turn_datasets, -> { where(dataset_type: :single_turn) }
     scope :conversational_datasets, -> { where(dataset_type: :conversational) }
 
@@ -144,14 +143,17 @@ module PromptTracker
 
     private
 
-    # Automatically set dataset_type to conversational for Assistant testables
+    # Automatically set dataset_type based on testable's model_config
     # unless explicitly set otherwise
     def set_dataset_type_from_testable
       return unless testable
       return unless single_turn? # Only change if it's still the default
 
-      # Assistants should use conversational datasets by default
-      self.dataset_type = :conversational if testable.is_a?(PromptTracker::Openai::Assistant)
+      # Conversational APIs (assistants, responses) should use conversational datasets by default
+      if testable.is_a?(PromptTracker::PromptVersion)
+        api = testable.model_config&.dig(:api) || testable.model_config&.dig("api")
+        self.dataset_type = :conversational if %w[assistants responses].include?(api)
+      end
     end
 
     # Copy schema from testable on creation

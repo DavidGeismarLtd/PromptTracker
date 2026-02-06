@@ -41,8 +41,8 @@ export default class extends Controller {
     // Provider/API UI targets
     "apiSelectContainer",
     "apiDescription",
-    "responseApiToolsContainer",
-    "responseApiToolsContent",
+    "toolsPanelContainer",
+    "toolsPanelContent",
     "toolCheckbox"
   ]
 
@@ -308,12 +308,12 @@ export default class extends Controller {
     // Check if API has tool capabilities
     const hasTools = tools && tools.length > 0
 
-    // Show/hide Response API tools container
-    if (this.hasResponseApiToolsContainerTarget) {
-      this.responseApiToolsContainerTarget.style.display = hasTools ? '' : 'none'
+    // Show/hide tools panel container
+    if (this.hasToolsPanelContainerTarget) {
+      this.toolsPanelContainerTarget.style.display = hasTools ? '' : 'none'
 
       // Update tools content if we have tools data
-      if (hasTools && this.hasResponseApiToolsContentTarget) {
+      if (hasTools && this.hasToolsPanelContentTarget) {
         this.updateToolsContent(tools)
       }
     }
@@ -336,9 +336,9 @@ export default class extends Controller {
 
   // Update the tools checkboxes dynamically
   updateToolsContent(tools) {
-    if (!this.hasResponseApiToolsContentTarget) return
+    if (!this.hasToolsPanelContentTarget) return
 
-    const container = this.responseApiToolsContentTarget
+    const container = this.toolsPanelContentTarget
     container.innerHTML = ''
 
     tools.forEach(tool => {

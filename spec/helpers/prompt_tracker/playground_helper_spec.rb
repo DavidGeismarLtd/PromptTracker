@@ -10,6 +10,17 @@ module PromptTracker
     before do
       # Set up instance variable that views would have
       @version = version
+
+      # Set up configuration defaults that ApplicationHelper methods depend on
+      PromptTracker.configuration.defaults = {
+        playground_provider: :openai,
+        playground_api: :chat_completions,
+        playground_model: "gpt-4o"
+      }
+
+      # Make ApplicationHelper methods available to the helper being tested
+      # In real views, all helpers are automatically included
+      helper.extend(ApplicationHelper)
     end
 
     describe "#available_tools_for_provider" do

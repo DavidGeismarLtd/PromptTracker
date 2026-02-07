@@ -335,8 +335,13 @@ export default class extends Controller {
   }
 
   // Update the tools checkboxes dynamically
+  // Preserves tool selection state from model_config when switching APIs
   updateToolsContent(tools) {
     if (!this.hasToolsPanelContentTarget) return
+
+    // IMPORTANT: Get currently enabled tools BEFORE clearing the container
+    // This preserves the user's tool selection when switching APIs
+    const savedTools = this.getEnabledTools()
 
     const container = this.toolsPanelContentTarget
     container.innerHTML = ''
@@ -346,8 +351,12 @@ export default class extends Controller {
       col.className = 'col-md-3'
       const isConfigurable = tool.configurable === true
 
+      // Check if this tool is in the saved tools list
+      const isChecked = savedTools.includes(tool.id)
+      const cardClass = isChecked ? 'active' : ''
+
       col.innerHTML = `
-        <label class="card tool-card p-3 h-100 position-relative"
+        <label class="card tool-card p-3 h-100 position-relative ${cardClass}"
                for="tool_${tool.id}"
                data-action="click->playground#onToolCardClick">
           <input class="d-none"
@@ -358,7 +367,8 @@ export default class extends Controller {
                  data-tools-config-target="toolCheckbox"
                  data-tool-id="${tool.id}"
                  data-configurable="${isConfigurable}"
-                 data-action="change->playground#onToolChange change->tools-config#onToolToggle">
+                 data-action="change->playground#onToolChange change->tools-config#onToolToggle"
+                 ${isChecked ? 'checked' : ''}>
           <i class="bi bi-check-circle-fill check-indicator"></i>
           <div class="text-center">
             <i class="bi ${tool.icon} tool-icon d-block mb-2"></i>
@@ -370,6 +380,20 @@ export default class extends Controller {
 
       container.appendChild(col)
     })
+
+    // Trigger panel visibility update for configurable tools
+    if (this.hasToolsPanelTarget) {
+      const toolsConfigElement = this.element.querySelector('[data-controller="tools-config"]')
+      if (toolsConfigElement) {
+        const toolsConfigController = this.application.getControllerForElementAndIdentifier(
+          toolsConfigElement,
+          'tools-config'
+        )
+        if (toolsConfigController && typeof toolsConfigController.updatePanelVisibility === 'function') {
+          toolsConfigController.updatePanelVisibility()
+        }
+      }
+    }
   }
 
   // Action: Model config change

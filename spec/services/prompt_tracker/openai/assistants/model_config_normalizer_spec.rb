@@ -33,6 +33,25 @@ module PromptTracker
               )
             end
 
+            let(:openai_client) { instance_double(OpenAI::Client) }
+            let(:vector_stores_api) { instance_double("VectorStores") }
+
+            before do
+              # Mock OpenAI client and vector store API calls
+              allow_any_instance_of(described_class).to receive(:openai_client).and_return(openai_client)
+              allow(openai_client).to receive(:vector_stores).and_return(vector_stores_api)
+
+              # Mock vector store retrieval calls
+              allow(vector_stores_api).to receive(:retrieve).with(id: "vs_123").and_return({
+                "id" => "vs_123",
+                "name" => "Product Documentation"
+              })
+              allow(vector_stores_api).to receive(:retrieve).with(id: "vs_456").and_return({
+                "id" => "vs_456",
+                "name" => "Support Articles"
+              })
+            end
+
             it "normalizes tools to string array" do
               result = described_class.normalize(assistant_data)
 
@@ -47,6 +66,34 @@ module PromptTracker
                   "vector_store_ids" => [ "vs_123", "vs_456" ]
                 }
               })
+            end
+
+            it "creates unified tool_config with vector store names" do
+              result = described_class.normalize(assistant_data)
+
+              expect(result[:tool_config]).to eq({
+                "file_search" => {
+                  "vector_store_ids" => [ "vs_123", "vs_456" ],
+                  "vector_stores" => [
+                    { "id" => "vs_123", "name" => "Product Documentation" },
+                    { "id" => "vs_456", "name" => "Support Articles" }
+                  ]
+                }
+              })
+            end
+
+            it "falls back to ID as name when API call fails" do
+              # Mock API failure for one vector store
+              allow(vector_stores_api).to receive(:retrieve).with(id: "vs_123").and_raise(StandardError.new("API Error"))
+
+              result = described_class.normalize(assistant_data)
+
+              expect(result[:tool_config]["file_search"]["vector_stores"]).to include(
+                { "id" => "vs_123", "name" => "vs_123" }  # Falls back to ID
+              )
+              expect(result[:tool_config]["file_search"]["vector_stores"]).to include(
+                { "id" => "vs_456", "name" => "Support Articles" }  # Successful fetch
+              )
             end
 
             it "sets correct provider and api" do
@@ -126,6 +173,12 @@ module PromptTracker
               result = described_class.normalize(assistant_data)
 
               expect(result[:tool_resources]).to eq({})
+            end
+
+            it "returns empty tool_config hash" do
+              result = described_class.normalize(assistant_data)
+
+              expect(result[:tool_config]).to eq({})
             end
           end
 

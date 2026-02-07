@@ -101,6 +101,142 @@ module PromptTracker
         expect(version.errors[:model_config]).to include("must be a hash")
       end
 
+      describe "model_config tool_config validation" do
+        it "allows model_config without tools" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: { "provider" => "openai", "model" => "gpt-4o" }
+                                      ))
+          expect(version).to be_valid
+        end
+
+        it "allows model_config with empty tools array" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [],
+                                          "tool_config" => {}
+                                        }
+                                      ))
+          expect(version).to be_valid
+        end
+
+        it "allows tools without tool_config (for tools that don't need config like code_interpreter)" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "code_interpreter" ],
+                                          "tool_config" => {}
+                                        }
+                                      ))
+          expect(version).to be_valid
+        end
+
+        it "allows tools array without tool_config key (normalizer will add it)" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "code_interpreter" ]
+                                        }
+                                      ))
+          expect(version).to be_valid
+        end
+
+        it "validates tool_config is a hash" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "file_search" ],
+                                          "tool_config" => "not a hash"
+                                        }
+                                      ))
+          expect(version).not_to be_valid
+          expect(version.errors[:model_config]).to include("tool_config must be a hash")
+        end
+
+        it "validates file_search config structure" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "file_search" ],
+                                          "tool_config" => {
+                                            "file_search" => "not a hash"
+                                          }
+                                        }
+                                      ))
+          expect(version).not_to be_valid
+          expect(version.errors[:model_config]).to include("tool_config.file_search must be a hash")
+        end
+
+        it "validates vector_store_ids is an array" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "file_search" ],
+                                          "tool_config" => {
+                                            "file_search" => {
+                                              "vector_store_ids" => "not an array"
+                                            }
+                                          }
+                                        }
+                                      ))
+          expect(version).not_to be_valid
+          expect(version.errors[:model_config]).to include("tool_config.file_search.vector_store_ids must be an array")
+        end
+
+        it "allows valid file_search config with vector_store_ids" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "file_search" ],
+                                          "tool_config" => {
+                                            "file_search" => {
+                                              "vector_store_ids" => [ "vs_123", "vs_456" ]
+                                            }
+                                          }
+                                        }
+                                      ))
+          expect(version).to be_valid
+        end
+
+        it "validates functions config is an array" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "functions" ],
+                                          "tool_config" => {
+                                            "functions" => "not an array"
+                                          }
+                                        }
+                                      ))
+          expect(version).not_to be_valid
+          expect(version.errors[:model_config]).to include("tool_config.functions must be an array")
+        end
+
+        it "allows valid functions config" do
+          version = PromptVersion.new(valid_attributes.merge(
+                                        model_config: {
+                                          "provider" => "openai",
+                                          "model" => "gpt-4o",
+                                          "tools" => [ "functions" ],
+                                          "tool_config" => {
+                                            "functions" => [
+                                              { "name" => "get_weather", "parameters" => {} }
+                                            ]
+                                          }
+                                        }
+                                      ))
+          expect(version).to be_valid
+        end
+      end
+
       describe "response_schema validation" do
         it "allows nil response_schema" do
           version = PromptVersion.new(valid_attributes.merge(response_schema: nil))

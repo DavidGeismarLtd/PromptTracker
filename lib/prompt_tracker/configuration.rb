@@ -201,7 +201,7 @@ module PromptTracker
           key: api_key,
           name: api_config[:name] || api_key.to_s.titleize,
           default: api_config[:default] || false,
-          capabilities: api_config[:capabilities] || [],
+          capabilities: ApiCapabilities.features_for(provider, api_key),
           description: api_config[:description]
         }
       end

@@ -840,5 +840,75 @@ module PromptTracker
         expect(version.response_schema_properties).to eq({ "name" => { "type" => "string" } })
       end
     end
+
+    # Archive functionality tests
+    describe "archive functionality" do
+      let(:version) { PromptVersion.create!(valid_attributes) }
+
+      describe "#archive!" do
+        it "sets archived_at timestamp" do
+          expect {
+            version.archive!
+          }.to change { version.archived_at }.from(nil).to(be_present)
+        end
+
+        it "persists the archived_at timestamp" do
+          version.archive!
+          version.reload
+          expect(version.archived_at).to be_present
+        end
+      end
+
+      describe "#unarchive!" do
+        before { version.archive! }
+
+        it "clears archived_at timestamp" do
+          expect {
+            version.unarchive!
+          }.to change { version.archived_at }.from(be_present).to(nil)
+        end
+
+        it "persists the change" do
+          version.unarchive!
+          version.reload
+          expect(version.archived_at).to be_nil
+        end
+      end
+
+      describe "#archived?" do
+        it "returns false when not archived" do
+          expect(version.archived?).to be false
+        end
+
+        it "returns true when archived" do
+          version.archive!
+          expect(version.archived?).to be true
+        end
+      end
+
+      describe ".not_archived scope" do
+        let!(:active_version) { PromptVersion.create!(valid_attributes) }
+        let!(:archived_version) { PromptVersion.create!(valid_attributes.merge(version_number: 2)) }
+
+        before { archived_version.archive! }
+
+        it "returns only non-archived versions" do
+          expect(PromptVersion.not_archived).to include(active_version)
+          expect(PromptVersion.not_archived).not_to include(archived_version)
+        end
+      end
+
+      describe ".archived scope" do
+        let!(:active_version) { PromptVersion.create!(valid_attributes) }
+        let!(:archived_version) { PromptVersion.create!(valid_attributes.merge(version_number: 2)) }
+
+        before { archived_version.archive! }
+
+        it "returns only archived versions" do
+          expect(PromptVersion.archived).to include(archived_version)
+          expect(PromptVersion.archived).not_to include(active_version)
+        end
+      end
+    end
   end
 end

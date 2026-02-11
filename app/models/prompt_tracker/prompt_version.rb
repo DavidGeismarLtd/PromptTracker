@@ -4,6 +4,7 @@
 #
 # Table name: prompt_tracker_prompt_versions
 #
+#  archived_at      :datetime
 #  created_at       :datetime         not null
 #  created_by       :string
 #  id               :bigint           not null, primary key
@@ -103,6 +104,14 @@ module PromptTracker
     # @return [ActiveRecord::Relation<PromptVersion>]
     scope :deprecated, -> { where(status: "deprecated") }
 
+    # Returns only non-archived versions (default scope behavior)
+    # @return [ActiveRecord::Relation<PromptVersion>]
+    scope :not_archived, -> { where(archived_at: nil) }
+
+    # Returns only archived versions
+    # @return [ActiveRecord::Relation<PromptVersion>]
+    scope :archived, -> { where.not(archived_at: nil) }
+
     # Returns only draft versions
     # @return [ActiveRecord::Relation<PromptVersion>]
     scope :draft, -> { where(status: "draft") }
@@ -162,6 +171,28 @@ module PromptTracker
     # @return [Boolean] true if status is "active"
     def active?
       status == "active"
+    end
+
+    # Archives this version (soft delete).
+    # Does NOT delete remote entities (e.g., OpenAI Assistants).
+    #
+    # @return [Boolean] true if successful
+    def archive!
+      update!(archived_at: Time.current)
+    end
+
+    # Unarchives this version.
+    #
+    # @return [Boolean] true if successful
+    def unarchive!
+      update!(archived_at: nil)
+    end
+
+    # Checks if this version is archived.
+    #
+    # @return [Boolean] true if archived
+    def archived?
+      archived_at.present?
     end
 
     # Checks if this version is deprecated.

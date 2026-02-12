@@ -14,7 +14,7 @@ module PromptTracker
   # @example Call an assistant
   #   response = OpenaiAssistantService.call(
   #     assistant_id: "asst_abc123",
-  #     prompt: "What's the weather in Berlin?"
+  #     user_message: "What's the weather in Berlin?"
   #   )
   #   response[:text]  # => "The current weather in Berlin is..."
   #
@@ -24,19 +24,19 @@ module PromptTracker
     # Call an OpenAI Assistant
     #
     # @param assistant_id [String] the assistant ID (starts with "asst_")
-    # @param prompt [String] the user message
+    # @param user_message [String] the user message to send to the assistant
     # @param timeout [Integer] maximum seconds to wait for completion (default: 60)
     # @return [Hash] response with :text, :usage, :model, :raw keys
     # @raise [AssistantError] if API call fails or times out
-    def self.call(assistant_id:, prompt:, timeout: 60)
-      new(assistant_id: assistant_id, prompt: prompt, timeout: timeout).call
+    def self.call(assistant_id:, user_message:, timeout: 60)
+      new(assistant_id: assistant_id, user_message: user_message, timeout: timeout).call
     end
 
-    attr_reader :assistant_id, :prompt, :timeout, :client
+    attr_reader :assistant_id, :user_message, :timeout, :client
 
-    def initialize(assistant_id:, prompt:, timeout: 60)
+    def initialize(assistant_id:, user_message:, timeout: 60)
       @assistant_id = assistant_id
-      @prompt = prompt
+      @user_message = user_message
       @timeout = timeout
       @client = build_client
     end
@@ -86,7 +86,7 @@ module PromptTracker
         thread_id: thread_id,
         parameters: {
           role: "user",
-          content: prompt
+          content: user_message
         }
       )
     end
@@ -96,7 +96,6 @@ module PromptTracker
     # @param thread_id [String] the thread ID
     # @return [String] run ID
     def run_assistant(thread_id)
-      binding.pry
       response = client.runs.create(
         thread_id: thread_id,
         parameters: {

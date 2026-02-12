@@ -326,11 +326,12 @@ export default class extends Controller {
   }
 
   // Generate slug from name
+  // Slug must use underscores (not hyphens) to match model validation
   generateSlugFromName(name) {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
   }
 
   // Show save loading state

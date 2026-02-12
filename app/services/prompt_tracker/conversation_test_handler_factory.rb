@@ -78,6 +78,9 @@ module PromptTracker
         when :openai_responses
           # OpenAI Response API has special stateful conversation handling
           TestRunners::Openai::Responses::SimulatedConversationRunner
+        when :openai_assistants
+          # OpenAI Assistants API uses thread-based conversation management
+          TestRunners::Openai::Assistants::SimulatedConversationRunner
         when :openai_chat_completions
           # OpenAI Chat Completions API
           TestRunners::Openai::ChatCompletions::SimulatedConversationRunner

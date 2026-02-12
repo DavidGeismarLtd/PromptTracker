@@ -101,7 +101,7 @@ module PromptTracker
 
           expect(OpenaiAssistantService).to have_received(:call).with(
             assistant_id: assistant_id,
-            prompt: prompt,
+            user_message: prompt,
             timeout: 60
           )
           expect(result).to eq(assistant_response)
@@ -121,7 +121,7 @@ module PromptTracker
 
           expect(OpenaiAssistantService).to have_received(:call).with(
             assistant_id: assistant_id,
-            prompt: prompt,
+            user_message: prompt,
             timeout: 120
           )
         end

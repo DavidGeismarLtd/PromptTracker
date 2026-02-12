@@ -191,7 +191,7 @@ module PromptTracker
       when :openai_assistants
         OpenaiAssistantService.call(
           assistant_id: options[:assistant_id],
-          prompt: prompt,
+          user_message: prompt,
           timeout: options[:timeout] || 60
         )
       end

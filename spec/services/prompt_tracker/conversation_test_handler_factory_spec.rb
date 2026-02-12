@@ -63,6 +63,37 @@ module PromptTracker
         end
       end
 
+      context "with OpenAI Assistants API" do
+        let(:model_config) do
+          {
+            provider: "openai",
+            api: "assistants",
+            model: "gpt-4o",
+            assistant_id: "asst_abc123"
+          }
+        end
+
+        it "returns Assistants::SimulatedConversationRunner" do
+          handler = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(handler).to be_a(TestRunners::Openai::Assistants::SimulatedConversationRunner)
+        end
+
+        it "passes model_config to handler" do
+          handler = described_class.build(
+            model_config: model_config,
+            use_real_llm: false
+          )
+
+          expect(handler.model_config[:provider]).to eq("openai")
+          expect(handler.model_config[:api]).to eq("assistants")
+          expect(handler.model_config[:assistant_id]).to eq("asst_abc123")
+        end
+      end
+
       context "with Anthropic Messages API" do
         let(:model_config) do
           {

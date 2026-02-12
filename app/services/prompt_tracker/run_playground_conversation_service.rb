@@ -108,8 +108,8 @@ module PromptTracker
 
     def execute_assistants_api
       OpenaiAssistantService.call(
-        assistant_id: model_config[:model],
-        prompt: content
+        assistant_id: model_config[:assistant_id],
+        user_message: content
       )
     end
 

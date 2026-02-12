@@ -53,15 +53,16 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
       expect(evaluators.keys).to include(:conversation_judge)
     end
 
-    it "returns only evaluators compatible with Assistant" do
-      assistant = create(:openai_assistant)
+    it "returns only evaluators compatible with PromptVersion using Assistants API" do
+      prompt = create(:prompt)
+      assistant_version = create(:prompt_version, :with_assistants, prompt: prompt)
 
-      evaluators = described_class.for_testable(assistant)
+      evaluators = described_class.for_testable(assistant_version)
 
       expect(evaluators).to be_a(Hash)
-      # Assistants are compatible with conversational evaluators
+      # Assistants API is compatible with conversational evaluators
       expect(evaluators.keys).to include(:conversation_judge)
-      # Single-response evaluators are NOT compatible with Assistants
+      # Single-response evaluators are NOT compatible with Assistants API
       expect(evaluators.keys).not_to include(:length, :keyword, :format, :llm_judge, :exact_match, :pattern_match)
     end
 

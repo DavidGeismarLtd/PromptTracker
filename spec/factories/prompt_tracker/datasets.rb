@@ -32,13 +32,6 @@ FactoryBot.define do
     end
 
     after(:build) do |dataset, evaluator|
-      # Auto-detect dataset_type based on api type if not explicitly set
-      # Conversational APIs (assistants, responses) use conversational datasets by default
-      if dataset.single_turn? && dataset.testable.is_a?(PromptTracker::PromptVersion)
-        api = dataset.testable.model_config&.dig(:api) || dataset.testable.model_config&.dig("api")
-        dataset.dataset_type = :conversational if %w[assistants responses].include?(api)
-      end
-
       if evaluator.custom_schema
         dataset.schema = evaluator.custom_schema
       elsif dataset.schema.blank? && dataset.testable

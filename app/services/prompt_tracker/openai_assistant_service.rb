@@ -89,8 +89,6 @@ module PromptTracker
           content: prompt
         }
       )
-    rescue => e
-      raise AssistantError, "Failed to add message: #{e.message}"
     end
 
     # Run the assistant on the thread
@@ -98,6 +96,7 @@ module PromptTracker
     # @param thread_id [String] the thread ID
     # @return [String] run ID
     def run_assistant(thread_id)
+      binding.pry
       response = client.runs.create(
         thread_id: thread_id,
         parameters: {
@@ -105,8 +104,6 @@ module PromptTracker
         }
       )
       response["id"]
-    rescue => e
-      raise AssistantError, "Failed to run assistant: #{e.message}"
     end
 
     # Wait for the assistant run to complete

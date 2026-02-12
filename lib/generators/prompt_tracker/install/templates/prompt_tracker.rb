@@ -183,4 +183,13 @@ PromptTracker.configure do |config|
     prompt_generator_model: "gpt-4o-mini",
     dataset_generator_model: "gpt-4o"
   }
+
+  # ===========================================================================
+  # Feature Flags
+  # ===========================================================================
+  # Enable OpenAI Assistant sync button in Testing Dashboard.
+  # When enabled, shows a "Sync OpenAI Assistants" button that fetches
+  # all assistants from your OpenAI account and creates agents for them.
+  # Default: false
+  config.enable_openai_assistant_sync = false
 end

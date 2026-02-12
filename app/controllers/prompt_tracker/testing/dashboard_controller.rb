@@ -41,7 +41,7 @@ module PromptTracker
         result = SyncOpenaiAssistantsToPromptVersionsService.new.call
 
         if result[:success]
-          redirect_to testing_root_path(filter: "assistants"),
+          redirect_to testing_root_path,
                       notice: "Synced #{result[:created_count]} assistants from OpenAI."
         else
           redirect_to testing_root_path,

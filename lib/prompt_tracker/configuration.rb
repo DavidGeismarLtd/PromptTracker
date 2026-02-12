@@ -66,6 +66,10 @@ module PromptTracker
     # @return [Hash] hash of setting name => value
     attr_accessor :defaults
 
+    # Enable OpenAI Assistant sync button in Testing Dashboard.
+    # @return [Boolean] true if the sync button should be shown
+    attr_accessor :enable_openai_assistant_sync
+
     # Built-in tools metadata (for Response API and Assistants API).
     # Maps tool capability symbols to display information.
     # @return [Hash] hash of tool symbol => tool metadata hash
@@ -90,6 +94,7 @@ module PromptTracker
       @contexts = {}
       @defaults = {}
       @builtin_tools = default_builtin_tools
+      @enable_openai_assistant_sync = false
     end
 
     # Check if basic authentication is enabled.

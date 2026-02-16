@@ -1,6 +1,9 @@
 <%# Unified output messages cell - displays messages from output_data %>
 <%# Clickable preview of first 2-3 messages, opens modal with full conversation %>
 <td data-column="output_messages">
+  <% if run.status == 'running' %>
+    <%= render "prompt_tracker/testing/test_runs/cells/loading_dots" %>
+  <% else %>
   <% messages = run.output_data&.dig("messages") || [] %>
 
   <% if messages.any? %>
@@ -68,5 +71,6 @@
     </div>
   <% else %>
     <span class="text-muted">-</span>
+  <% end %>
   <% end %>
 </td>

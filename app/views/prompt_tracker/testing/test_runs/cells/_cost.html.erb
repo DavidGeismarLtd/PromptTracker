@@ -1,5 +1,7 @@
 <td data-column="run_cost">
-  <% if run.cost_usd %>
+  <% if run.status == 'running' %>
+    <%= render "prompt_tracker/testing/test_runs/cells/loading_dots" %>
+  <% elsif run.cost_usd %>
     <small>$<%= number_with_precision(run.cost_usd, precision: 4) %></small>
   <% else %>
     <span class="text-muted">-</span>

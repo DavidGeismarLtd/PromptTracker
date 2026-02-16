@@ -1,22 +1,53 @@
-<%# Rendered prompt cell - reads from output_data %>
+<%# Rendered prompt cell - clickable to open modal with highlighted variables %>
 <td data-column="rendered_prompt">
-  <% rendered_prompt = run.output_data&.dig("rendered_prompt") %>
+  <% rendered_prompt = run.rendered_prompt %>
+  <% variables_used = run.variables_used %>
+
   <% if rendered_prompt.present? %>
-    <% prompt_id = "prompt-#{run.id}" %>
-    <div class="expandable-text">
-      <div id="<%= prompt_id %>-truncated">
-        <small class="text-muted"><%= truncate(rendered_prompt, length: 100) %></small>
-        <% if rendered_prompt.length > 100 %>
-          <button class="btn btn-link btn-sm p-0 ms-1" type="button" onclick="document.getElementById('<%= prompt_id %>-truncated').style.display='none'; document.getElementById('<%= prompt_id %>-full').style.display='block';">
-            <i class="bi bi-chevron-down"></i>
-          </button>
-        <% end %>
-      </div>
-      <div id="<%= prompt_id %>-full" style="display: none;">
-        <small class="text-muted" style="white-space: pre-wrap;"><%= rendered_prompt %></small>
-        <button class="btn btn-link btn-sm p-0 ms-1" type="button" onclick="document.getElementById('<%= prompt_id %>-full').style.display='none'; document.getElementById('<%= prompt_id %>-truncated').style.display='block';">
-          <i class="bi bi-chevron-up"></i>
-        </button>
+    <% modal_id = "rendered-prompt-modal-#{run.id}" %>
+
+    <!-- Clickable cell content -->
+    <div style="cursor: pointer;"
+         data-bs-toggle="modal"
+         data-bs-target="#<%= modal_id %>">
+      <small class="text-muted"><%= truncate(rendered_prompt, length: 100) %></small>
+      <% if rendered_prompt.length > 100 %>
+        <i class="bi bi-three-dots text-primary ms-1"></i>
+      <% end %>
+    </div>
+
+    <!-- Modal wrapped in modal-fix controller parent -->
+    <div data-controller="modal-fix">
+      <div class="modal fade"
+           id="<%= modal_id %>"
+           tabindex="-1"
+           aria-labelledby="<%= modal_id %>-label"
+           aria-hidden="true"
+           data-modal-fix-target="modal">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="<%= modal_id %>-label">
+                <i class="bi bi-file-text"></i> Rendered Prompt
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;">
+                <%= highlight_variables(rendered_prompt, variables_used) %>
+              </div>
+              <% if variables_used.present? && variables_used.any? %>
+                <hr>
+                <div class="small text-muted">
+                  <strong>Variables used:</strong>
+                  <% variables_used.each do |key, value| %>
+                    <span class="badge bg-warning text-dark me-1"><%= key %></span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   <% else %>

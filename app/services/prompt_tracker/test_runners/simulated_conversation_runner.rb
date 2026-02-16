@@ -103,13 +103,32 @@ module PromptTracker
       # @return [Hash] standardized output_data
       def build_output_data(messages:, params:, **extra)
         {
-          "rendered_prompt" => params[:system_prompt],
+          "rendered_system_prompt" => params[:system_prompt],
+          "rendered_user_prompt" => params[:first_user_message],
+          "rendered_prompt" => build_rendered_prompt_display(params),
           "model" => model,
           "provider" => provider,
           "messages" => messages,
           "total_turns" => calculate_total_turns(messages),
-          "status" => "completed"
+          "status" => "completed",
+          "max_turns" => params[:max_turns],
+          "interlocutor_prompt" => params[:interlocutor_prompt]
         }.merge(extra.stringify_keys)
+      end
+
+      # Build the rendered_prompt display string combining system and user prompts
+      #
+      # @param params [Hash] execution params
+      # @return [String] formatted prompt display
+      def build_rendered_prompt_display(params)
+        parts = []
+        if params[:system_prompt].present?
+          parts << "[System]\n#{params[:system_prompt]}"
+        end
+        if params[:first_user_message].present?
+          parts << "[User]\n#{params[:first_user_message]}"
+        end
+        parts.join("\n\n")
       end
 
       # Calculate total conversation turns from messages

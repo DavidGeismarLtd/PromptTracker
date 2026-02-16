@@ -145,9 +145,9 @@ module PromptTracker
 
         # Generate a mock response
         #
-        # @return [NormalizedResponse] mock API response
+        # @return [NormalizedLlmResponse] mock API response
         def mock_response
-          NormalizedResponse.new(
+          NormalizedLlmResponse.new(
             text: "Mock response after function call",
             usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
             model: @model,

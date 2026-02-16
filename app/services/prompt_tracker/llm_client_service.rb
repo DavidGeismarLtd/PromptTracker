@@ -217,42 +217,34 @@ module PromptTracker
       chat
     end
 
-    # Normalize RubyLLM response to our standard format
+    # Normalize RubyLLM response to NormalizedResponse format
     #
     # @param response [RubyLLM::Message] the RubyLLM message object
-    # @return [Hash] normalized response
+    # @return [NormalizedResponse] normalized response
     def normalize_response(response)
-      {
-        text: response.content,
-        usage: extract_usage(response),
-        model: response.model_id,
-        raw: response
-      }
+      LlmResponseNormalizers::Openai::ChatCompletions.normalize(response)
     end
 
-    # Normalize RubyLLM schema response to our standard format
+    # Normalize RubyLLM schema response to NormalizedResponse format
     #
     # @param response [RubyLLM::Message] the RubyLLM message object with structured content
-    # @return [Hash] normalized response with JSON text
+    # @return [NormalizedResponse] normalized response with JSON text
     def normalize_schema_response(response)
-      {
+      NormalizedResponse.new(
         text: response.content.to_json,  # Convert structured hash to JSON string
-        usage: extract_usage(response),
+        usage: {
+          prompt_tokens: response.input_tokens || 0,
+          completion_tokens: response.output_tokens || 0,
+          total_tokens: (response.input_tokens || 0) + (response.output_tokens || 0)
+        },
         model: response.model_id,
-        raw: response
-      }
-    end
-
-    # Extract usage information from RubyLLM response
-    #
-    # @param response [RubyLLM::Message] the RubyLLM message object
-    # @return [Hash] usage hash with token counts
-    def extract_usage(response)
-      {
-        prompt_tokens: response.input_tokens || 0,
-        completion_tokens: response.output_tokens || 0,
-        total_tokens: (response.input_tokens || 0) + (response.output_tokens || 0)
-      }
+        tool_calls: [],
+        file_search_results: [],
+        web_search_results: [],
+        code_interpreter_results: [],
+        api_metadata: {},
+        raw_response: response
+      )
     end
   end
 end

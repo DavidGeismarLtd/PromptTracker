@@ -93,11 +93,17 @@ module PromptTracker
               system_prompt: params[:system_prompt]
             )
 
+            # Build message with standardized structure matching NormalizedResponse
             messages << {
               "role" => "assistant",
               "content" => response[:text],
               "turn" => turn,
-              "usage" => response[:usage]
+              "usage" => response[:usage],
+              "tool_calls" => response[:tool_calls] || [],
+              "file_search_results" => response[:file_search_results] || [],
+              "web_search_results" => response[:web_search_results] || [],
+              "code_interpreter_results" => response[:code_interpreter_results] || [],
+              "api_metadata" => response[:api_metadata] || {}
             }
             conversation_history << { role: "assistant", content: response[:text] }
           end

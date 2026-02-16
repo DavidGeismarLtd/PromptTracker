@@ -46,7 +46,7 @@ module PromptTracker
         )
 
         expect(response[:text]).to eq("I don't have access to real-time weather data.")
-        expect(response[:response_id]).to eq("resp_abc123")
+        expect(response.response_id).to eq("resp_abc123")
         expect(response[:model]).to eq("gpt-4o-2024-08-06")
         expect(response[:usage][:prompt_tokens]).to eq(25)
         expect(response[:usage][:completion_tokens]).to eq(15)
@@ -54,7 +54,7 @@ module PromptTracker
         expect(response[:web_search_results]).to eq([])
         expect(response[:code_interpreter_results]).to eq([])
         expect(response[:file_search_results]).to eq([])
-        expect(response[:raw]).to eq(api_response)
+        expect(response[:raw_response]).to eq(api_response)
       end
 
       it "passes correct parameters to the API" do
@@ -310,7 +310,7 @@ module PromptTracker
         )
 
         expect(response[:text]).to eq("Your name is Alice.")
-        expect(response[:response_id]).to eq("resp_followup456")
+        expect(response.response_id).to eq("resp_followup456")
       end
 
       it "passes tools but not temperature when previous_response_id is present" do

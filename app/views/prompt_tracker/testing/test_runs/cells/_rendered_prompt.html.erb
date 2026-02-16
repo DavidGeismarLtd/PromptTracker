@@ -38,11 +38,16 @@
               </div>
               <% if variables_used.present? && variables_used.any? %>
                 <hr>
-                <div class="small text-muted">
-                  <strong>Variables used:</strong>
-                  <% variables_used.each do |key, value| %>
-                    <span class="badge bg-warning text-dark me-1"><%= key %></span>
-                  <% end %>
+                <div class="small">
+                  <strong class="text-muted">Variables used:</strong>
+                  <div class="mt-2">
+                    <% variables_used.each do |key, value| %>
+                      <div class="mb-2 d-flex align-items-start">
+                        <span class="badge bg-warning text-dark me-2" style="min-width: fit-content;"><%= key %></span>
+                        <span class="text-muted" style="word-break: break-word;"><%= truncate(value.to_s, length: 200) %></span>
+                      </div>
+                    <% end %>
+                  </div>
                 </div>
               <% end %>
             </div>

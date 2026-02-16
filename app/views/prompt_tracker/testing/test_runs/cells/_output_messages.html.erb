@@ -1,57 +1,76 @@
 <%# Unified output messages cell - displays messages from output_data %>
-<%# Works for both single-turn (1 message) and multi-turn (conversation) test runs %>
+<%# Clickable preview of first 2-3 messages, opens modal with full conversation %>
 <td data-column="output_messages">
+  <% if run.status == 'running' %>
+    <%= render "prompt_tracker/testing/test_runs/cells/loading_dots" %>
+  <% else %>
   <% messages = run.output_data&.dig("messages") || [] %>
+
   <% if messages.any? %>
-    <% if messages.length == 1 %>
-      <%# Single-turn: show response text directly %>
-      <% response_text = messages.first["content"] || "" %>
-      <% response_id = "response-#{run.id}" %>
-      <div class="expandable-text">
-        <div id="<%= response_id %>-truncated">
-          <small class="text-muted"><%= truncate(response_text, length: 100) %></small>
-          <% if response_text.length > 100 %>
-            <button class="btn btn-link btn-sm p-0 ms-1" type="button" onclick="document.getElementById('<%= response_id %>-truncated').style.display='none'; document.getElementById('<%= response_id %>-full').style.display='block';">
-              <i class="bi bi-chevron-down"></i>
-            </button>
-          <% end %>
+    <% modal_id = "conversation-modal-#{run.id}" %>
+    <% preview_messages = messages.first(3) %>
+
+    <!-- Clickable preview -->
+    <div style="cursor: pointer;"
+         class="hover-highlight rounded p-1"
+         data-bs-toggle="modal"
+         data-bs-target="#<%= modal_id %>">
+
+      <% preview_messages.each do |message| %>
+        <div class="mb-1 d-flex align-items-start gap-1">
+          <span class="badge <%= message['role'] == 'user' ? 'bg-primary' : 'bg-success' %>" style="font-size: 0.65rem;">
+            <%= message['role'] == 'user' ? 'U' : 'A' %>
+          </span>
+          <small class="text-muted" style="line-height: 1.3;"><%= truncate(message['content'], length: 60) %></small>
         </div>
-        <div id="<%= response_id %>-full" style="display: none;">
-          <small class="text-muted" style="white-space: pre-wrap;"><%= response_text %></small>
-          <button class="btn btn-link btn-sm p-0 ms-1" type="button" onclick="document.getElementById('<%= response_id %>-full').style.display='none'; document.getElementById('<%= response_id %>-truncated').style.display='block';">
-            <i class="bi bi-chevron-up"></i>
-          </button>
-        </div>
-      </div>
-    <% else %>
-      <%# Multi-turn: show conversation view %>
-      <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#conversation-<%= run.id %>" aria-expanded="false">
-        <i class="bi bi-chat-dots"></i> View Conversation (<%= messages.length %> messages)
-      </button>
-      <div class="collapse mt-2" id="conversation-<%= run.id %>">
-        <div class="card card-body">
-          <% messages.each_with_index do |message, index| %>
-            <div class="mb-3 <%= message['role'] == 'user' ? 'text-end' : '' %>">
-              <div class="d-inline-block text-start" style="max-width: 80%;">
-                <div class="mb-1">
-                  <% if message['role'] == 'user' %>
-                    <span class="badge bg-primary">User</span>
-                  <% else %>
-                    <span class="badge bg-success">Assistant</span>
-                  <% end %>
-                  <small class="text-muted">Turn <%= (index / 2.0).ceil %></small>
-                </div>
-                <div class="p-2 rounded <%= message['role'] == 'user' ? 'bg-primary text-white' : 'bg-light' %>">
-                  <%= simple_format(message['content']) %>
-                </div>
-              </div>
+      <% end %>
+
+      <% if messages.length > 3 %>
+        <small class="text-primary">
+          <i class="bi bi-three-dots"></i> +<%= messages.length - 3 %> more
+        </small>
+      <% end %>
+    </div>
+
+    <!-- Modal with full conversation -->
+    <div data-controller="modal-fix">
+      <div class="modal fade"
+           id="<%= modal_id %>"
+           tabindex="-1"
+           aria-labelledby="<%= modal_id %>-label"
+           aria-hidden="true"
+           data-modal-fix-target="modal">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="<%= modal_id %>-label">
+                <i class="bi bi-chat-dots"></i> Conversation (<%= messages.length %> messages)
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-          <% end %>
+            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+              <% messages.each_with_index do |message, index| %>
+                <div class="mb-3 <%= message['role'] == 'user' ? 'text-end' : '' %>">
+                  <div class="d-inline-block text-start" style="max-width: 80%;">
+                    <div class="mb-1">
+                      <span class="badge <%= message['role'] == 'user' ? 'bg-primary' : 'bg-success' %>">
+                        <%= message['role'] == 'user' ? 'User' : 'Assistant' %>
+                      </span>
+                      <small class="text-muted">Turn <%= (index / 2.0).ceil %></small>
+                    </div>
+                    <div class="p-2 rounded <%= message['role'] == 'user' ? 'bg-primary text-white' : 'bg-light' %>">
+                      <%= simple_format(message['content']) %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
         </div>
       </div>
-    <% end %>
+    </div>
   <% else %>
     <span class="text-muted">-</span>
   <% end %>
+  <% end %>
 </td>
-

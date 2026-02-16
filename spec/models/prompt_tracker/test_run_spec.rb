@@ -362,6 +362,47 @@ module PromptTracker
       end
     end
 
+    # Variables Used Tests
+
+    describe "#variables_used" do
+      context "when test_run has dataset_row" do
+        let(:dataset) { create(:dataset, testable: version) }
+        let(:dataset_row) { create(:dataset_row, dataset: dataset, row_data: { "name" => "John" }) }
+        let(:test_run_with_dataset) do
+          TestRun.create!(valid_attributes.merge(
+            dataset: dataset,
+            dataset_row: dataset_row
+          ))
+        end
+
+        it "returns row_data from dataset_row" do
+          expect(test_run_with_dataset.variables_used).to eq({ "name" => "John" })
+        end
+      end
+
+      context "when test_run has custom_variables in metadata" do
+        let(:test_run_with_custom_vars) do
+          TestRun.create!(valid_attributes.merge(
+            metadata: { "custom_variables" => { "name" => "Alice", "issue" => "refund" } }
+          ))
+        end
+
+        it "returns custom_variables from metadata" do
+          expect(test_run_with_custom_vars.variables_used).to eq({ "name" => "Alice", "issue" => "refund" })
+        end
+      end
+
+      context "when test_run has neither dataset_row nor custom_variables" do
+        let(:test_run_without_vars) do
+          TestRun.create!(valid_attributes.merge(metadata: {}))
+        end
+
+        it "returns empty hash" do
+          expect(test_run_without_vars.variables_used).to eq({})
+        end
+      end
+    end
+
     # Callbacks Tests
 
     describe "callbacks" do

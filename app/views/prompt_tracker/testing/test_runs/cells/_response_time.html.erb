@@ -1,5 +1,7 @@
 <td data-column="response_time">
-  <% if run.llm_response_time_ms %>
+  <% if run.status == 'running' %>
+    <%= render "prompt_tracker/testing/test_runs/cells/loading_dots" %>
+  <% elsif run.llm_response_time_ms %>
     <small><%= number_with_precision(run.llm_response_time_ms, precision: 0) %> ms</small>
   <% elsif run.execution_time_ms %>
     <small><%= number_with_precision(run.execution_time_ms, precision: 0) %> ms</small>

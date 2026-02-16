@@ -106,17 +106,22 @@ module PromptTracker
             aggregated_usage = result[:aggregated_usage]
             all_responses = result[:all_responses]
 
-            @previous_response_id = response[:response_id]
+            # Store response_id for multi-turn conversations (use convenience method)
+            @previous_response_id = response.response_id
             # Track ALL responses from this turn (including intermediate function call responses)
             @all_responses.concat(all_responses)
 
+            # Build message with standardized structure matching NormalizedResponse
             messages << {
               "role" => "assistant",
               "content" => response[:text],
               "turn" => turn,
-              "response_id" => response[:response_id],
               "usage" => aggregated_usage,  # Use aggregated usage from ALL API calls in this turn
-              "tool_calls" => all_tool_calls  # Include ALL tool calls from this turn
+              "tool_calls" => all_tool_calls,  # Include ALL tool calls from this turn
+              "file_search_results" => response[:file_search_results] || [],
+              "web_search_results" => response[:web_search_results] || [],
+              "code_interpreter_results" => response[:code_interpreter_results] || [],
+              "api_metadata" => response[:api_metadata] || {}
             }
           end
 
@@ -198,22 +203,22 @@ module PromptTracker
 
         # Generate a mock Response API response
         #
-        # @return [Hash] mock response
+        # @return [NormalizedResponse] mock response
         def mock_response_api_response
           @mock_response_counter ||= 0
           @mock_response_counter += 1
 
-          {
+          NormalizedResponse.new(
             text: "Mock Response API response for testing (#{@mock_response_counter})",
-            response_id: "resp_mock_#{SecureRandom.hex(8)}",
             usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
             model: model,
             tool_calls: [],
+            file_search_results: [],
             web_search_results: [],
             code_interpreter_results: [],
-            file_search_results: [],
-            raw: {}
-          }
+            api_metadata: { response_id: "resp_mock_#{SecureRandom.hex(8)}" },
+            raw_response: {}
+          )
         end
 
         # Get the interlocutor simulator instance

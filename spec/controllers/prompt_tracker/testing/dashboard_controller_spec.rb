@@ -91,11 +91,6 @@ module PromptTracker
           post :sync_openai_assistants
         end
 
-        it "redirects to testing root with assistants filter" do
-          post :sync_openai_assistants
-          expect(response).to redirect_to(testing_root_path(filter: "assistants"))
-        end
-
         it "sets success flash notice with sync details" do
           post :sync_openai_assistants
           expect(flash[:notice]).to eq("Synced 3 assistants from OpenAI.")

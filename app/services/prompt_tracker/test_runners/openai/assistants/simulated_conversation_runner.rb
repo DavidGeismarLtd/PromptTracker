@@ -94,15 +94,21 @@ module PromptTracker
               # Call Assistants API
               response = call_assistants_api(user_message: user_message)
 
-              @thread_id = response[:raw][:thread_id] if response[:raw]
+              # Store thread_id for subsequent turns (reuse the same thread)
+              # Use convenience method since thread_id is now in api_metadata
+              @thread_id ||= response.thread_id
 
+              # Build message with standardized structure matching NormalizedResponse
               messages << {
                 "role" => "assistant",
                 "content" => response[:text],
                 "turn" => turn,
                 "usage" => response[:usage],
-                "thread_id" => response[:raw]&.dig(:thread_id),
-                "run_id" => response[:raw]&.dig(:run_id)
+                "tool_calls" => response[:tool_calls] || [],
+                "file_search_results" => response[:file_search_results] || [],
+                "web_search_results" => response[:web_search_results] || [],
+                "code_interpreter_results" => response[:code_interpreter_results] || [],
+                "api_metadata" => response[:api_metadata] || {}
               }
             end
 
@@ -117,7 +123,8 @@ module PromptTracker
             if use_real_llm
               OpenaiAssistantService.call(
                 assistant_id: assistant_id,
-                user_message: user_message
+                user_message: user_message,
+                thread_id: @thread_id
               )
             else
               mock_assistants_api_response
@@ -126,20 +133,33 @@ module PromptTracker
 
           # Generate a mock Assistants API response
           #
-          # @return [Hash] mock response
+          # @return [NormalizedResponse] mock response matching OpenaiAssistantService format
           def mock_assistants_api_response
             @mock_response_counter ||= 0
             @mock_response_counter += 1
 
-            {
+            # Use stable thread_id for multi-turn (same thread across turns)
+            @mock_thread_id ||= "thread_mock_#{SecureRandom.hex(8)}"
+            mock_run_id = "run_mock_#{SecureRandom.hex(8)}"
+
+            NormalizedResponse.new(
               text: "Mock Assistants API response for testing (#{@mock_response_counter})",
               usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
               model: assistant_id,
-              raw: {
-                thread_id: "thread_mock_#{SecureRandom.hex(8)}",
-                run_id: "run_mock_#{SecureRandom.hex(8)}"
+              tool_calls: [],
+              file_search_results: [],
+              web_search_results: [],
+              code_interpreter_results: [],
+              api_metadata: {
+                thread_id: @mock_thread_id,
+                run_id: mock_run_id,
+                annotations: []
+              },
+              raw_response: {
+                thread_id: @mock_thread_id,
+                run_id: mock_run_id
               }
-            }
+            )
           end
 
           # Get the interlocutor simulator instance

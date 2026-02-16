@@ -57,12 +57,12 @@ module PromptTracker
               expect(result["thread_id"]).to start_with("thread_mock_")
             end
 
-            it "includes thread_id and run_id in assistant messages" do
+            it "includes thread_id and run_id in assistant messages api_metadata" do
               result = runner.execute(params)
 
               assistant_message = result["messages"].find { |m| m["role"] == "assistant" }
-              expect(assistant_message["thread_id"]).to start_with("thread_mock_")
-              expect(assistant_message["run_id"]).to start_with("run_mock_")
+              expect(assistant_message["api_metadata"][:thread_id]).to start_with("thread_mock_")
+              expect(assistant_message["api_metadata"][:run_id]).to start_with("run_mock_")
             end
 
             it "includes token usage in output_data" do
@@ -113,15 +113,24 @@ module PromptTracker
               end
 
               let(:mock_response) do
-                {
+                PromptTracker::NormalizedResponse.new(
                   text: "Hello! How can I help you?",
                   usage: { prompt_tokens: 15, completion_tokens: 10, total_tokens: 25 },
                   model: "asst_abc123",
-                  raw: {
+                  tool_calls: [],
+                  file_search_results: [],
+                  web_search_results: [],
+                  code_interpreter_results: [],
+                  api_metadata: {
+                    thread_id: "thread_real123",
+                    run_id: "run_real456",
+                    annotations: []
+                  },
+                  raw_response: {
                     thread_id: "thread_real123",
                     run_id: "run_real456"
                   }
-                }
+                )
               end
 
               before do
@@ -133,7 +142,8 @@ module PromptTracker
 
                 expect(OpenaiAssistantService).to have_received(:call).with(
                   assistant_id: "asst_abc123",
-                  user_message: "Hello"
+                  user_message: "Hello",
+                  thread_id: nil
                 )
               end
 
@@ -142,7 +152,7 @@ module PromptTracker
 
                 assistant_message = result["messages"].find { |m| m["role"] == "assistant" }
                 expect(assistant_message["content"]).to eq("Hello! How can I help you?")
-                expect(assistant_message["thread_id"]).to eq("thread_real123")
+                expect(assistant_message["api_metadata"][:thread_id]).to eq("thread_real123")
               end
             end
           end

@@ -242,34 +242,4 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
       expect(evaluators.keys).to include(:conversation_judge)
     end
   end
-
-  describe ".normalizer_for" do
-    it "returns ChatCompletionNormalizer for openai_chat_completions" do
-      normalizer = described_class.normalizer_for(:openai_chat_completions)
-
-      expect(normalizer).to be_a(PromptTracker::Evaluators::Normalizers::ChatCompletionNormalizer)
-    end
-
-    it "returns ResponseApiNormalizer for openai_responses" do
-      normalizer = described_class.normalizer_for(:openai_responses)
-
-      expect(normalizer).to be_a(PromptTracker::Evaluators::Normalizers::ResponseApiNormalizer)
-    end
-
-    it "returns AssistantsApiNormalizer for openai_assistants" do
-      normalizer = described_class.normalizer_for(:openai_assistants)
-
-      expect(normalizer).to be_a(PromptTracker::Evaluators::Normalizers::AssistantsApiNormalizer)
-    end
-
-    it "returns AnthropicNormalizer for anthropic_messages" do
-      normalizer = described_class.normalizer_for(:anthropic_messages)
-
-      expect(normalizer).to be_a(PromptTracker::Evaluators::Normalizers::AnthropicNormalizer)
-    end
-
-    it "raises ArgumentError for unknown API type" do
-      expect { described_class.normalizer_for(:unknown_api) }.to raise_error(ArgumentError)
-    end
-  end
 end

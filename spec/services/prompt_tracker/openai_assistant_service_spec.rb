@@ -32,7 +32,7 @@ module PromptTracker
               'data' => [
                 {
                   'content' => [
-                    { 'text' => { 'value' => 'The weather in Berlin is sunny.' } }
+                    { 'text' => { 'value' => 'The weather in Berlin is sunny.', 'annotations' => [] } }
                   ]
                 }
               ]
@@ -56,6 +56,11 @@ module PromptTracker
           )
         )
 
+        # Mock run steps (for file_search extraction)
+        allow(mock_client).to receive(:run_steps).and_return(
+          double(list: { 'data' => [] })
+        )
+
         response = described_class.call(
           assistant_id: assistant_id,
           user_message: user_message
@@ -66,8 +71,10 @@ module PromptTracker
         expect(response[:usage][:completion_tokens]).to eq(20)
         expect(response[:usage][:total_tokens]).to eq(30)
         expect(response[:model]).to eq(assistant_id)
-        expect(response[:raw][:thread_id]).to eq(thread_id)
-        expect(response[:raw][:run_id]).to eq(run_id)
+        expect(response.thread_id).to eq(thread_id)
+        expect(response.run_id).to eq(run_id)
+        expect(response[:raw_response][:thread_id]).to eq(thread_id)
+        expect(response[:raw_response][:run_id]).to eq(run_id)
       end
 
       it 'raises error when API key is missing' do

@@ -181,7 +181,7 @@ module PromptTracker
         expect(result[:usage][:completion_tokens]).to eq(8)
         expect(result[:usage][:total_tokens]).to eq(18)
         expect(result[:model]).to eq("gpt-4-0613")
-        expect(result[:raw]).to eq(response_double)
+        expect(result[:raw_response]).to eq(response_double)
       end
 
       it "applies max_tokens using with_params" do

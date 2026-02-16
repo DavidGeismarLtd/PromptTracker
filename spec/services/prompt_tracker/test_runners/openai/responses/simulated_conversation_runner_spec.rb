@@ -52,17 +52,17 @@ module PromptTracker
               it "correctly extracts tool results from each execution independently" do
                 # First execution with mock responses that include web search results
                 allow(runner).to receive(:mock_response_api_response).and_return(
-                  {
+                  PromptTracker::NormalizedResponse.new(
                     text: "First response",
-                    response_id: "resp_1",
                     usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
                     model: "gpt-4o",
                     tool_calls: [],
+                    file_search_results: [],
                     web_search_results: [ { query: "first query", results: [ "result1" ] } ],
                     code_interpreter_results: [],
-                    file_search_results: [],
-                    raw: {}
-                  }
+                    api_metadata: { response_id: "resp_1" },
+                    raw_response: {}
+                  )
                 )
 
                 first_result = runner.execute(params)
@@ -72,17 +72,17 @@ module PromptTracker
 
                 # Second execution with different mock responses
                 allow(runner).to receive(:mock_response_api_response).and_return(
-                  {
+                  PromptTracker::NormalizedResponse.new(
                     text: "Second response",
-                    response_id: "resp_2",
                     usage: { prompt_tokens: 15, completion_tokens: 25, total_tokens: 40 },
                     model: "gpt-4o",
                     tool_calls: [],
+                    file_search_results: [],
                     web_search_results: [],
                     code_interpreter_results: [ { code: "print('hello')", output: "hello" } ],
-                    file_search_results: [],
-                    raw: {}
-                  }
+                    api_metadata: { response_id: "resp_2" },
+                    raw_response: {}
+                  )
                 )
 
                 second_result = runner.execute(params)

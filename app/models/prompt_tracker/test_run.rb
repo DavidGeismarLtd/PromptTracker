@@ -234,6 +234,20 @@ module PromptTracker
       output_data&.dig("tool_outputs") || {}
     end
 
+    # Get the variables used for this test run
+    # From dataset_row.row_data or metadata["custom_variables"]
+    #
+    # @return [Hash] the variables used
+    def variables_used
+      if dataset_row.present?
+        dataset_row.row_data || {}
+      elsif metadata&.dig("custom_variables").present?
+        metadata["custom_variables"]
+      else
+        {}
+      end
+    end
+
     private
 
     def broadcast_status_change

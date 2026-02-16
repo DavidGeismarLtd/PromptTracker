@@ -753,6 +753,15 @@ a:hover {
   background: var(--pt-bg-tertiary) !important;
 }
 
+/* Hover highlight for clickable elements */
+.hover-highlight {
+  transition: var(--pt-transition);
+}
+
+.hover-highlight:hover {
+  background: rgba(0, 123, 255, 0.08);
+}
+
 /* Add spacing utilities */
 .mb-4 {
   margin-bottom: 1.5rem !important;

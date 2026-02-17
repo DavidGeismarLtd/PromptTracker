@@ -157,6 +157,46 @@ FactoryBot.define do
       end
     end
 
+    # Trait for conversation with tool calls
+    trait :with_tool_calls do
+      output_data do
+        {
+          "messages" => [
+            {
+              "role" => "user",
+              "content" => "What's the weather in Paris?",
+              "turn" => 1
+            },
+            {
+              "role" => "assistant",
+              "content" => "Based on my search, the weather in Paris is currently 18°C and sunny.",
+              "turn" => 1,
+              "tool_calls" => [
+                {
+                  "id" => "call_abc123",
+                  "type" => "function",
+                  "function_name" => "get_weather",
+                  "arguments" => { "city" => "Paris", "unit" => "celsius" }
+                }
+              ],
+              "web_search_results" => [
+                {
+                  "query" => "current weather Paris",
+                  "sources" => [
+                    { "title" => "Weather.com", "url" => "https://weather.com/paris" }
+                  ]
+                }
+              ]
+            }
+          ],
+          "rendered_prompt" => "What's the weather in Paris?",
+          "model" => "gpt-4",
+          "provider" => "openai",
+          "response_time_ms" => 1500
+        }
+      end
+    end
+
     trait :failed do
       status { "failed" }
       passed { false }

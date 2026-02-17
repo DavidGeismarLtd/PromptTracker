@@ -1,0 +1,166 @@
+<%#
+  Conversation Message Partial
+  Displays a single message with tool calls, file search, web search, and code interpreter results
+
+  Local variables:
+    - message: Hash with role, content, tool_calls, file_search_results, web_search_results, code_interpreter_results
+    - message_index: Integer index of the message
+    - run_id: ID of the test run (for unique element IDs)
+%>
+<%
+  role = message['role']
+  content = message['content']
+  turn = message['turn']
+  tool_calls = message['tool_calls'] || []
+  file_search_results = message['file_search_results'] || []
+  web_search_results = message['web_search_results'] || []
+  code_interpreter_results = message['code_interpreter_results'] || []
+  is_user = role == 'user'
+  has_tool_activity = tool_calls.any? || file_search_results.any? || web_search_results.any? || code_interpreter_results.any?
+%>
+
+<div class="mb-3 <%= is_user ? 'text-end' : '' %>">
+  <div class="d-inline-block text-start" style="max-width: 85%;">
+    <%# Message header %>
+    <div class="mb-1">
+      <span class="badge <%= is_user ? 'bg-primary' : 'bg-success' %>">
+        <%= is_user ? 'User' : 'Assistant' %>
+      </span>
+      <% if turn.present? %>
+        <small class="text-muted">Turn <%= turn %></small>
+      <% end %>
+    </div>
+
+    <%# Tool activity section (shown before assistant's text response) %>
+    <% if !is_user && has_tool_activity %>
+      <div class="tool-activity mb-2">
+        <%# Tool/Function Calls %>
+        <% tool_calls.each_with_index do |tc, tc_index| %>
+          <% 
+            func_name = tc['function_name'] || tc['name']
+            arguments = tc['arguments'] || {}
+            call_id = tc['id']
+            collapse_id = "tool-call-#{run_id}-#{message_index}-#{tc_index}"
+          %>
+          <div class="tool-call-block border-start border-3 border-warning ps-2 py-1 mb-2 bg-light rounded-end">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-gear text-warning"></i>
+              <code class="small"><%= func_name %></code>
+              <button class="btn btn-link btn-sm p-0 text-muted" 
+                      type="button"
+                      data-bs-toggle="collapse" 
+                      data-bs-target="#<%= collapse_id %>">
+                <i class="bi bi-chevron-down"></i>
+              </button>
+            </div>
+            <div class="collapse" id="<%= collapse_id %>">
+              <div class="mt-1">
+                <small class="text-muted">Arguments:</small>
+                <pre class="bg-white p-2 rounded border mb-0 small"><code><%= JSON.pretty_generate(arguments) rescue arguments.to_s %></code></pre>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%# File Search Results %>
+        <% file_search_results.each_with_index do |fs, fs_index| %>
+          <% collapse_id = "file-search-#{run_id}-#{message_index}-#{fs_index}" %>
+          <div class="tool-call-block border-start border-3 border-info ps-2 py-1 mb-2 bg-light rounded-end">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark-search text-info"></i>
+              <span class="small">File Search</span>
+              <% if fs['query'].present? %>
+                <small class="text-muted">- "<%= truncate(fs['query'], length: 40) %>"</small>
+              <% end %>
+              <button class="btn btn-link btn-sm p-0 text-muted" 
+                      type="button"
+                      data-bs-toggle="collapse" 
+                      data-bs-target="#<%= collapse_id %>">
+                <i class="bi bi-chevron-down"></i>
+              </button>
+            </div>
+            <div class="collapse" id="<%= collapse_id %>">
+              <div class="mt-1">
+                <small class="text-muted">Files found:</small>
+                <ul class="list-unstyled mb-0 small">
+                  <% (fs['files'] || []).each do |file| %>
+                    <li><i class="bi bi-file-text"></i> <%= file %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%# Web Search Results %>
+        <% web_search_results.each_with_index do |ws, ws_index| %>
+          <% collapse_id = "web-search-#{run_id}-#{message_index}-#{ws_index}" %>
+          <div class="tool-call-block border-start border-3 border-primary ps-2 py-1 mb-2 bg-light rounded-end">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-globe text-primary"></i>
+              <span class="small">Web Search</span>
+              <% if ws['query'].present? %>
+                <small class="text-muted">- "<%= truncate(ws['query'], length: 40) %>"</small>
+              <% end %>
+              <button class="btn btn-link btn-sm p-0 text-muted" 
+                      type="button"
+                      data-bs-toggle="collapse" 
+                      data-bs-target="#<%= collapse_id %>">
+                <i class="bi bi-chevron-down"></i>
+              </button>
+            </div>
+            <div class="collapse" id="<%= collapse_id %>">
+              <div class="mt-1">
+                <small class="text-muted">Sources:</small>
+                <ul class="list-unstyled mb-0 small">
+                  <% (ws['sources'] || []).each do |source| %>
+                    <li>
+                      <a href="<%= source['url'] %>" target="_blank" rel="noopener">
+                        <%= source['title'] || source['url'] %>
+                      </a>
+                    </li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%# Code Interpreter Results %>
+        <% code_interpreter_results.each_with_index do |ci, ci_index| %>
+          <% collapse_id = "code-interpreter-#{run_id}-#{message_index}-#{ci_index}" %>
+          <div class="tool-call-block border-start border-3 border-success ps-2 py-1 mb-2 bg-light rounded-end">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-code-slash text-success"></i>
+              <span class="small">Code Interpreter</span>
+              <button class="btn btn-link btn-sm p-0 text-muted" 
+                      type="button"
+                      data-bs-toggle="collapse" 
+                      data-bs-target="#<%= collapse_id %>">
+                <i class="bi bi-chevron-down"></i>
+              </button>
+            </div>
+            <div class="collapse" id="<%= collapse_id %>">
+              <div class="mt-1">
+                <% if ci['code'].present? %>
+                  <small class="text-muted">Code:</small>
+                  <pre class="bg-dark text-light p-2 rounded mb-1 small"><code><%= ci['code'] %></code></pre>
+                <% end %>
+                <% if ci['output'].present? %>
+                  <small class="text-muted">Output:</small>
+                  <pre class="bg-white p-2 rounded border mb-0 small"><code><%= ci['output'] %></code></pre>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%# Message content %>
+    <div class="p-2 rounded <%= is_user ? 'bg-primary text-white' : 'bg-light' %>">
+      <%= simple_format(content) %>
+    </div>
+  </div>
+</div>
+

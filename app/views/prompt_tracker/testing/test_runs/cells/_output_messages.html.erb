@@ -5,6 +5,7 @@
     <%= render "prompt_tracker/testing/test_runs/cells/loading_dots" %>
   <% else %>
   <% messages = run.output_data&.dig("messages") || [] %>
+  <% total_tool_calls = messages.sum { |m| (m['tool_calls'] || []).length } %>
 
   <% if messages.any? %>
     <% modal_id = "conversation-modal-#{run.id}" %>
@@ -30,6 +31,14 @@
           <i class="bi bi-three-dots"></i> +<%= messages.length - 3 %> more
         </small>
       <% end %>
+
+      <% if total_tool_calls > 0 %>
+        <div class="mt-1">
+          <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">
+            <i class="bi bi-gear"></i> <%= total_tool_calls %> tool call<%= total_tool_calls > 1 ? 's' : '' %>
+          </span>
+        </div>
+      <% end %>
     </div>
 
     <!-- Modal with full conversation -->
@@ -45,24 +54,20 @@
             <div class="modal-header">
               <h5 class="modal-title" id="<%= modal_id %>-label">
                 <i class="bi bi-chat-dots"></i> Conversation (<%= messages.length %> messages)
+                <% if total_tool_calls > 0 %>
+                  <span class="badge bg-warning text-dark ms-2">
+                    <i class="bi bi-gear"></i> <%= total_tool_calls %> tool call<%= total_tool_calls > 1 ? 's' : '' %>
+                  </span>
+                <% end %>
               </h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
               <% messages.each_with_index do |message, index| %>
-                <div class="mb-3 <%= message['role'] == 'user' ? 'text-end' : '' %>">
-                  <div class="d-inline-block text-start" style="max-width: 80%;">
-                    <div class="mb-1">
-                      <span class="badge <%= message['role'] == 'user' ? 'bg-primary' : 'bg-success' %>">
-                        <%= message['role'] == 'user' ? 'User' : 'Assistant' %>
-                      </span>
-                      <small class="text-muted">Turn <%= (index / 2.0).ceil %></small>
-                    </div>
-                    <div class="p-2 rounded <%= message['role'] == 'user' ? 'bg-primary text-white' : 'bg-light' %>">
-                      <%= simple_format(message['content']) %>
-                    </div>
-                  </div>
-                </div>
+                <%= render "prompt_tracker/testing/test_runs/cells/conversation_message",
+                           message: message,
+                           message_index: index,
+                           run_id: run.id %>
               <% end %>
             </div>
           </div>

@@ -232,12 +232,12 @@ module PromptTracker
       chat
     end
 
-    # Normalize RubyLLM response to NormalizedResponse format
+    # Normalize RubyLLM response to NormalizedLlmResponse format
     #
     # @param response [RubyLLM::Message] the RubyLLM message object
-    # @return [NormalizedResponse] normalized response
+    # @return [NormalizedLlmResponse] normalized response
     def normalize_response(response)
-      LlmResponseNormalizers::Openai::ChatCompletions.normalize(response)
+      LlmResponseNormalizers::RubyLlm.normalize(response)
     end
 
     # Normalize RubyLLM schema response to NormalizedLlmResponse format

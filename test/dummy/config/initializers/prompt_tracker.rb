@@ -29,6 +29,7 @@ PromptTracker.configure do |config|
   # Providers and Their APIs
   # ===========================================================================
   # Define providers and the APIs they offer.
+  # Note: Tool capabilities are defined in ApiCapabilities, not here.
   config.providers = {
     openai: {
       name: "OpenAI",
@@ -40,13 +41,11 @@ PromptTracker.configure do |config|
         },
         responses: {
           name: "Responses",
-          description: "Stateful conversations with built-in tools",
-          capabilities: [ :web_search, :file_search, :code_interpreter, :functions ]
+          description: "Stateful conversations with built-in tools"
         },
         assistants: {
           name: "Assistants",
-          description: "Full assistant features with threads and runs",
-          capabilities: [ :code_interpreter, :file_search, :functions ]
+          description: "Full assistant features with threads and runs"
         }
       }
     },

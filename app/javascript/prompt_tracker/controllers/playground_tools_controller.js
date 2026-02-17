@@ -8,10 +8,12 @@ import { Controller } from "@hotwired/stimulus"
  * This controller handles:
  * - Tool checkbox state changes (visual active/inactive state)
  * - Show/hide configuration panels based on checkbox state
+ * - Dynamic tool card rendering when provider/API changes
  */
 export default class extends Controller {
   static targets = [
     "toolCheckbox",      // All tool checkboxes
+    "toolCardsContainer", // Container for tool cards (for dynamic updates)
     "fileSearchPanel",   // File search config panel
     "functionsPanel"     // Functions config panel
   ]
@@ -21,6 +23,78 @@ export default class extends Controller {
     requestAnimationFrame(() => {
       this.updatePanelVisibility()
     })
+  }
+
+  /**
+   * Update the available tools when provider/API changes
+   * Called by playground_ui_controller via outlet
+   *
+   * @param {Array<Object>} tools - Array of tool objects with id, name, description, icon, configurable
+   */
+  updateTools(tools) {
+    if (!this.hasToolCardsContainerTarget) {
+      console.warn('[PlaygroundToolsController] No tool cards container target found')
+      return
+    }
+
+    console.log(`[PlaygroundToolsController] Updating tools:`, tools)
+
+    // Clear existing tool cards
+    this.toolCardsContainerTarget.innerHTML = ''
+
+    // Render new tool cards
+    if (tools && tools.length > 0) {
+      tools.forEach(tool => {
+        const cardHtml = this.buildToolCardHtml(tool)
+        this.toolCardsContainerTarget.insertAdjacentHTML('beforeend', cardHtml)
+      })
+    } else {
+      // Show "no tools" message
+      this.toolCardsContainerTarget.innerHTML = `
+        <div class="col-12">
+          <div class="alert alert-secondary py-2 mb-0">
+            <i class="bi bi-info-circle"></i>
+            No tools available for this API.
+          </div>
+        </div>
+      `
+    }
+
+    // Reset configuration panels visibility (collapse them since tools are unchecked)
+    this.updatePanelVisibility()
+  }
+
+  /**
+   * Build HTML for a single tool card
+   * @param {Object} tool - Tool object with id, name, description, icon, configurable
+   * @returns {string} HTML string for the tool card
+   * @private
+   */
+  buildToolCardHtml(tool) {
+    const checkboxId = `tool_${tool.id}`
+    const configurable = tool.configurable === true
+
+    return `
+      <div class="col-md-3">
+        <label class="card tool-card p-3 h-100 position-relative"
+               for="${checkboxId}">
+          <input class="d-none"
+                 type="checkbox"
+                 id="${checkboxId}"
+                 value="${tool.id}"
+                 data-playground-tools-target="toolCheckbox"
+                 data-tool-id="${tool.id}"
+                 data-configurable="${configurable}"
+                 data-action="change->playground-tools#onToolToggle">
+          <i class="bi bi-check-circle-fill check-indicator"></i>
+          <div class="text-center">
+            <i class="bi ${tool.icon} tool-icon d-block mb-2"></i>
+            <strong class="d-block" style="font-size: 0.85rem;">${tool.name}</strong>
+            <small class="text-muted" style="font-size: 0.7rem;">${tool.description}</small>
+          </div>
+        </label>
+      </div>
+    `
   }
 
   /**

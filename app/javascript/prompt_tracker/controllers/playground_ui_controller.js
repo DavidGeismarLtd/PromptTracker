@@ -58,7 +58,7 @@ export default class extends Controller {
     capabilities: Object
   }
 
-  static outlets = ["playground-conversation"]
+  static outlets = ["playground-conversation", "playground-tools"]
 
   connect() {
     console.log('[PlaygroundUIController] Connected')
@@ -124,7 +124,7 @@ export default class extends Controller {
     // Update all UI elements
     this.updatePanelVisibility(playgroundUI)
     this.updateConversationVisibility(playgroundUI)
-    this.updateToolsVisibility(tools)
+    this.updateToolsVisibility(tools, provider, api)
     this.updateApiDescription(provider, api)
   }
 
@@ -261,15 +261,47 @@ export default class extends Controller {
   }
 
   /**
-   * Update tools panel visibility based on available tools
+   * Update tools panel visibility and content based on available tools
+   *
+   * @param {Array<string>} toolSymbols - Array of tool symbols from capabilities (e.g., ['functions', 'web_search'])
+   * @param {string} provider - Current provider key
+   * @param {string} api - Current API key
    */
-  updateToolsVisibility(tools) {
+  updateToolsVisibility(toolSymbols, provider, api) {
     if (!this.hasToolsPanelContainerTarget) return
 
-    const hasTools = tools && tools.length > 0
+    const hasTools = toolSymbols && toolSymbols.length > 0
     this.toolsPanelContainerTarget.style.display = hasTools ? '' : 'none'
 
-    console.log(`[PlaygroundUIController] Tools panel: ${hasTools ? 'visible' : 'hidden'} (${tools.length} tools)`)
+    console.log(`[PlaygroundUIController] Tools panel: ${hasTools ? 'visible' : 'hidden'} (${toolSymbols.length} tools)`)
+
+    // Update the actual tool cards via outlet
+    if (this.hasPlaygroundToolsOutlet) {
+      // Get full tool metadata from providerData
+      const toolsData = this.getToolsDataForApi(provider, api)
+      this.playgroundToolsOutlet.updateTools(toolsData)
+    }
+  }
+
+  /**
+   * Get full tool metadata for a provider/API combination from providerData
+   *
+   * @param {string} provider - Provider key
+   * @param {string} api - API key
+   * @returns {Array<Object>} Array of tool objects with id, name, description, icon, configurable
+   */
+  getToolsDataForApi(provider, api) {
+    if (!this.hasModelProviderTarget) return []
+
+    const providerData = JSON.parse(this.modelProviderTarget.dataset.providerData || '{}')
+    const data = providerData[provider]
+
+    if (!data || !data.tools_by_api) {
+      console.warn(`[PlaygroundUIController] No tools_by_api data for provider: ${provider}`)
+      return []
+    }
+
+    return data.tools_by_api[api] || []
   }
 
   /**

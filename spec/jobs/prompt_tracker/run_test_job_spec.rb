@@ -67,7 +67,8 @@ module PromptTracker
       double(
         "RubyLLM::ModelInfo",
         input_price_per_million: 30.0,
-        output_price_per_million: 60.0
+        output_price_per_million: 60.0,
+        provider: "openai"
       )
     end
 
@@ -122,6 +123,21 @@ module PromptTracker
       end
 
       context "with real LLM" do
+        let(:mock_chat) { instance_double(RubyLLM::Chat) }
+
+        before do
+          # Mock RubyLLM.chat to return a mock chat instance
+          allow(RubyLLM).to receive(:chat).and_return(mock_chat)
+          allow(mock_chat).to receive(:with_instructions).and_return(mock_chat)
+          allow(mock_chat).to receive(:with_temperature).and_return(mock_chat)
+          allow(mock_chat).to receive(:with_tools).and_return(mock_chat)
+          allow(mock_chat).to receive(:on_new_message).and_return(mock_chat)
+          allow(mock_chat).to receive(:on_tool_call).and_return(mock_chat)
+          allow(mock_chat).to receive(:on_tool_result).and_return(mock_chat)
+          allow(mock_chat).to receive(:messages).and_return([])
+          allow(mock_chat).to receive(:ask).and_return(mock_response)
+        end
+
         it "stores output_data in test run" do
           allow(RubyLLM.models).to receive(:find).and_return(mock_model_info)
 
@@ -155,7 +171,7 @@ module PromptTracker
         end
 
         it "handles model info without pricing" do
-          model_without_pricing = double("RubyLLM::ModelInfo", input_price_per_million: nil, output_price_per_million: nil)
+          model_without_pricing = double("RubyLLM::ModelInfo", input_price_per_million: nil, output_price_per_million: nil, provider: "openai")
           allow(RubyLLM.models).to receive(:find).and_return(model_without_pricing)
 
           described_class.new.perform(test_run.id, use_real_llm: true)

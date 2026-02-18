@@ -26,7 +26,7 @@
     analyze files, execute code, and call custom functions.
   </div>
 
-  <div class="row g-2">
+  <div class="row g-2" data-playground-tools-target="toolCardsContainer">
     <% available_tools.each do |tool| %>
       <%= render 'prompt_tracker/testing/playground/tools/tool_card',
                  tool: tool,

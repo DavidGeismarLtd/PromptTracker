@@ -31,8 +31,10 @@ module PromptTracker
       }.freeze
 
       # Compatible API types
+      # Uses :ruby_llm since chat completions and anthropic messages
+      # are all routed through RubyLLM (see ApiTypes.from_config)
       def self.compatible_with_apis
-        [ :openai_chat_completions, :anthropic_messages ]
+        [ :ruby_llm ]
       end
 
       # Parameter schema for form processing
@@ -132,9 +134,9 @@ module PromptTracker
           chat = RubyLLM.chat(model: config[:judge_model]).with_schema(schema)
           response = chat.ask(judge_prompt)
 
-          # Response content is already a structured hash!
-          # Convert to hash with indifferent access to handle both string and symbol keys
-          parsed = response.content.with_indifferent_access
+          # Parse the response content
+          # OpenAI returns a Hash directly, Anthropic returns a String with JSON
+          parsed = parse_structured_response(response.content)
           raw_response = response.raw.to_s
         end
 
@@ -143,6 +145,20 @@ module PromptTracker
           feedback: parsed[:feedback],
           raw_response: raw_response
         }
+      end
+
+      # Parse structured response content from LLM
+      #
+      # OpenAI's structured output returns a Hash directly.
+      # Anthropic returns a String (often wrapped in markdown code blocks).
+      #
+      # @param content [Hash, String] the response content
+      # @return [HashWithIndifferentAccess] parsed content
+      def parse_structured_response(content)
+        return content.with_indifferent_access if content.is_a?(Hash)
+
+        # Parse string responses (handles markdown code blocks from some providers)
+        StructuredOutputParser.parse(content)
       end
 
       # Build RubyLLM schema for structured output

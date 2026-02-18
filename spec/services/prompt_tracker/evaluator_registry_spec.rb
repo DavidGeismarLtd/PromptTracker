@@ -228,8 +228,9 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
   end
 
   describe ".for_api" do
-    it "returns evaluators compatible with OpenAI Chat Completions" do
-      evaluators = described_class.for_api(:openai_chat_completions)
+    it "returns evaluators compatible with RubyLLM (chat completions, anthropic, etc.)" do
+      # Note: OpenAI chat_completions and Anthropic messages map to :ruby_llm
+      evaluators = described_class.for_api(:ruby_llm)
 
       expect(evaluators).to be_a(Hash)
       expect(evaluators.keys).to include(:length, :keyword)

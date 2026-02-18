@@ -75,6 +75,8 @@ module PromptTracker
         execute_responses_api
       when :openai_assistants
         execute_assistants_api
+      when :anthropic_messages
+        execute_anthropic_messages
       else
         execute_chat_completion
       end
@@ -85,7 +87,7 @@ module PromptTracker
 
       if previous_response_id.present?
         # Follow-up turn: use previous_response_id for context
-        OpenaiResponseService.call_with_context(
+        LlmClients::OpenaiResponseService.call_with_context(
           model: model_config[:model],
           input: content,
           previous_response_id: previous_response_id,
@@ -95,7 +97,7 @@ module PromptTracker
         )
       else
         # First turn: pass instructions and user message
-        OpenaiResponseService.call(
+        LlmClients::OpenaiResponseService.call(
           model: model_config[:model],
           input: content,
           instructions: rendered_system_prompt,
@@ -107,9 +109,23 @@ module PromptTracker
     end
 
     def execute_assistants_api
-      OpenaiAssistantService.call(
+      LlmClients::OpenaiAssistantService.call(
         assistant_id: model_config[:assistant_id],
         user_message: content
+      )
+    end
+
+    def execute_anthropic_messages
+      # Use LlmClients::RubyLlmService which handles tools automatically via RubyLLM
+      # For multi-turn conversations, we pass the current user message
+      # (conversation history is managed by the playground state)
+      LlmClients::RubyLlmService.call(
+        model: model_config[:model],
+        prompt: content,
+        system: rendered_system_prompt,
+        tools: parse_tools,
+        tool_config: model_config[:tool_config],
+        temperature: model_config[:temperature]
       )
     end
 

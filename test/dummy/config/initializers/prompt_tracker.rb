@@ -29,6 +29,7 @@ PromptTracker.configure do |config|
   # Providers and Their APIs
   # ===========================================================================
   # Define providers and the APIs they offer.
+  # Note: Tool capabilities are defined in ApiCapabilities, not here.
   config.providers = {
     openai: {
       name: "OpenAI",
@@ -40,13 +41,11 @@ PromptTracker.configure do |config|
         },
         responses: {
           name: "Responses",
-          description: "Stateful conversations with built-in tools",
-          capabilities: [ :web_search, :file_search, :code_interpreter, :functions ]
+          description: "Stateful conversations with built-in tools"
         },
         assistants: {
           name: "Assistants",
-          description: "Full assistant features with threads and runs",
-          capabilities: [ :code_interpreter, :file_search, :functions ]
+          description: "Full assistant features with threads and runs"
         }
       }
     },
@@ -102,16 +101,16 @@ PromptTracker.configure do |config|
         supported_apis: [ :chat_completions, :assistants ] }
     ],
     anthropic: [
-      { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", category: "Claude 3.5",
-        capabilities: [ :chat, :structured_output, :vision ] },
-      { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", category: "Claude 3.5",
-        capabilities: [ :chat, :structured_output ] },
-      { id: "claude-3-opus-20240229", name: "Claude 3 Opus", category: "Claude 3",
-        capabilities: [ :chat, :vision ] },
-      { id: "claude-3-sonnet-20240229", name: "Claude 3 Sonnet", category: "Claude 3",
-        capabilities: [ :chat ] },
-      { id: "claude-3-haiku-20240307", name: "Claude 3 Haiku", category: "Claude 3",
-        capabilities: [ :chat ] }
+      { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku",
+        capabilities: [ :chat, :structured_output, :function_calling ] },
+      { id: "claude-3-7-sonnet-latest", name: "Claude Sonnet 3.7",
+        capabilities: [ :chat, :structured_output, :function_calling ] },
+      { id: "claude-haiku-4-5", name: "Claude Haiku 4.5",
+        capabilities: [ :chat, :structured_output, :function_calling ] },
+      { id: "claude-opus-4-1", name: "Claude Opus 4.1",
+        capabilities: [ :chat, :structured_output, :function_calling ] },
+      { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5",
+        capabilities: [ :chat, :structured_output, :function_calling ] }
     ]
   }
 

@@ -58,7 +58,7 @@ export default class extends Controller {
     capabilities: Object
   }
 
-  static outlets = ["playground-conversation"]
+  static outlets = ["playground-conversation", "playground-tools"]
 
   connect() {
     console.log('[PlaygroundUIController] Connected')
@@ -70,7 +70,7 @@ export default class extends Controller {
 
   /**
    * Handle provider dropdown change
-   * Updates API dropdown options and triggers visibility update
+   * Updates API dropdown options, model dropdown, and triggers visibility update
    */
   onProviderChange(event) {
     const provider = event.target.value
@@ -79,17 +79,30 @@ export default class extends Controller {
     // Update API dropdown options based on provider
     this.updateApiDropdown(provider)
 
+    // Update model dropdown based on new provider/API
+    const api = this.hasModelApiTarget ? this.modelApiTarget.value : null
+    if (api) {
+      this.updateModelDropdown(provider, api)
+    }
+
     // Update visibility
     this.updateVisibility()
   }
 
   /**
    * Handle API dropdown change
-   * Triggers visibility update
+   * Updates model dropdown and triggers visibility update
    */
   onApiChange(event) {
     const api = event.target.value
     console.log(`[PlaygroundUIController] API changed to: ${api}`)
+
+    // Update model dropdown based on new API
+    const provider = this.hasModelProviderTarget ? this.modelProviderTarget.value : null
+    if (provider) {
+      this.updateModelDropdown(provider, api)
+    }
+
     // Update visibility
     this.updateVisibility()
   }
@@ -124,7 +137,7 @@ export default class extends Controller {
     // Update all UI elements
     this.updatePanelVisibility(playgroundUI)
     this.updateConversationVisibility(playgroundUI)
-    this.updateToolsVisibility(tools)
+    this.updateToolsVisibility(tools, provider, api)
     this.updateApiDescription(provider, api)
   }
 
@@ -175,15 +188,17 @@ export default class extends Controller {
       return
     }
 
-    // Show/hide API select container
+    // Always show API select container (even with single API, for clarity)
     if (this.hasApiSelectContainerTarget) {
-      this.apiSelectContainerTarget.style.display = data.apis.length > 1 ? '' : 'none'
+      this.apiSelectContainerTarget.style.display = ''
     }
 
     // Update API dropdown options
     if (this.hasModelApiTarget) {
-      const currentApi = this.modelApiTarget.value
       this.modelApiTarget.innerHTML = ''
+
+      // Find the default API for this provider, or use the first one
+      const defaultApi = data.apis.find(api => api.default) || data.apis[0]
 
       data.apis.forEach(api => {
         const option = document.createElement('option')
@@ -192,13 +207,84 @@ export default class extends Controller {
         option.dataset.description = api.description
         option.dataset.capabilities = JSON.stringify(api.capabilities)
 
-        // Preserve selection if possible
-        if (api.key === currentApi || data.apis.length === 1) {
+        // Select the default API for this provider
+        if (api.key === defaultApi.key) {
           option.selected = true
         }
 
         this.modelApiTarget.appendChild(option)
       })
+    }
+  }
+
+  /**
+   * Update model dropdown options based on selected provider and API
+   */
+  updateModelDropdown(provider, api) {
+    if (!this.hasModelProviderTarget || !this.hasModelNameTarget) return
+
+    const providerData = JSON.parse(this.modelProviderTarget.dataset.providerData || '{}')
+    const data = providerData[provider]
+
+    if (!data || !data.models_by_api) {
+      console.warn(`[PlaygroundUIController] No models_by_api data for provider: ${provider}`)
+      return
+    }
+
+    const models = data.models_by_api[api] || []
+    console.log(`[PlaygroundUIController] Updating models for ${provider}/${api}:`, models.length, 'models')
+
+    // Clear and rebuild model dropdown
+    this.modelNameTarget.innerHTML = ''
+
+    if (models.length === 0) {
+      const option = document.createElement('option')
+      option.value = ''
+      option.textContent = 'No models available'
+      option.disabled = true
+      this.modelNameTarget.appendChild(option)
+      return
+    }
+
+    // Group models by category
+    const modelsByCategory = {}
+    models.forEach(model => {
+      const category = model.category || 'Other'
+      if (!modelsByCategory[category]) {
+        modelsByCategory[category] = []
+      }
+      modelsByCategory[category].push(model)
+    })
+
+    // Build options with optgroups
+    Object.entries(modelsByCategory).forEach(([category, categoryModels]) => {
+      if (Object.keys(modelsByCategory).length > 1 && category !== 'Other') {
+        // Create optgroup for multiple categories
+        const optgroup = document.createElement('optgroup')
+        optgroup.label = category
+
+        categoryModels.forEach(model => {
+          const option = document.createElement('option')
+          option.value = model.id
+          option.textContent = model.name || model.id
+          optgroup.appendChild(option)
+        })
+
+        this.modelNameTarget.appendChild(optgroup)
+      } else {
+        // No optgroup for single category or 'Other'
+        categoryModels.forEach(model => {
+          const option = document.createElement('option')
+          option.value = model.id
+          option.textContent = model.name || model.id
+          this.modelNameTarget.appendChild(option)
+        })
+      }
+    })
+
+    // Select the first model by default
+    if (this.modelNameTarget.options.length > 0) {
+      this.modelNameTarget.selectedIndex = 0
     }
   }
 
@@ -261,15 +347,47 @@ export default class extends Controller {
   }
 
   /**
-   * Update tools panel visibility based on available tools
+   * Update tools panel visibility and content based on available tools
+   *
+   * @param {Array<string>} toolSymbols - Array of tool symbols from capabilities (e.g., ['functions', 'web_search'])
+   * @param {string} provider - Current provider key
+   * @param {string} api - Current API key
    */
-  updateToolsVisibility(tools) {
+  updateToolsVisibility(toolSymbols, provider, api) {
     if (!this.hasToolsPanelContainerTarget) return
 
-    const hasTools = tools && tools.length > 0
+    const hasTools = toolSymbols && toolSymbols.length > 0
     this.toolsPanelContainerTarget.style.display = hasTools ? '' : 'none'
 
-    console.log(`[PlaygroundUIController] Tools panel: ${hasTools ? 'visible' : 'hidden'} (${tools.length} tools)`)
+    console.log(`[PlaygroundUIController] Tools panel: ${hasTools ? 'visible' : 'hidden'} (${toolSymbols.length} tools)`)
+
+    // Update the actual tool cards via outlet
+    if (this.hasPlaygroundToolsOutlet) {
+      // Get full tool metadata from providerData
+      const toolsData = this.getToolsDataForApi(provider, api)
+      this.playgroundToolsOutlet.updateTools(toolsData)
+    }
+  }
+
+  /**
+   * Get full tool metadata for a provider/API combination from providerData
+   *
+   * @param {string} provider - Provider key
+   * @param {string} api - API key
+   * @returns {Array<Object>} Array of tool objects with id, name, description, icon, configurable
+   */
+  getToolsDataForApi(provider, api) {
+    if (!this.hasModelProviderTarget) return []
+
+    const providerData = JSON.parse(this.modelProviderTarget.dataset.providerData || '{}')
+    const data = providerData[provider]
+
+    if (!data || !data.tools_by_api) {
+      console.warn(`[PlaygroundUIController] No tools_by_api data for provider: ${provider}`)
+      return []
+    }
+
+    return data.tools_by_api[api] || []
   }
 
   /**

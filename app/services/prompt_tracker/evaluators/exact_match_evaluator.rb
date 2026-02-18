@@ -32,8 +32,10 @@ module PromptTracker
       }.freeze
 
       # Compatible API types
+      # Uses :ruby_llm since chat completions and anthropic messages
+      # are all routed through RubyLLM (see ApiTypes.from_config)
       def self.compatible_with_apis
-        [ :openai_chat_completions, :anthropic_messages ]
+        [ :ruby_llm ]
       end
 
       # Parameter schema for form processing

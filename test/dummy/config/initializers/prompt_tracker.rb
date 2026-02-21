@@ -61,6 +61,13 @@ PromptTracker.configure do |config|
       default_provider: :openai,
       default_api: :chat_completions,
       default_model: "gpt-4o-mini"
+    },
+    test_generation: {
+      description: "AI-powered test case generation for prompts",
+      default_provider: :openai,
+      default_api: :chat_completions,
+      default_model: "gpt-4o",
+      default_temperature: 0.7
     }
   }
 

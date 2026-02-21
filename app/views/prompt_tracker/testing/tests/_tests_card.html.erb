@@ -26,6 +26,12 @@
           <i class="bi bi-play-circle"></i> Run All (<%= tests.count %>)
         </button>
       <% end %>
+      <%# AI Generate button - only for PromptVersions %>
+      <% if testable.is_a?(PromptTracker::PromptVersion) %>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#generate-tests-modal">
+          <i class="bi bi-magic"></i> Generate with AI
+        </button>
+      <% end %>
       <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#new-test-modal">
         <i class="bi bi-plus-circle"></i> New Test
       </button>

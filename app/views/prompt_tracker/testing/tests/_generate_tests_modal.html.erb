@@ -1,0 +1,77 @@
+<%#
+  Generate Tests with AI Modal
+
+  Required locals:
+    - version: the PromptVersion to generate tests for
+%>
+<% version ||= @version %>
+
+<div data-controller="modal-fix">
+  <div class="modal fade" id="generate-tests-modal" tabindex="-1"
+       data-modal-fix-target="modal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-magic"></i> Generate Tests with AI
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <%= form_with url: generate_tests_testing_prompt_version_path(version),
+                      method: :post,
+                      data: { turbo: false } do |f| %>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Instructions (optional)</label>
+              <textarea name="instructions" class="form-control" rows="4"
+                placeholder="Describe what you'd like to test, or leave empty for AI to generate a comprehensive test suite..."></textarea>
+              <div class="form-text">
+                Examples: "Test edge cases for empty inputs", "Focus on error handling",
+                "Ensure function calls are made correctly"
+              </div>
+            </div>
+
+            <div class="alert alert-info">
+              <h6 class="alert-heading">
+                <i class="bi bi-info-circle"></i> AI will analyze:
+              </h6>
+              <ul class="mb-0 small">
+                <li>
+                  <strong>System prompt:</strong>
+                  <%= truncate(version.system_prompt, length: 60) || "None" %>
+                </li>
+                <li>
+                  <strong>User prompt:</strong>
+                  <%= truncate(version.user_prompt, length: 60) %>
+                </li>
+                <li>
+                  <strong>Variables:</strong>
+                  <%= version.variables_schema&.map { |v| v["name"] }&.join(", ").presence || "None" %>
+                </li>
+                <li>
+                  <strong>Tools:</strong>
+                  <%= version.model_config&.dig("tools")&.join(", ").presence || "None" %>
+                </li>
+                <li>
+                  <strong>Functions:</strong>
+                  <%= version.model_config&.dig("tool_config", "functions")&.map { |f| f["name"] }&.join(", ").presence || "None" %>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-magic"></i> Generate Tests
+            </button>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+

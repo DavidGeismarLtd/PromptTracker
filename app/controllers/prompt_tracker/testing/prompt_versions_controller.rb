@@ -4,8 +4,9 @@ module PromptTracker
   module Testing
     # Controller for viewing prompt versions in the Testing section
     class PromptVersionsController < ApplicationController
-    before_action :set_prompt
+    before_action :set_prompt, except: [ :generate_tests ]
     before_action :set_version, only: [ :show, :compare, :activate ]
+    before_action :set_version_standalone, only: [ :generate_tests ]
 
     # Make path helpers available to views
     helper_method :load_more_runs_path, :run_test_path, :datasets_path
@@ -75,6 +76,22 @@ module PromptTracker
       redirect_to testing_prompt_prompt_version_path(@prompt, @version), notice: "Version activated successfully."
     end
 
+    # POST /testing/versions/:id/generate_tests
+    # Generate tests with AI for this prompt version
+    def generate_tests
+      result = TestGeneratorService.generate(
+        prompt_version: @version,
+        instructions: params[:instructions].presence
+      )
+
+      redirect_to testing_prompt_prompt_version_path(@version.prompt, @version),
+                  notice: "Generated #{result[:count]} test(s) successfully."
+    rescue TestGeneratorService::MalformedResponseError => e
+      Rails.logger.error "[TestGeneratorService] Malformed response: #{e.message}"
+      redirect_to testing_prompt_prompt_version_path(@version.prompt, @version),
+                  alert: "AI test generation failed: #{e.message}"
+    end
+
     private
 
     def set_prompt
@@ -83,6 +100,11 @@ module PromptTracker
 
     def set_version
       @version = @prompt.prompt_versions.includes(:llm_responses).find(params[:id])
+    end
+
+    # Set version without requiring prompt_id (for standalone routes)
+    def set_version_standalone
+      @version = PromptVersion.find(params[:id])
     end
 
     def calculate_version_metrics(version)

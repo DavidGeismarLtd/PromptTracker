@@ -73,6 +73,9 @@ PromptTracker::Engine.routes.draw do
 
     # Tests for prompt versions (not nested under prompts for simpler URLs)
     resources :prompt_versions, only: [], path: "versions" do
+      member do
+        post :generate_tests
+      end
       resources :tests, only: [ :create, :update, :destroy ] do
         collection do
           post :run_all

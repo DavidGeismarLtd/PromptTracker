@@ -217,6 +217,13 @@ module PromptTracker
       context_default(context, :model)
     end
 
+    # Get the default temperature for a context.
+    # @param context [Symbol] the context name
+    # @return [Float, nil] the default temperature or nil
+    def default_temperature_for(context)
+      context_default(context, :temperature)
+    end
+
     # =========================================================================
     # Feature Flag Methods
     # =========================================================================

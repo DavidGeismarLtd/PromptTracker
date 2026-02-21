@@ -163,4 +163,50 @@ RSpec.describe "PromptTracker::PromptVersionsController", type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  describe "POST /testing/versions/:id/generate_tests" do
+    let(:mock_result) do
+      {
+        tests: [ build(:test, testable: version) ],
+        count: 1,
+        overall_reasoning: "Generated test suite"
+      }
+    end
+
+    before do
+      allow(PromptTracker::TestGeneratorService).to receive(:generate).and_return(mock_result)
+    end
+
+    it "generates tests and redirects with success message" do
+      post "/prompt_tracker/testing/versions/#{version.id}/generate_tests"
+
+      expect(response).to redirect_to("/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}")
+      follow_redirect!
+      expect(response.body).to include("Generated 1 test(s) successfully")
+    end
+
+    it "calls TestGeneratorService with prompt version" do
+      expect(PromptTracker::TestGeneratorService).to receive(:generate).with(
+        prompt_version: version,
+        instructions: nil
+      ).and_return(mock_result)
+
+      post "/prompt_tracker/testing/versions/#{version.id}/generate_tests"
+    end
+
+    it "passes instructions to TestGeneratorService" do
+      expect(PromptTracker::TestGeneratorService).to receive(:generate).with(
+        prompt_version: version,
+        instructions: "Focus on edge cases"
+      ).and_return(mock_result)
+
+      post "/prompt_tracker/testing/versions/#{version.id}/generate_tests",
+           params: { instructions: "Focus on edge cases" }
+    end
+
+    it "returns 404 for non-existent version" do
+      post "/prompt_tracker/testing/versions/999999/generate_tests"
+      expect(response).to have_http_status(:not_found)
+    end
+  end
 end

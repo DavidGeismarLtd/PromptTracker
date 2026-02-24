@@ -94,12 +94,26 @@ module PromptTracker
           .reject(&:blank?)
           .sort
 
-        @available_models = all_versions
-          .select("DISTINCT model_config->>'model' as model")
-          .map(&:model)
-          .compact
-          .reject(&:blank?)
-          .sort
+        # Build provider-to-models mapping for linked dropdowns
+        @models_by_provider = all_versions
+          .select("model_config->>'provider' as provider, model_config->>'model' as model")
+          .map { |v| [ v.provider, v.model ] }
+          .reject { |p, m| p.blank? || m.blank? }
+          .uniq
+          .group_by(&:first)
+          .transform_values { |pairs| pairs.map(&:last).sort }
+
+        # Available models based on selected provider (or all if no provider selected)
+        @available_models = if @provider_filter.present?
+          @models_by_provider[@provider_filter] || []
+        else
+          all_versions
+            .select("DISTINCT model_config->>'model' as model")
+            .map(&:model)
+            .compact
+            .reject(&:blank?)
+            .sort
+        end
       end
 
       def calculate_statistics

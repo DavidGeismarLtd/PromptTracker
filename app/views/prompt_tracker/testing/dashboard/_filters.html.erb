@@ -1,0 +1,48 @@
+<%#
+  Dashboard Filters Partial
+
+  Required locals:
+    - available_providers: Array of provider strings
+    - available_models: Array of model strings for the selected provider (or all if no provider)
+    - models_by_provider: Hash mapping provider -> array of model strings (for JS linking)
+    - provider_filter: Currently selected provider (or nil)
+    - model_filter: Currently selected model (or nil)
+%>
+
+<% if available_providers.any? || available_models.any? %>
+  <div class="card mb-4" data-controller="linked-filters">
+    <div class="card-body py-2">
+      <%= form_with url: testing_root_path, method: :get, local: true, class: "row g-2 align-items-center" do %>
+        <div class="col-auto">
+          <label class="col-form-label"><i class="bi bi-funnel"></i> Filters:</label>
+        </div>
+        <div class="col-auto">
+          <%= select_tag :provider,
+              options_for_select([["All Providers", ""]] + available_providers.map { |p| [p.titleize, p] }, provider_filter),
+              class: "form-select form-select-sm",
+              data: { linked_filters_target: "provider", action: "change->linked-filters#providerChanged" } %>
+        </div>
+        <div class="col-auto">
+          <%= select_tag :model,
+              options_for_select([["All Models", ""]] + available_models.map { |m| [m, m] }, model_filter),
+              class: "form-select form-select-sm",
+              data: { linked_filters_target: "model" },
+              onchange: "this.form.submit()" %>
+        </div>
+        <% if provider_filter.present? || model_filter.present? %>
+          <div class="col-auto">
+            <%= link_to testing_root_path, class: "btn btn-sm btn-outline-secondary" do %>
+              <i class="bi bi-x-circle"></i> Clear
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <%# Store models-by-provider mapping for JavaScript %>
+    <script type="application/json" data-linked-filters-target="modelsData">
+      <%= models_by_provider.to_json.html_safe %>
+    </script>
+  </div>
+<% end %>
+

@@ -141,6 +141,9 @@
                             <td>
                               <div class="btn-group" role="group">
                                 <%= link_to "View", testing_prompt_prompt_version_path(prompt, version), class: "btn btn-sm btn-outline-primary" %>
+                                <%= link_to testing_prompt_prompt_version_datasets_path(prompt, version), class: "btn btn-sm btn-outline-secondary", title: "Datasets" do %>
+                                  <i class="bi bi-table"></i>
+                                <% end %>
                                 <% if show_monitor_button %>
                                   <%= link_to "Monitor", monitoring_prompt_prompt_version_path(prompt, version), class: "btn btn-sm btn-outline-success", title: "View Tracked Calls" %>
                                 <% end %>

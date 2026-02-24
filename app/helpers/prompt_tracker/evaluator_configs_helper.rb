@@ -10,7 +10,7 @@ module PromptTracker
     EvaluatorFormData = Struct.new(
       :all_evaluators,
       :current_evaluators,
-      :has_vector_store,
+      :testable,
       keyword_init: true
     )
 
@@ -26,6 +26,39 @@ module PromptTracker
       keyword_init: true
     )
 
+    # Requirements for tool-based evaluators
+    # Each entry defines:
+    # - check: Lambda that returns true if the evaluator can be used
+    # - reason: Message to display when the evaluator is disabled
+    EVALUATOR_REQUIREMENTS = {
+      file_search: {
+        check: ->(testable) {
+          testable.model_config&.dig("tool_config", "file_search", "vector_store_ids").present?
+        },
+        reason: "Attach a vector store to the assistant first"
+      },
+      function_call: {
+        check: ->(testable) {
+          tools = Array(testable.model_config&.dig("tools"))
+          functions = testable.model_config&.dig("tool_config", "functions")
+          tools.include?("functions") && functions.present?
+        },
+        reason: "Enable functions and define at least one function first"
+      },
+      web_search: {
+        check: ->(testable) {
+          Array(testable.model_config&.dig("tools")).include?("web_search")
+        },
+        reason: "Enable web search in the prompt version first"
+      },
+      code_interpreter: {
+        check: ->(testable) {
+          Array(testable.model_config&.dig("tools")).include?("code_interpreter")
+        },
+        reason: "Enable code interpreter in the prompt version first"
+      }
+    }.freeze
+
     # Build form data for evaluator configuration section
     #
     # @param test [PromptTracker::Test] The test being edited
@@ -35,13 +68,10 @@ module PromptTracker
       current_evaluators = test.evaluator_configs.to_a
       testable = test.testable
 
-      # Check if testable has vector stores attached (for file_search evaluator)
-      vector_store_ids = testable.model_config&.dig("tool_config", "file_search", "vector_store_ids") || []
-
       EvaluatorFormData.new(
         all_evaluators: all_evaluators,
         current_evaluators: current_evaluators,
-        has_vector_store: vector_store_ids.present?
+        testable: testable
       )
     end
 
@@ -56,8 +86,7 @@ module PromptTracker
         e.evaluator_type == meta[:evaluator_class].name
       end
 
-      is_disabled = key.to_s == "file_search" && !form_data.has_vector_store
-      disabled_reason = is_disabled ? "Attach a vector store to the assistant first" : nil
+      is_disabled, disabled_reason = evaluator_disabled_state(key, form_data.testable)
 
       # Build the default config JSON for the hidden field
       config_value = existing_config&.config || meta[:default_config] || {}
@@ -71,6 +100,19 @@ module PromptTracker
         disabled_reason: disabled_reason,
         default_config_json: JSON.generate(config_value)
       )
+    end
+
+    # Check if an evaluator should be disabled based on testable configuration
+    #
+    # @param key [Symbol] The evaluator key
+    # @param testable [Object] The testable (PromptVersion, Assistant, etc.)
+    # @return [Array<Boolean, String|nil>] [is_disabled, reason]
+    def evaluator_disabled_state(key, testable)
+      requirement = EVALUATOR_REQUIREMENTS[key.to_sym]
+      return [ false, nil ] unless requirement
+
+      is_enabled = requirement[:check].call(testable)
+      is_enabled ? [ false, nil ] : [ true, requirement[:reason] ]
     end
 
     # CSS classes for the evaluator card

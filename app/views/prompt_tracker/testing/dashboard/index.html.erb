@@ -60,36 +60,12 @@
   </div>
 
   <!-- Filters -->
-  <% if @available_providers.any? || @available_models.any? %>
-    <div class="card mb-4">
-      <div class="card-body py-2">
-        <%= form_with url: testing_root_path, method: :get, local: true, class: "row g-2 align-items-center" do %>
-          <div class="col-auto">
-            <label class="col-form-label"><i class="bi bi-funnel"></i> Filters:</label>
-          </div>
-          <div class="col-auto">
-            <%= select_tag :provider,
-                options_for_select([["All Providers", ""]] + @available_providers.map { |p| [p.titleize, p] }, @provider_filter),
-                class: "form-select form-select-sm",
-                onchange: "this.form.submit()" %>
-          </div>
-          <div class="col-auto">
-            <%= select_tag :model,
-                options_for_select([["All Models", ""]] + @available_models.map { |m| [m, m] }, @model_filter),
-                class: "form-select form-select-sm",
-                onchange: "this.form.submit()" %>
-          </div>
-          <% if @provider_filter.present? || @model_filter.present? %>
-            <div class="col-auto">
-              <%= link_to testing_root_path, class: "btn btn-sm btn-outline-secondary" do %>
-                <i class="bi bi-x-circle"></i> Clear
-              <% end %>
-            </div>
-          <% end %>
-        <% end %>
-      </div>
-    </div>
-  <% end %>
+  <%= render "filters",
+      available_providers: @available_providers,
+      available_models: @available_models,
+      models_by_provider: @models_by_provider,
+      provider_filter: @provider_filter,
+      model_filter: @model_filter %>
 
   <!-- Agent List -->
   <% if @prompts.any? %>

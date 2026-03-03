@@ -27,7 +27,7 @@ module PromptTracker
         if @dataset.testable.is_a?(PromptTracker::PromptVersion)
           prompt_version = @dataset.testable
           prompt = prompt_version.prompt
-          update_path = PromptTracker::Engine.routes.url_helpers.testing_prompt_prompt_version_dataset_dataset_row_path(prompt, prompt_version, @dataset, @row)
+          update_path = helpers.engine_path(:testing_prompt_prompt_version_dataset_dataset_row_path, prompt, prompt_version, @dataset, @row)
         end
 
         render partial: "prompt_tracker/testing/datasets/edit_row_modal",

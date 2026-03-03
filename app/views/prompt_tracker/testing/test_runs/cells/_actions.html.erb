@@ -1,5 +1,5 @@
 <td data-column="actions">
-  <%= button_to PromptTracker::Engine.routes.url_helpers.rerun_testing_run_path(run),
+  <%= button_to engine_path(:rerun_testing_run_path, run),
                 method: :post,
                 class: "btn btn-sm btn-outline-secondary me-1",
                 title: "Re-run test with same configuration",
@@ -16,6 +16,6 @@
   </button>
    <%= render "prompt_tracker/shared/human_evaluation_modal_form",
                    record: run,
-                   form_url: PromptTracker::Engine.routes.url_helpers.  testing_run_human_evaluations_path(run),
+                   form_url: engine_path(:testing_run_human_evaluations_path, run),
                    context: 'testing' %>
 </td>

@@ -120,6 +120,22 @@ module PromptTracker
     #   }
     attr_accessor :configuration_provider
 
+    # Dynamic URL options provider for multi-tenant applications.
+    # When set, this proc/lambda is called at runtime to get URL options
+    # (like :org_slug) that are needed when generating engine URLs.
+    #
+    # This is essential when the engine is mounted under a scoped route like:
+    #   scope "/orgs/:org_slug" do
+    #     mount PromptTracker::Engine, at: "/app"
+    #   end
+    #
+    # @return [Proc, nil] callable that returns URL options hash
+    # @example
+    #   config.url_options_provider = -> {
+    #     { org_slug: ActsAsTenant.current_tenant&.slug }
+    #   }
+    attr_accessor :url_options_provider
+
     # Initialize with default values.
     def initialize
       @basic_auth_username = nil
@@ -129,6 +145,7 @@ module PromptTracker
       @features = {}
       @builtin_tools = default_builtin_tools
       @configuration_provider = nil
+      @url_options_provider = nil
     end
 
     # Check if basic authentication is enabled.

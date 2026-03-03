@@ -4,8 +4,10 @@ module PromptTracker
   # Helper methods for test-related views.
   #
   # This helper provides URL generation methods that work in both controller
-  # and background job contexts by using explicit engine route helpers.
+  # and background job contexts by using the UrlHelper for multi-tenant support.
   module TestsHelper
+    include UrlHelper
+
     # Generate the path to run a specific test
     #
     # @param test [PromptTracker::Test] The test to run
@@ -16,7 +18,7 @@ module PromptTracker
 
       case testable
       when PromptTracker::PromptVersion
-        PromptTracker::Engine.routes.url_helpers.run_testing_prompt_version_test_path(testable, test)
+        engine_path(:run_testing_prompt_version_test_path, testable, test)
       else
         raise ArgumentError, "Unknown testable type: #{testable.class}"
       end
@@ -30,7 +32,7 @@ module PromptTracker
     def datasets_path_for_testable(testable)
       case testable
       when PromptTracker::PromptVersion
-        PromptTracker::Engine.routes.url_helpers.testing_prompt_prompt_version_datasets_path(testable.prompt, testable)
+        engine_path(:testing_prompt_prompt_version_datasets_path, testable.prompt, testable)
       else
         raise ArgumentError, "Unknown testable type: #{testable.class}"
       end
@@ -48,9 +50,7 @@ module PromptTracker
 
       case testable
       when PromptTracker::PromptVersion
-        PromptTracker::Engine.routes.url_helpers.load_more_runs_testing_prompt_version_test_path(
-          testable, test, offset: offset, limit: limit
-        )
+        engine_path(:load_more_runs_testing_prompt_version_test_path, testable, test, offset: offset, limit: limit)
       else
         raise ArgumentError, "Unknown testable type: #{testable.class}"
       end

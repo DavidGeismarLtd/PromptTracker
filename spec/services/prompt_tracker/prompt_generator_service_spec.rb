@@ -46,8 +46,13 @@ module PromptTracker
         expect(result[:explanation]).to eq('This prompt provides friendly customer support.')
       end
 
-      it 'uses the configured model' do
-        stub_const('PromptTracker::PromptGeneratorService::DEFAULT_MODEL', 'gpt-4o')
+      it 'uses the model from configuration' do
+        PromptTracker.configuration.contexts = {
+          prompt_generation: {
+            default_model: 'gpt-4o',
+            default_temperature: 0.5
+          }
+        }
 
         expect(RubyLLM).to receive(:chat).with(model: 'gpt-4o').at_least(:once).and_return(mock_chat)
         allow(mock_chat).to receive(:ask).and_return(mock_response, mock_variables_response, mock_generation_response)
@@ -55,7 +60,24 @@ module PromptTracker
         described_class.generate(description: description)
       end
 
-      it 'uses temperature 0.7' do
+      it 'uses the temperature from configuration' do
+        PromptTracker.configuration.contexts = {
+          prompt_generation: {
+            default_model: 'gpt-4o-mini',
+            default_temperature: 0.5
+          }
+        }
+
+        expect(mock_chat).to receive(:with_temperature).with(0.5).at_least(:once).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).and_return(mock_response, mock_variables_response, mock_generation_response)
+
+        described_class.generate(description: description)
+      end
+
+      it 'falls back to defaults when configuration is not set' do
+        PromptTracker.configuration.contexts = {}
+
+        expect(RubyLLM).to receive(:chat).with(model: 'gpt-4o-mini').at_least(:once).and_return(mock_chat)
         expect(mock_chat).to receive(:with_temperature).with(0.7).at_least(:once).and_return(mock_chat)
         allow(mock_chat).to receive(:ask).and_return(mock_response, mock_variables_response, mock_generation_response)
 

@@ -6,9 +6,23 @@ module PromptTracker
   # 1. Understand and expand the brief description
   # 2. Propose dynamic variables
   # 3. Generate system and user prompts with variables
+  #
+  # Configuration:
+  # Uses the :prompt_generation context from PromptTracker.configuration.
+  # Supports dynamic_configuration for multi-tenant applications.
+  #
+  # @example Configure in initializer
+  #   config.contexts = {
+  #     prompt_generation: {
+  #       default_provider: :openai,
+  #       default_model: "gpt-4o-mini",
+  #       default_temperature: 0.7
+  #     }
+  #   }
+  #
   class PromptGeneratorService
-    DEFAULT_MODEL = ENV.fetch("PROMPT_GENERATOR_MODEL", "gpt-4o-mini")
-    DEFAULT_TEMPERATURE = 0.7
+    FALLBACK_MODEL = "gpt-4o-mini"
+    FALLBACK_TEMPERATURE = 0.7
 
     def self.generate(description:)
       new(description: description).generate
@@ -28,6 +42,18 @@ module PromptTracker
 
     attr_reader :description
 
+    # Get the model from configuration, respecting dynamic_configuration
+    # @return [String] model ID
+    def model
+      PromptTracker.configuration.default_model_for(:prompt_generation) || FALLBACK_MODEL
+    end
+
+    # Get the temperature from configuration, respecting dynamic_configuration
+    # @return [Float] temperature value
+    def temperature
+      PromptTracker.configuration.default_temperature_for(:prompt_generation) || FALLBACK_TEMPERATURE
+    end
+
     def understand_and_expand
       prompt = <<~PROMPT
         You are an expert prompt engineer. A user has provided a brief description of what they want their prompt to do.
@@ -45,7 +71,7 @@ module PromptTracker
         Provide a comprehensive expansion of the requirements in 2-3 paragraphs.
       PROMPT
 
-      chat = RubyLLM.chat(model: DEFAULT_MODEL).with_temperature(DEFAULT_TEMPERATURE)
+      chat = RubyLLM.chat(model: model).with_temperature(temperature)
       response = chat.ask(prompt)
       response.content
     end
@@ -65,7 +91,7 @@ module PromptTracker
         Return ONLY the variable names, one per line, nothing else.
       PROMPT
 
-      chat = RubyLLM.chat(model: DEFAULT_MODEL).with_temperature(DEFAULT_TEMPERATURE)
+      chat = RubyLLM.chat(model: model).with_temperature(temperature)
       response = chat.ask(prompt)
 
       # Parse variable names from response
@@ -76,8 +102,8 @@ module PromptTracker
       schema = build_generation_schema
       prompt = build_generation_prompt(requirements, variables)
 
-      chat = RubyLLM.chat(model: DEFAULT_MODEL)
-        .with_temperature(DEFAULT_TEMPERATURE)
+      chat = RubyLLM.chat(model: model)
+        .with_temperature(temperature)
         .with_schema(schema)
 
       response = chat.ask(prompt)

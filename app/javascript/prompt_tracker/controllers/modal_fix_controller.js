@@ -12,6 +12,9 @@ export default class extends Controller {
   static targets = ["modal"]
 
   connect() {
+    console.log('[ModalFix] Controller connected')
+    console.log('[ModalFix] Element:', this.element)
+    console.log('[ModalFix] Modal targets:', this.modalTargets)
     this.moveModalsToBody()
     this.attachModalListeners()
   }
@@ -82,11 +85,20 @@ export default class extends Controller {
    * Close all modals managed by this controller
    * Useful for closing modals after form submission
    */
-  closeModal() {
+  closeModal(event) {
+    console.log('[ModalFix] closeModal called', event)
+    console.log('[ModalFix] modalTargets:', this.modalTargets)
+
     this.modalTargets.forEach(modal => {
+      console.log('[ModalFix] Processing modal:', modal.id)
       const bsModal = bootstrap.Modal.getInstance(modal)
+      console.log('[ModalFix] Bootstrap Modal instance:', bsModal)
+
       if (bsModal) {
+        console.log('[ModalFix] Hiding modal:', modal.id)
         bsModal.hide()
+      } else {
+        console.log('[ModalFix] No Bootstrap Modal instance found for:', modal.id)
       }
     })
   }

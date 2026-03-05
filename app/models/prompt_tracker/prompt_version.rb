@@ -627,8 +627,7 @@ module PromptTracker
     def should_extract_variables?
       # Only extract if:
       # 1. User prompt has changed (or is new)
-      # 2. Variables schema is blank (not explicitly set)
-      user_prompt.present? && (user_prompt_changed? || new_record?) && variables_schema.blank?
+      user_prompt.present? && (user_prompt_changed? || new_record?)
     end
 
     # Extracts variables from user_prompt and populates variables_schema

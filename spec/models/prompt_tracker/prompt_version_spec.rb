@@ -87,7 +87,11 @@ module PromptTracker
         version = PromptVersion.new(valid_attributes.merge(variables_schema: []))
         expect(version).to be_valid
 
-        version = PromptVersion.new(valid_attributes.merge(variables_schema: "not an array"))
+        # Use a prompt with no variables to prevent auto-extraction from overwriting
+        version = PromptVersion.new(valid_attributes.merge(
+          user_prompt: "Static prompt with no variables",
+          variables_schema: "not an array"
+        ))
         expect(version).not_to be_valid
         expect(version.errors[:variables_schema]).to include("must be an array")
       end
@@ -518,7 +522,7 @@ module PromptTracker
           expect(version.variables_schema.map { |v| v["name"] }).to match_array(%w[name age])
         end
 
-        it "does not extract variables when variables_schema is explicitly provided" do
+        it "extracts variables from user_prompt even when variables_schema is explicitly provided" do
           custom_schema = [
             { "name" => "custom_var", "type" => "integer", "required" => true }
           ]
@@ -530,9 +534,12 @@ module PromptTracker
             )
           )
 
-          # Should keep the explicitly provided schema
-          expect(version.variables_schema).to eq(custom_schema)
-          expect(version.variables_schema.first["name"]).to eq("custom_var")
+          # Should auto-extract from user_prompt, overwriting the custom schema
+          expect(version.variables_schema).to be_present
+          expect(version.variables_schema.length).to eq(1)
+          expect(version.variables_schema.first["name"]).to eq("name")
+          expect(version.variables_schema.first["type"]).to eq("string")
+          expect(version.variables_schema.first["required"]).to eq(false)
         end
 
         it "does not extract variables when user_prompt has no variables" do
@@ -649,6 +656,12 @@ module PromptTracker
       end
 
       it "raises error for missing required variables" do
+        # Manually set a required variable (since auto-extraction always sets required: false)
+        version.update_column(:variables_schema, [
+          { "name" => "name", "type" => "string", "required" => true },
+          { "name" => "issue", "type" => "string", "required" => false }
+        ])
+
         expect do
           version.render(issue: "billing") # missing required 'name'
         end.to raise_error(ArgumentError, /Missing required variables: name/)

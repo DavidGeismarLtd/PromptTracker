@@ -6,24 +6,25 @@
 %>
 <% version ||= @version %>
 
-<div data-controller="modal-fix">
-  <div class="modal fade" id="generate-tests-modal" tabindex="-1"
-       data-modal-fix-target="modal" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="generate-tests-modal" tabindex="-1"
+     data-controller="modal-fix"
+     data-modal-fix-target="modal" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-magic"></i> Generate Tests with AI
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
       <%= form_with url: generate_tests_testing_prompt_version_path(version),
                     method: :post,
                     data: {
                       turbo: true,
                       action: "turbo:submit-end->modal-fix#closeModal"
                     } do |f| %>
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="bi bi-magic"></i> Generate Tests with AI
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-          <div class="modal-body">
+        <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Instructions (optional)</label>
               <textarea name="instructions" class="form-control" rows="4"
@@ -71,7 +72,6 @@
             <i class="bi bi-magic"></i> Generate Tests
           </button>
         </div>
-      </div>
       <% end %>
     </div>
   </div>

@@ -2,17 +2,17 @@ import { Controller } from "@hotwired/stimulus"
 
 /**
  * Function Parameters Examples Controller
- * 
+ *
  * Handles clicking on parameter examples in the modal and filling the
  * corresponding function parameter textarea with the selected example.
- * 
+ *
  * This controller is attached to the modal and listens for clicks on
  * example buttons. When clicked, it:
  * 1. Gets the parameter JSON from the button's data attribute
  * 2. Finds the currently focused/active function parameter textarea
  * 3. Fills it with the formatted JSON
  * 4. Closes the modal
- * 
+ *
  * @example
  * <div data-controller="function-parameters-examples">
  *   <button data-action="click->function-parameters-examples#useExample"
@@ -24,7 +24,7 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   connect() {
     console.log('[FunctionParametersExamplesController] Connected')
-    
+
     // Store reference to the currently active function item when modal opens
     this.element.addEventListener('show.bs.modal', (event) => {
       // Find which function item triggered the modal
@@ -43,10 +43,10 @@ export default class extends Controller {
    */
   useExample(event) {
     event.preventDefault()
-    
+
     const button = event.currentTarget
     const parametersJson = button.dataset.parameters
-    
+
     if (!parametersJson) {
       console.error('[FunctionParametersExamplesController] No parameters data found on button')
       return
@@ -66,15 +66,15 @@ export default class extends Controller {
 
     // Find the parameter textarea for the current function
     const textarea = this.findParameterTextarea()
-    
+
     if (textarea) {
       textarea.value = formattedJson
-      
+
       // Trigger input event so playground-functions controller knows about the change
       textarea.dispatchEvent(new Event('input', { bubbles: true }))
-      
+
       console.log('[FunctionParametersExamplesController] Filled parameter textarea')
-      
+
       // Close the modal
       this.closeModal()
     } else {
@@ -112,10 +112,14 @@ export default class extends Controller {
    * Close the modal
    */
   closeModal() {
-    const modal = bootstrap.Modal.getInstance(this.element)
-    if (modal) {
-      modal.hide()
+    // Try to get existing instance first
+    let modal = bootstrap.Modal.getInstance(this.element)
+
+    // If no instance exists, create one
+    if (!modal) {
+      modal = new bootstrap.Modal(this.element)
     }
+
+    modal.hide()
   }
 }
-

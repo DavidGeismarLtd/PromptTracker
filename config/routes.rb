@@ -171,6 +171,15 @@ PromptTracker::Engine.routes.draw do
   end
 
   # ========================================
+  # FUNCTION LIBRARY - Code-based functions
+  # ========================================
+  resources :functions do
+    member do
+      post :test  # POST /functions/:id/test - Test function with sample inputs
+    end
+  end
+
+  # ========================================
   # API SECTION - Internal API endpoints
   # ========================================
   namespace :api do

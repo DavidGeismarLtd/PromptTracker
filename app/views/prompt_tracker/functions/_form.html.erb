@@ -1,0 +1,174 @@
+<%= form_with model: [:prompt_tracker, function], local: true, class: "needs-validation", novalidate: true do |f| %>
+  <% if function.errors.any? %>
+    <div class="alert alert-danger">
+      <h4 class="alert-heading">Please fix the following errors:</h4>
+      <ul class="mb-0">
+        <% function.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- Basic Information -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Basic Information</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <%= f.label :name, "Function Name", class: "form-label" %>
+          <%= f.text_field :name, class: "form-control", placeholder: "e.g., get_weather", required: true %>
+          <div class="form-text">Unique identifier for this function (snake_case recommended)</div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <%= f.label :category, "Category", class: "form-label" %>
+          <%= f.select :category, 
+                       options_for_select([
+                         ["API Integration", "api"],
+                         ["Utility", "utility"],
+                         ["Validation", "validation"],
+                         ["Data Processing", "data_processing"],
+                         ["External Service", "external_service"]
+                       ], function.category),
+                       { include_blank: "Select category" },
+                       class: "form-select",
+                       required: true %>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <%= f.label :language, "Language", class: "form-label" %>
+          <%= f.select :language,
+                       options_for_select([["Ruby", "ruby"]], function.language),
+                       {},
+                       class: "form-select",
+                       required: true %>
+          <div class="form-text">Currently only Ruby is supported</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <%= f.label :description, "Description", class: "form-label" %>
+        <%= f.text_area :description, class: "form-control", rows: 3, placeholder: "Describe what this function does...", required: true %>
+      </div>
+
+      <div class="mb-3">
+        <%= f.label :tags, "Tags (comma-separated)", class: "form-label" %>
+        <%= f.text_field :tags, 
+                         value: function.tags&.join(", "),
+                         class: "form-control",
+                         placeholder: "e.g., weather, api, external" %>
+        <div class="form-text">Add tags to help organize and search for functions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Function Code</h5>
+    </div>
+    <div class="card-body">
+      <%= f.label :code, "Ruby Code", class: "form-label" %>
+      <%= f.text_area :code, 
+                      class: "form-control font-monospace",
+                      rows: 20,
+                      placeholder: "# Write your Ruby code here\ndef execute(args)\n  # Your implementation\nend",
+                      required: true,
+                      style: "font-size: 14px;" %>
+      <div class="form-text">
+        <strong>Note:</strong> Code will be executed in a sandboxed environment. 
+        Use the <code>execute</code> method as the entry point.
+      </div>
+    </div>
+  </div>
+
+  <!-- Parameters (JSON Schema) -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Parameters (JSON Schema)</h5>
+    </div>
+    <div class="card-body">
+      <%= f.label :parameters, "JSON Schema", class: "form-label" %>
+      <%= f.text_area :parameters,
+                      value: function.parameters.present? ? JSON.pretty_generate(function.parameters) : "",
+                      class: "form-control font-monospace",
+                      rows: 10,
+                      placeholder: '{\n  "type": "object",\n  "properties": {\n    "city": {\n      "type": "string",\n      "description": "City name"\n    }\n  },\n  "required": ["city"]\n}',
+                      style: "font-size: 14px;" %>
+      <div class="form-text">Define the input parameters using JSON Schema format</div>
+    </div>
+  </div>
+
+  <!-- Environment Variables -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Environment Variables (Optional)</h5>
+    </div>
+    <div class="card-body">
+      <%= f.label :environment_variables, "Environment Variables (JSON)", class: "form-label" %>
+      <%= f.text_area :environment_variables,
+                      value: function.environment_variables.present? ? JSON.pretty_generate(function.environment_variables) : "",
+                      class: "form-control font-monospace",
+                      rows: 5,
+                      placeholder: '{\n  "API_KEY": "your-api-key-here",\n  "BASE_URL": "https://api.example.com"\n}',
+                      style: "font-size: 14px;" %>
+      <div class="form-text">
+        <i class="bi bi-shield-lock"></i> These values will be encrypted and securely stored
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Dependencies (Optional)</h5>
+    </div>
+    <div class="card-body">
+      <%= f.label :dependencies, "Ruby Gems (JSON array)", class: "form-label" %>
+      <%= f.text_area :dependencies,
+                      value: function.dependencies.present? ? JSON.pretty_generate(function.dependencies) : "",
+                      class: "form-control font-monospace",
+                      rows: 3,
+                      placeholder: '["httparty", "json"]',
+                      style: "font-size: 14px;" %>
+      <div class="form-text">List of Ruby gems required by this function</div>
+    </div>
+  </div>
+
+  <!-- Example Input/Output -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Example (Optional)</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <%= f.label :example_input, "Example Input (JSON)", class: "form-label" %>
+          <%= f.text_area :example_input,
+                          class: "form-control font-monospace",
+                          rows: 5,
+                          placeholder: '{"city": "San Francisco"}',
+                          style: "font-size: 14px;" %>
+        </div>
+        <div class="col-md-6 mb-3">
+          <%= f.label :example_output, "Example Output (JSON)", class: "form-label" %>
+          <%= f.text_area :example_output,
+                          class: "form-control font-monospace",
+                          rows: 5,
+                          placeholder: '{"temperature": 72, "conditions": "sunny"}',
+                          style: "font-size: 14px;" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="d-flex justify-content-between">
+    <%= link_to "Cancel", function.persisted? ? function_path(function) : functions_path, class: "btn btn-outline-secondary" %>
+    <%= f.submit function.persisted? ? "Update Function" : "Create Function", class: "btn btn-primary" %>
+  </div>
+<% end %>
+

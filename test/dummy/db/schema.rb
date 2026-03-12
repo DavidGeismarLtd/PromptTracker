@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_12_185358) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_11_233425) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -110,6 +110,49 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_12_185358) do
     t.index [ "configurable_type", "configurable_id" ], name: "index_evaluator_configs_on_configurable"
     t.index [ "depends_on" ], name: "index_prompt_tracker_evaluator_configs_on_depends_on"
     t.index [ "enabled" ], name: "index_prompt_tracker_evaluator_configs_on_enabled"
+  end
+
+  create_table "prompt_tracker_function_definitions", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "description"
+    t.jsonb "parameters", default: {}, null: false
+    t.text "code", null: false
+    t.string "language", default: "ruby", null: false
+    t.string "category"
+    t.jsonb "tags", default: []
+    t.text "environment_variables"
+    t.jsonb "dependencies", default: []
+    t.jsonb "example_input", default: {}
+    t.jsonb "example_output", default: {}
+    t.integer "version", default: 1, null: false
+    t.string "created_by"
+    t.integer "usage_count", default: 0, null: false
+    t.datetime "last_executed_at"
+    t.integer "execution_count", default: 0, null: false
+    t.integer "average_execution_time_ms"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "category" ], name: "index_prompt_tracker_function_definitions_on_category"
+    t.index [ "created_at" ], name: "index_prompt_tracker_function_definitions_on_created_at"
+    t.index [ "language" ], name: "index_prompt_tracker_function_definitions_on_language"
+    t.index [ "last_executed_at" ], name: "index_prompt_tracker_function_definitions_on_last_executed_at"
+    t.index [ "name" ], name: "index_prompt_tracker_function_definitions_on_name", unique: true
+  end
+
+  create_table "prompt_tracker_function_executions", force: :cascade do |t|
+    t.bigint "function_definition_id", null: false
+    t.jsonb "arguments", default: {}, null: false
+    t.jsonb "result"
+    t.boolean "success", default: true, null: false
+    t.text "error_message"
+    t.integer "execution_time_ms"
+    t.datetime "executed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "executed_at" ], name: "index_prompt_tracker_function_executions_on_executed_at"
+    t.index [ "function_definition_id", "executed_at" ], name: "index_function_executions_on_definition_and_executed_at"
+    t.index [ "function_definition_id" ], name: "idx_on_function_definition_id_ac862f4b59"
+    t.index [ "success" ], name: "index_prompt_tracker_function_executions_on_success"
   end
 
   create_table "prompt_tracker_human_evaluations", force: :cascade do |t|
@@ -336,6 +379,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_12_185358) do
   add_foreign_key "prompt_tracker_ab_tests", "prompt_tracker_prompts", column: "prompt_id"
   add_foreign_key "prompt_tracker_dataset_rows", "prompt_tracker_datasets", column: "dataset_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_test_runs", column: "test_run_id"
+  add_foreign_key "prompt_tracker_function_executions", "prompt_tracker_function_definitions", column: "function_definition_id"
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_evaluations", column: "evaluation_id"
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_llm_responses", column: "llm_response_id"
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_test_runs", column: "test_run_id"

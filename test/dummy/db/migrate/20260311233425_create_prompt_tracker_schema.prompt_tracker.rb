@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# This migration comes from prompt_tracker (originally 20251216000001)
 # Consolidated migration that creates the complete PromptTracker schema.
 #
 # This migration replaces 38+ individual migrations with a single comprehensive

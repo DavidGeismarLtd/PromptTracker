@@ -26,9 +26,9 @@ module PromptTracker
         @functions = @functions.by_language(params[:language])
       end
 
-      # Filter by tag
+      # Filter by tag (JSONB array contains)
       if params[:tag].present?
-        @functions = @functions.where("? = ANY(tags)", params[:tag])
+        @functions = @functions.where("tags @> ?", [ params[:tag] ].to_json)
       end
 
       # Sort
@@ -153,12 +153,12 @@ module PromptTracker
         :code,
         :language,
         :category,
-        :example_input,
-        :example_output,
-        :parameters,
-        :environment_variables,
-        :dependencies,
-        tags: []
+        tags: [],
+        parameters: {},
+        example_input: {},
+        example_output: {},
+        environment_variables: {},
+        dependencies: {}
       )
     end
   end

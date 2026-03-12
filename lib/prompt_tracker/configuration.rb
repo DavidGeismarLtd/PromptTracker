@@ -142,6 +142,21 @@ module PromptTracker
     #   }
     attr_accessor :url_options_provider
 
+    # Function execution provider configuration.
+    # Similar to LLM providers, but for code execution backends.
+    # @return [Hash] hash of provider symbol => provider config hash
+    # @example
+    #   {
+    #     aws_lambda: {
+    #       region: ENV["AWS_REGION"],
+    #       access_key_id: ENV["AWS_ACCESS_KEY_ID"],
+    #       secret_access_key: ENV["AWS_SECRET_ACCESS_KEY"],
+    #       execution_role_arn: ENV["LAMBDA_EXECUTION_ROLE_ARN"],
+    #       function_prefix: "prompt-tracker"
+    #     }
+    #   }
+    attr_accessor :function_providers
+
     # Initialize with default values.
     def initialize
       @basic_auth_username = nil
@@ -153,6 +168,7 @@ module PromptTracker
       @configuration_provider = nil
       @url_options_provider = nil
       @base_record_class = "::ActiveRecord::Base"
+      @function_providers = {}
     end
 
     # Check if basic authentication is enabled.
@@ -339,6 +355,41 @@ module PromptTracker
     # @return [Boolean] true if the feature is enabled
     def feature_enabled?(feature)
       effective_features[feature.to_sym] == true
+    end
+
+    # =========================================================================
+    # Function Provider Methods
+    # =========================================================================
+
+    # Check if a function provider is configured.
+    # @param provider [Symbol] the provider name (e.g., :aws_lambda)
+    # @return [Boolean] true if the provider has required configuration
+    def function_provider_configured?(provider)
+      config = @function_providers[provider.to_sym]
+      return false if config.nil?
+
+      # Provider-specific validation
+      case provider.to_sym
+      when :aws_lambda
+        config[:access_key_id].present? &&
+          config[:secret_access_key].present? &&
+          config[:execution_role_arn].present?
+      else
+        false
+      end
+    end
+
+    # Get the default function provider.
+    # @return [Symbol, nil] the first configured provider or nil
+    def default_function_provider
+      @function_providers.keys.find { |provider| function_provider_configured?(provider) }
+    end
+
+    # Get configuration for a function provider.
+    # @param provider [Symbol] the provider name
+    # @return [Hash, nil] the provider configuration or nil
+    def function_provider_config(provider)
+      @function_providers[provider.to_sym]
     end
 
     # =========================================================================

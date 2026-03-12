@@ -1,4 +1,4 @@
-<%= form_with model: [:prompt_tracker, function], local: true, class: "needs-validation", novalidate: true do |f| %>
+<%= form_with model: @function, url: @function.persisted? ? function_path(@function) : functions_path, local: true, class: "needs-validation", novalidate: true do |f| %>
   <% if function.errors.any? %>
     <div class="alert alert-danger">
       <h4 class="alert-heading">Please fix the following errors:</h4>
@@ -25,7 +25,7 @@
 
         <div class="col-md-3 mb-3">
           <%= f.label :category, "Category", class: "form-label" %>
-          <%= f.select :category, 
+          <%= f.select :category,
                        options_for_select([
                          ["API Integration", "api"],
                          ["Utility", "utility"],
@@ -56,7 +56,7 @@
 
       <div class="mb-3">
         <%= f.label :tags, "Tags (comma-separated)", class: "form-label" %>
-        <%= f.text_field :tags, 
+        <%= f.text_field :tags,
                          value: function.tags&.join(", "),
                          class: "form-control",
                          placeholder: "e.g., weather, api, external" %>
@@ -72,14 +72,14 @@
     </div>
     <div class="card-body">
       <%= f.label :code, "Ruby Code", class: "form-label" %>
-      <%= f.text_area :code, 
+      <%= f.text_area :code,
                       class: "form-control font-monospace",
                       rows: 20,
                       placeholder: "# Write your Ruby code here\ndef execute(args)\n  # Your implementation\nend",
                       required: true,
                       style: "font-size: 14px;" %>
       <div class="form-text">
-        <strong>Note:</strong> Code will be executed in a sandboxed environment. 
+        <strong>Note:</strong> Code will be executed in a sandboxed environment.
         Use the <code>execute</code> method as the entry point.
       </div>
     </div>
@@ -171,4 +171,3 @@
     <%= f.submit function.persisted? ? "Update Function" : "Create Function", class: "btn btn-primary" %>
   </div>
 <% end %>
-

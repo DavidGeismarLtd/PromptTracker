@@ -290,163 +290,224 @@ Full-page editor with split layout:
 
 #### Services
 
+**Note**: Initial implementation uses AWS Lambda for code execution instead of Docker for simplicity, security, and scalability. Docker-based execution can be added later as an alternative backend.
+
 ```ruby
 # app/services/prompt_tracker/code_executor.rb
 class CodeExecutor
-  # Execute user-written Ruby code in a sandboxed environment
+  # Execute user-written Ruby code using AWS Lambda
   #
   # @param code [String] Ruby source code
   # @param arguments [Hash] function arguments
   # @param environment_variables [Hash] environment variables (API keys, etc.)
   # @param dependencies [Array<String>] gem dependencies
-  # @param timeout [Integer] execution timeout in seconds (default: 30)
-  # @return [Hash] { success: true/false, result: {...}, error: nil, execution_time_ms: 123 }
-
-  TIMEOUT = 30 # seconds
-  MEMORY_LIMIT = 512 # MB
-  CPU_LIMIT = 1.0 # cores
+  # @return [Result] execution result with success status, output, errors, and timing
 
   Result = Struct.new(:success?, :result, :error, :execution_time_ms, :logs, keyword_init: true)
 
-  def self.execute(code:, arguments:, environment_variables: {}, dependencies: [], timeout: TIMEOUT)
-    new(code, arguments, environment_variables, dependencies, timeout).execute
+  def self.execute(code:, arguments:, environment_variables: {}, dependencies: [])
+    # Delegate to Lambda adapter (can be swapped for Docker later)
+    LambdaAdapter.execute(
+      code: code,
+      arguments: arguments,
+      environment_variables: environment_variables,
+      dependencies: dependencies
+    )
+  end
+end
+
+# app/services/prompt_tracker/code_executor/lambda_adapter.rb
+class CodeExecutor::LambdaAdapter
+  # AWS Lambda-based code execution
+  # Benefits:
+  # - Zero infrastructure management
+  # - Built-in sandboxing and security
+  # - Automatic scaling
+  # - Pay-per-use pricing
+  # - Easy to test locally with SAM/LocalStack
+
+  TIMEOUT = 30 # seconds
+  MEMORY_SIZE = 512 # MB
+  RUNTIME = 'ruby3.2'
+
+  Result = CodeExecutor::Result
+
+  def self.execute(code:, arguments:, environment_variables: {}, dependencies: [])
+    new(code, arguments, environment_variables, dependencies).execute
   end
 
-  def initialize(code, arguments, environment_variables, dependencies, timeout)
+  def initialize(code, arguments, environment_variables, dependencies)
     @code = code
     @arguments = arguments
     @environment_variables = environment_variables
     @dependencies = dependencies
-    @timeout = timeout
+    @lambda_client = Aws::Lambda::Client.new(
+      region: PromptTracker.configuration.aws_region,
+      credentials: Aws::Credentials.new(
+        PromptTracker.configuration.aws_access_key_id,
+        PromptTracker.configuration.aws_secret_access_key
+      )
+    )
   end
 
   def execute
     start_time = Time.current
 
-    # Build Docker container with code and dependencies
-    container_id = build_container
+    # Create or update Lambda function with user code
+    function_name = ensure_lambda_function
 
-    # Execute code in container
-    result = run_in_container(container_id)
+    # Invoke Lambda with arguments
+    response = invoke_lambda(function_name)
 
     execution_time_ms = ((Time.current - start_time) * 1000).to_i
 
+    # Parse response
+    parse_lambda_response(response, execution_time_ms)
+  rescue Aws::Lambda::Errors::ServiceException => e
     Result.new(
-      success?: result[:success],
-      result: result[:output],
-      error: result[:error],
-      execution_time_ms: execution_time_ms,
-      logs: result[:logs]
+      success?: false,
+      result: nil,
+      error: "Lambda error: #{e.message}",
+      execution_time_ms: 0,
+      logs: ""
     )
-  ensure
-    # Clean up container
-    cleanup_container(container_id) if container_id
+  rescue => e
+    Result.new(
+      success?: false,
+      result: nil,
+      error: "Execution error: #{e.message}",
+      execution_time_ms: 0,
+      logs: ""
+    )
   end
 
   private
 
-  def build_container
-    # Create temporary directory with code and dependencies
-    temp_dir = create_temp_directory
+  def ensure_lambda_function
+    # Generate unique function name based on code hash
+    # This allows caching - same code = same Lambda function
+    code_hash = Digest::SHA256.hexdigest(@code)[0..15]
+    function_name = "#{PromptTracker.configuration.lambda_function_prefix}-#{code_hash}"
 
-    # Write code to file
-    File.write("#{temp_dir}/function.rb", wrapped_code)
+    begin
+      # Check if function exists
+      @lambda_client.get_function(function_name: function_name)
 
-    # Write Gemfile with dependencies
-    File.write("#{temp_dir}/Gemfile", gemfile_content)
+      # Function exists - update code if needed
+      @lambda_client.update_function_code(
+        function_name: function_name,
+        zip_file: build_deployment_package
+      )
 
-    # Write arguments as JSON
-    File.write("#{temp_dir}/arguments.json", @arguments.to_json)
+      # Update environment variables
+      @lambda_client.update_function_configuration(
+        function_name: function_name,
+        environment: { variables: @environment_variables }
+      )
+    rescue Aws::Lambda::Errors::ResourceNotFoundException
+      # Function doesn't exist - create it
+      @lambda_client.create_function(
+        function_name: function_name,
+        runtime: RUNTIME,
+        role: PromptTracker.configuration.lambda_execution_role_arn,
+        handler: 'function.handler',
+        code: { zip_file: build_deployment_package },
+        timeout: TIMEOUT,
+        memory_size: MEMORY_SIZE,
+        environment: { variables: @environment_variables },
+        description: "PromptTracker function execution"
+      )
 
-    # Write environment variables
-    File.write("#{temp_dir}/env.json", @environment_variables.to_json)
+      # Wait for function to be active
+      @lambda_client.wait_until(:function_active, function_name: function_name)
+    end
 
-    # Build Docker image
-    image_id = Docker::Image.build_from_dir(temp_dir) do |v|
-      if (log = JSON.parse(v)) && log.has_key?("stream")
-        Rails.logger.debug log["stream"]
+    function_name
+  end
+
+  def invoke_lambda(function_name)
+    @lambda_client.invoke(
+      function_name: function_name,
+      invocation_type: 'RequestResponse', # Synchronous
+      log_type: 'Tail', # Include logs in response
+      payload: { arguments: @arguments }.to_json
+    )
+  end
+
+  def parse_lambda_response(response, execution_time_ms)
+    # Decode logs (base64 encoded)
+    logs = response.log_result ? Base64.decode64(response.log_result) : ""
+
+    # Parse payload
+    payload = JSON.parse(response.payload.read)
+
+    if response.status_code == 200 && !payload['errorMessage']
+      Result.new(
+        success?: true,
+        result: payload['result'],
+        error: nil,
+        execution_time_ms: execution_time_ms,
+        logs: logs
+      )
+    else
+      Result.new(
+        success?: false,
+        result: nil,
+        error: payload['errorMessage'] || payload['errorType'] || 'Unknown error',
+        execution_time_ms: execution_time_ms,
+        logs: logs
+      )
+    end
+  end
+
+  def build_deployment_package
+    # Create ZIP file with Lambda handler and user code
+    require 'zip'
+
+    zip_buffer = Zip::OutputStream.write_buffer do |zip|
+      # Add Lambda handler
+      zip.put_next_entry('function.rb')
+      zip.write(lambda_handler_code)
+
+      # Add user code
+      zip.put_next_entry('user_code.rb')
+      zip.write(@code)
+
+      # Add Gemfile if dependencies specified
+      if @dependencies.any?
+        zip.put_next_entry('Gemfile')
+        zip.write(gemfile_content)
       end
     end
 
-    # Create container
-    container = Docker::Container.create(
-      'Image' => image_id.id,
-      'Cmd' => ['ruby', 'function.rb'],
-      'HostConfig' => {
-        'Memory' => MEMORY_LIMIT * 1024 * 1024, # Convert MB to bytes
-        'CpuQuota' => (CPU_LIMIT * 100_000).to_i,
-        'NetworkMode' => 'none' # No network access by default
-      }
-    )
-
-    container.id
+    zip_buffer.rewind
+    zip_buffer.read
   end
 
-  def run_in_container(container_id)
-    container = Docker::Container.get(container_id)
-
-    # Start container
-    container.start
-
-    # Wait for completion with timeout
-    status = container.wait(@timeout)
-
-    # Get output
-    stdout = container.logs(stdout: true)
-    stderr = container.logs(stderr: true)
-
-    if status['StatusCode'] == 0
-      # Success - parse JSON output
-      output = JSON.parse(stdout)
-      { success: true, output: output, error: nil, logs: stderr }
-    else
-      # Error
-      { success: false, output: nil, error: stderr, logs: stderr }
-    end
-  rescue Docker::Error::TimeoutError
-    { success: false, output: nil, error: "Execution timeout (#{@timeout}s)", logs: "" }
-  rescue JSON::ParserError => e
-    { success: false, output: nil, error: "Invalid JSON output: #{e.message}", logs: stdout }
-  rescue => e
-    { success: false, output: nil, error: e.message, logs: "" }
-  end
-
-  def cleanup_container(container_id)
-    container = Docker::Container.get(container_id)
-    container.stop
-    container.delete(force: true)
-  rescue => e
-    Rails.logger.error "Failed to cleanup container #{container_id}: #{e.message}"
-  end
-
-  def wrapped_code
-    # Wrap user code with execution harness
+  def lambda_handler_code
+    # Lambda handler that loads and executes user code
     <<~RUBY
       require 'json'
-      require 'http' # Pre-installed HTTP gem
 
-      # Load arguments
-      arguments = JSON.parse(File.read('arguments.json'), symbolize_names: true)
+      def handler(event:, context:)
+        # Load user code
+        require_relative 'user_code'
 
-      # Load environment variables
-      ENV_VARS = JSON.parse(File.read('env.json'))
+        # Extract arguments from event
+        arguments = event['arguments'] || {}
 
-      # Helper to access environment variables
-      def env
-        ENV_VARS
-      end
+        # Execute user function
+        result = execute(**arguments.transform_keys(&:to_sym))
 
-      # User code
-      #{@code}
-
-      # Execute function
-      begin
-        result = execute(**arguments)
-        puts result.to_json
+        # Return result
+        { result: result }
       rescue => e
-        STDERR.puts "Error: \#{e.message}"
-        STDERR.puts e.backtrace.join("\\n")
-        exit 1
+        # Return error
+        {
+          errorMessage: e.message,
+          errorType: e.class.name,
+          stackTrace: e.backtrace
+        }
       end
     RUBY
   end
@@ -473,10 +534,6 @@ class CodeExecutor
       #{base_gems.join("\n")}
       #{user_gems.join("\n")}
     GEMFILE
-  end
-
-  def create_temp_directory
-    Dir.mktmpdir('prompt_tracker_function_')
   end
 end
 ```
@@ -1015,6 +1072,22 @@ end
 Add to `lib/prompt_tracker/configuration.rb`:
 
 ```ruby
+# AWS Lambda configuration for function execution
+# @return [String] AWS region (e.g., "us-east-1")
+attr_accessor :aws_region
+
+# @return [String] AWS access key ID
+attr_accessor :aws_access_key_id
+
+# @return [String] AWS secret access key
+attr_accessor :aws_secret_access_key
+
+# @return [String] Lambda execution role ARN
+attr_accessor :lambda_execution_role_arn
+
+# @return [String] Prefix for Lambda function names
+attr_accessor :lambda_function_prefix
+
 # Base URL for deployed agents (used to generate public URLs)
 # @return [String] base URL (e.g., "https://api.example.com")
 attr_accessor :agent_base_url
@@ -1034,6 +1107,13 @@ Example initializer:
 # config/initializers/prompt_tracker.rb
 PromptTracker.configure do |config|
   # ... existing config ...
+
+  # AWS Lambda configuration (required for function execution)
+  config.aws_region = ENV.fetch("AWS_REGION", "us-east-1")
+  config.aws_access_key_id = ENV.fetch("AWS_ACCESS_KEY_ID")
+  config.aws_secret_access_key = ENV.fetch("AWS_SECRET_ACCESS_KEY")
+  config.lambda_execution_role_arn = ENV.fetch("LAMBDA_EXECUTION_ROLE_ARN")
+  config.lambda_function_prefix = ENV.fetch("LAMBDA_FUNCTION_PREFIX", "prompt-tracker")
 
   # Agent deployment settings
   config.agent_base_url = ENV.fetch("AGENT_BASE_URL", "http://localhost:3000")

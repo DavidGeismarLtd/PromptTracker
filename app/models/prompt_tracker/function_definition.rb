@@ -95,16 +95,14 @@ module PromptTracker
     # Test the function with sample input (does not track execution)
     #
     # @param arguments [Hash] function arguments
-    # @return [Hash] { success?: Boolean, result: Object, error: String, execution_time_ms: Integer }
+    # @return [CodeExecutor::Result] execution result
     def test(arguments = {})
-      # TODO: Implement CodeExecutor service in Phase 2
-      # For now, return a mock response
-      {
-        success?: true,
-        result: { message: "CodeExecutor not yet implemented - this is a mock response" },
-        error: nil,
-        execution_time_ms: 0
-      }
+      CodeExecutor.execute(
+        code: code,
+        arguments: arguments,
+        environment_variables: environment_variables || {},
+        dependencies: dependencies || []
+      )
     end
 
     # Execute the function and track the execution

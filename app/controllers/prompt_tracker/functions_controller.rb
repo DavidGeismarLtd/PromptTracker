@@ -4,8 +4,8 @@ module PromptTracker
   # Controller for managing the Function Library
   # Provides CRUD operations for code-based functions
   class FunctionsController < ApplicationController
-    before_action :set_function, only: [ :show, :edit, :update, :destroy, :test ]
-
+    before_action :set_function, only: [ :show, :edit, :update, :destroy, :test, :deploy, :undeploy ]
+    skip_before_action :verify_authenticity_token, only: [ :test, :deploy, :undeploy ]
     # GET /functions
     # List all functions with search and filtering
     def index
@@ -120,6 +120,24 @@ module PromptTracker
     # POST /functions/:id/test
     # Test a function with sample inputs
     def test
+      # Check if function is deployed
+      unless @function.deployed?
+        respond_to do |format|
+          format.json do
+            render json: {
+              success?: false,
+              error: "Function must be deployed to AWS Lambda before testing. Click 'Publish to Lambda' first.",
+              deployment_status: @function.deployment_status
+            }, status: :unprocessable_entity
+          end
+          format.html do
+            flash[:alert] = "Function must be deployed to AWS Lambda before testing. Click 'Publish to Lambda' first."
+            redirect_to function_path(@function)
+          end
+        end
+        return
+      end
+
       arguments = JSON.parse(params[:arguments] || "{}")
       result = @function.test(**arguments.symbolize_keys)
 
@@ -138,6 +156,75 @@ module PromptTracker
           redirect_to function_path(@function)
         end
       end
+    end
+
+    # POST /functions/:id/deploy
+    # Deploy function to AWS Lambda
+    def deploy
+      @function.update!(deployment_status: "deploying", deployment_error: nil)
+
+      # Deploy to Lambda
+      result = CodeExecutor::LambdaAdapter.deploy(
+        function_definition: @function,
+        code: @function.code,
+        environment_variables: @function.environment_variables || {},
+        dependencies: @function.dependencies || []
+      )
+
+      if result[:success]
+        @function.update!(
+          deployment_status: "deployed",
+          lambda_function_name: result[:function_name],
+          deployed_at: Time.current,
+          deployment_error: nil
+        )
+
+        respond_to do |format|
+          format.html do
+            flash[:notice] = "Function successfully deployed to AWS Lambda"
+            redirect_to function_path(@function)
+          end
+          format.json { render json: { success: true, function_name: result[:function_name] } }
+        end
+      else
+        @function.update!(
+          deployment_status: "deployment_failed",
+          deployment_error: result[:error]
+        )
+
+        respond_to do |format|
+          format.html do
+            flash[:alert] = "Deployment failed: #{result[:error]}"
+            redirect_to function_path(@function)
+          end
+          format.json { render json: { success: false, error: result[:error] }, status: :unprocessable_entity }
+        end
+      end
+    end
+
+    # DELETE /functions/:id/undeploy
+    # Remove function from AWS Lambda
+    def undeploy
+      if @function.lambda_function_name.present?
+        result = CodeExecutor::LambdaAdapter.undeploy(@function.lambda_function_name)
+
+        if result[:success]
+          @function.update!(
+            deployment_status: "not_deployed",
+            lambda_function_name: nil,
+            deployed_at: nil,
+            deployment_error: nil
+          )
+
+          flash[:notice] = "Function successfully removed from AWS Lambda"
+        else
+          flash[:alert] = "Failed to remove function: #{result[:error]}"
+        end
+      else
+        flash[:alert] = "Function is not deployed"
+      end
+
+      redirect_to function_path(@function)
     end
 
     private

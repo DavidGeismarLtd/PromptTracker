@@ -175,7 +175,9 @@ PromptTracker::Engine.routes.draw do
   # ========================================
   resources :functions do
     member do
-      post :test  # POST /functions/:id/test - Test function with sample inputs
+      post :test      # POST /functions/:id/test - Test function with sample inputs
+      post :deploy    # POST /functions/:id/deploy - Deploy function to AWS Lambda
+      delete :undeploy # DELETE /functions/:id/undeploy - Remove function from AWS Lambda
     end
   end
 

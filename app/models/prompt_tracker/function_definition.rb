@@ -10,12 +10,16 @@
 #  created_at                :datetime         not null
 #  created_by                :string
 #  dependencies              :jsonb
+#  deployed_at               :datetime
+#  deployment_error          :text
+#  deployment_status         :string           default("not_deployed"), not null
 #  description               :text
 #  environment_variables     :text
 #  example_input             :jsonb
 #  example_output            :jsonb
 #  execution_count           :integer          default(0), not null
 #  id                        :bigint           not null, primary key
+#  lambda_function_name      :string
 #  language                  :string           default("ruby"), not null
 #  last_executed_at          :datetime
 #  name                      :string           not null
@@ -83,6 +87,9 @@ module PromptTracker
     serialize :environment_variables, coder: JSON
     encrypts :environment_variables
 
+    # Deployment statuses
+    DEPLOYMENT_STATUSES = %w[not_deployed deploying deployed deployment_failed].freeze
+
     # Scopes
     scope :by_category, ->(category) { where(category: category) }
     scope :by_language, ->(language) { where(language: language) }
@@ -91,17 +98,19 @@ module PromptTracker
     scope :search, lambda { |query|
       where("name ILIKE ? OR description ILIKE ?", "%#{query}%", "%#{query}%")
     }
+    scope :deployed, -> { where(deployment_status: "deployed") }
+    scope :not_deployed, -> { where(deployment_status: "not_deployed") }
+    scope :deployment_failed, -> { where(deployment_status: "deployment_failed") }
 
     # Test the function with sample input (does not track execution)
+    # NOTE: Function must be deployed before testing!
     #
     # @param arguments [Hash] function arguments
     # @return [CodeExecutor::Result] execution result
     def test(arguments = {})
       CodeExecutor.execute(
-        code: code,
-        arguments: arguments,
-        environment_variables: environment_variables || {},
-        dependencies: dependencies || []
+        lambda_function_name: lambda_function_name,
+        arguments: arguments
       )
     end
 
@@ -128,6 +137,41 @@ module PromptTracker
       update_average_execution_time(result[:execution_time_ms])
 
       result
+    end
+
+    # Deployment status helpers
+    def deployed?
+      deployment_status == "deployed"
+    end
+
+    def not_deployed?
+      deployment_status == "not_deployed"
+    end
+
+    def deploying?
+      deployment_status == "deploying"
+    end
+
+    def deployment_failed?
+      deployment_status == "deployment_failed"
+    end
+
+    def deployment_status_badge_class
+      case deployment_status
+      when "deployed" then "success"
+      when "deploying" then "warning"
+      when "deployment_failed" then "danger"
+      else "secondary"
+      end
+    end
+
+    def deployment_status_text
+      case deployment_status
+      when "deployed" then "✓ Deployed"
+      when "deploying" then "⏳ Deploying..."
+      when "deployment_failed" then "✗ Failed"
+      else "Not Deployed"
+      end
     end
 
     private

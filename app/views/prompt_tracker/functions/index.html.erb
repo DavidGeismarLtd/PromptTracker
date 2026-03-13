@@ -66,6 +66,7 @@
                 <th>Description</th>
                 <th>Category</th>
                 <th>Language</th>
+                <th>Status</th>
                 <th>Executions</th>
                 <th>Success Rate</th>
                 <th>Avg Time</th>
@@ -91,6 +92,11 @@
                   </td>
                   <td>
                     <code><%= function.language.upcase %></code>
+                  </td>
+                  <td>
+                    <span class="badge bg-<%= function.deployment_status_badge_class %>">
+                      <%= function.deployment_status_text %>
+                    </span>
                   </td>
                   <td class="text-end">
                     <%= number_with_delimiter(function.execution_count) %>
@@ -140,4 +146,3 @@
     </div>
   </div>
 </div>
-

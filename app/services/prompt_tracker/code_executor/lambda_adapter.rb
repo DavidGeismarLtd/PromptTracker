@@ -29,15 +29,55 @@ module PromptTracker
 
       Result = CodeExecutor::Result
 
-      # Execute user code using AWS Lambda.
+      # Execute a deployed function on AWS Lambda.
+      # NOTE: Function must already be deployed to Lambda!
       #
-      # @param code [String] Ruby source code
+      # @param lambda_function_name [String] AWS Lambda function name
       # @param arguments [Hash] function arguments
+      # @return [Result] execution result
+      def self.execute(lambda_function_name:, arguments:)
+        new(nil, arguments, {}, []).execute_deployed(lambda_function_name)
+      end
+
+      # Deploy a function to AWS Lambda (explicit deployment).
+      #
+      # @param function_definition [FunctionDefinition] the function to deploy
+      # @param code [String] Ruby source code
       # @param environment_variables [Hash] environment variables
       # @param dependencies [Array<String, Hash>] gem dependencies
-      # @return [Result] execution result
-      def self.execute(code:, arguments:, environment_variables: {}, dependencies: [])
-        new(code, arguments, environment_variables, dependencies).execute
+      # @return [Hash] { success: Boolean, function_name: String, error: String }
+      def self.deploy(function_definition:, code:, environment_variables: {}, dependencies: [])
+        adapter = new(code, {}, environment_variables, dependencies)
+        adapter.deploy_function(function_definition)
+      end
+
+      # Remove a function from AWS Lambda.
+      #
+      # @param function_name [String] Lambda function name
+      # @return [Hash] { success: Boolean, error: String }
+      def self.undeploy(function_name)
+        lambda_client = build_lambda_client_static
+        lambda_client.delete_function(function_name: function_name)
+        { success: true }
+      rescue Aws::Lambda::Errors::ServiceException => e
+        { success: false, error: e.message }
+      rescue StandardError => e
+        { success: false, error: e.message }
+      end
+
+      def self.build_lambda_client_static
+        config = PromptTracker.configuration
+        lambda_config = config.function_provider_config(:aws_lambda)
+
+        raise "AWS Lambda function provider not configured" unless lambda_config
+
+        Aws::Lambda::Client.new(
+          region: lambda_config[:region] || "us-east-1",
+          credentials: Aws::Credentials.new(
+            lambda_config[:access_key_id],
+            lambda_config[:secret_access_key]
+          )
+        )
       end
 
       def initialize(code, arguments, environment_variables, dependencies)
@@ -48,11 +88,9 @@ module PromptTracker
         @lambda_client = build_lambda_client
       end
 
-      def execute
+      # Execute an already-deployed Lambda function
+      def execute_deployed(function_name)
         start_time = Time.current
-
-        # Create or update Lambda function with user code
-        function_name = ensure_lambda_function
 
         # Invoke Lambda with arguments
         response = invoke_lambda(function_name)
@@ -79,6 +117,56 @@ module PromptTracker
         )
       end
 
+      # Deploy function to Lambda (explicit deployment)
+      def deploy_function(function_definition)
+        # Use stored function name if available, otherwise generate new one
+        function_name = if function_definition.lambda_function_name.present?
+          function_definition.lambda_function_name
+        else
+          generate_function_name
+        end
+
+        begin
+          # Check if function exists
+          @lambda_client.get_function(function_name: function_name)
+
+          # Function exists - update code
+          @lambda_client.update_function_code(
+            function_name: function_name,
+            zip_file: build_deployment_package
+          )
+
+          # Update environment variables
+          @lambda_client.update_function_configuration(
+            function_name: function_name,
+            environment: { variables: @environment_variables }
+          )
+        rescue Aws::Lambda::Errors::ResourceNotFoundException
+          # Function doesn't exist - create it
+          lambda_config = PromptTracker.configuration.function_provider_config(:aws_lambda)
+          @lambda_client.create_function(
+            function_name: function_name,
+            runtime: RUNTIME,
+            role: lambda_config[:execution_role_arn],
+            handler: "function.handler",
+            code: { zip_file: build_deployment_package },
+            timeout: TIMEOUT,
+            memory_size: MEMORY_SIZE,
+            environment: { variables: @environment_variables },
+            description: "PromptTracker function: #{function_definition.name}"
+          )
+
+          # Wait for function to be active
+          @lambda_client.wait_until(:function_active, function_name: function_name)
+        end
+
+        { success: true, function_name: function_name }
+      rescue Aws::Lambda::Errors::ServiceException => e
+        { success: false, error: "Lambda error: #{e.message}" }
+      rescue StandardError => e
+        { success: false, error: "Deployment error: #{e.message}" }
+      end
+
       private
 
       def build_lambda_client
@@ -99,10 +187,7 @@ module PromptTracker
       def ensure_lambda_function
         # Generate unique function name based on code hash
         # This allows caching - same code = same Lambda function
-        lambda_config = PromptTracker.configuration.function_provider_config(:aws_lambda)
-        function_prefix = lambda_config[:function_prefix] || "prompt-tracker"
-        code_hash = Digest::SHA256.hexdigest(@code)[0..15]
-        function_name = "#{function_prefix}-#{code_hash}"
+        function_name = generate_function_name
 
         begin
           # Check if function exists
@@ -139,6 +224,13 @@ module PromptTracker
         end
 
         function_name
+      end
+
+      def generate_function_name
+        lambda_config = PromptTracker.configuration.function_provider_config(:aws_lambda)
+        function_prefix = lambda_config[:function_prefix] || "prompt-tracker"
+        code_hash = Digest::SHA256.hexdigest(@code)[0..15]
+        "#{function_prefix}-#{code_hash}"
       end
 
       def invoke_lambda(function_name)

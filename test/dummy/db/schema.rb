@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_11_233425) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_12_153330) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -132,8 +132,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_11_233425) do
     t.integer "average_execution_time_ms"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "lambda_function_name"
+    t.string "deployment_status", default: "not_deployed", null: false
+    t.datetime "deployed_at"
+    t.text "deployment_error"
     t.index [ "category" ], name: "index_prompt_tracker_function_definitions_on_category"
     t.index [ "created_at" ], name: "index_prompt_tracker_function_definitions_on_created_at"
+    t.index [ "deployment_status" ], name: "index_prompt_tracker_function_definitions_on_deployment_status"
+    t.index [ "lambda_function_name" ], name: "idx_on_lambda_function_name_982a02593f"
     t.index [ "language" ], name: "index_prompt_tracker_function_definitions_on_language"
     t.index [ "last_executed_at" ], name: "index_prompt_tracker_function_definitions_on_last_executed_at"
     t.index [ "name" ], name: "index_prompt_tracker_function_definitions_on_name", unique: true

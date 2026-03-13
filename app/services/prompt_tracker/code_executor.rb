@@ -6,20 +6,20 @@ module PromptTracker
   # This service provides a simple interface for executing code in a sandboxed environment.
   # The actual execution is delegated to LambdaAdapter, which handles AWS Lambda integration.
   #
-  # @example Execute a simple function
+  # NOTE: Functions must be explicitly deployed to Lambda before execution.
+  # Use FunctionDefinition#deploy to deploy, then call this method to execute.
+  #
+  # @example Execute a deployed function
+  #   # First deploy the function
+  #   function.deploy
+  #
+  #   # Then execute it
   #   result = CodeExecutor.execute(
-  #     code: "def execute(name:)\n  { greeting: \"Hello, #{name}!\" }\nend",
+  #     lambda_function_name: function.lambda_function_name,
   #     arguments: { name: "World" }
   #   )
   #   result.success? # => true
   #   result.result   # => { "greeting" => "Hello, World!" }
-  #
-  # @example Execute with environment variables
-  #   result = CodeExecutor.execute(
-  #     code: "def execute\n  { api_key: ENV['API_KEY'] }\nend",
-  #     arguments: {},
-  #     environment_variables: { "API_KEY" => "secret" }
-  #   )
   #
   class CodeExecutor
     # Result object returned by execute.
@@ -35,19 +35,16 @@ module PromptTracker
     #   @return [String] execution logs
     Result = Struct.new(:success?, :result, :error, :execution_time_ms, :logs, keyword_init: true)
 
-    # Execute user code using AWS Lambda.
+    # Execute a deployed function on AWS Lambda.
+    # NOTE: Function must already be deployed to Lambda!
     #
-    # @param code [String] Ruby source code containing an `execute` method
+    # @param lambda_function_name [String] AWS Lambda function name
     # @param arguments [Hash] arguments to pass to the execute method
-    # @param environment_variables [Hash] environment variables to set
-    # @param dependencies [Array<String, Hash>] gem dependencies
     # @return [Result] execution result
-    def self.execute(code:, arguments:, environment_variables: {}, dependencies: [])
+    def self.execute(lambda_function_name:, arguments:)
       LambdaAdapter.execute(
-        code: code,
-        arguments: arguments,
-        environment_variables: environment_variables,
-        dependencies: dependencies
+        lambda_function_name: lambda_function_name,
+        arguments: arguments
       )
     end
   end

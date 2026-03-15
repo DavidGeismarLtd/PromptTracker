@@ -2,6 +2,9 @@ module PromptTracker
   class Engine < ::Rails::Engine
     isolate_namespace PromptTracker
 
+    # Add lib directory to autoload paths
+    config.autoload_paths << root.join("lib")
+
     initializer "prompt_tracker.assets.precompile" do |app|
       app.config.assets.precompile += %w[
         prompt_tracker/application.js

@@ -208,10 +208,14 @@ export default class extends Controller {
       paramsEditor.setValue(JSON.stringify(result.parameters, null, 2))
     }
 
-    // Populate dependencies
-    const dependenciesTextarea = document.getElementById("function_definition_dependencies")
-    if (dependenciesTextarea && result.dependencies) {
-      dependenciesTextarea.value = result.dependencies.join("\n")
+    // Populate dependencies using Monaco Editor
+    const dependenciesEl = this.element.querySelector('[data-field="dependencies"][data-controller*="monaco-editor"]')
+    const dependenciesEditor = dependenciesEl ? this.application.getControllerForElementAndIdentifier(dependenciesEl, "monaco-editor") : null
+
+    console.log("[FunctionAiGeneratorController] Dependencies editor:", !!dependenciesEditor)
+
+    if (dependenciesEditor && result.dependencies) {
+      dependenciesEditor.setValue(JSON.stringify(result.dependencies, null, 2))
     }
 
     // Populate example input/output using Monaco Editors

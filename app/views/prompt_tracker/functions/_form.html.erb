@@ -183,7 +183,9 @@
       <div data-controller="monaco-editor"
            data-monaco-editor-language-value="json"
            data-monaco-editor-height-value="150px"
-           data-monaco-editor-minimap-value="false">
+           data-monaco-editor-minimap-value="false"
+           data-function-ai-generator-monaco-editor-outlet="monaco-editor"
+           data-field="dependencies">
         <div data-monaco-editor-target="container"></div>
         <%= f.text_area :dependencies,
                         value: function.dependencies.present? ? JSON.pretty_generate(function.dependencies) : "",

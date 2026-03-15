@@ -156,6 +156,7 @@ end`
    */
   showTemplates(event) {
     event.preventDefault()
+    console.log("[FunctionCodeTemplates] showTemplates called")
 
     // Remove focus from button to prevent aria-hidden focus conflict
     if (event.target) {
@@ -175,14 +176,17 @@ end`
     modalContainer.setAttribute("data-controller", "modal-fix")
     modalElement.setAttribute("data-modal-fix-target", "modal")
 
+    console.log("[FunctionCodeTemplates] Appending modal to body")
     // Now append to body (this will trigger Stimulus to connect the controller)
     document.body.appendChild(modalContainer)
 
     // Add click event listeners to template cards
     modalElement.querySelectorAll(".template-card").forEach(card => {
       card.addEventListener("click", (e) => {
+        console.log("[FunctionCodeTemplates] Template card clicked:", e.currentTarget.dataset.templateKey)
         const templateKey = e.currentTarget.dataset.templateKey
         this.insertTemplate(templateKey)
+        console.log("[FunctionCodeTemplates] Hiding modal")
         const modal = bootstrap.Modal.getInstance(modalElement)
         if (modal) modal.hide()
       })
@@ -190,12 +194,18 @@ end`
 
     // Show modal after a brief delay to ensure DOM is ready
     setTimeout(() => {
-      const modal = new bootstrap.Modal(modalElement)
+      console.log("[FunctionCodeTemplates] Showing modal")
+      const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+      })
       modal.show()
     }, 10)
 
     // Clean up when modal is hidden
     modalElement.addEventListener("hidden.bs.modal", () => {
+      console.log("[FunctionCodeTemplates] Modal hidden, cleaning up")
       modalContainer.remove()
     })
   }

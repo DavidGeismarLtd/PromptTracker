@@ -245,5 +245,60 @@ module PromptTracker
         expect(result[:result]).to be_present
       end
     end
+
+    # Environment Variables Tests
+
+    describe "environment variables" do
+      describe "associations" do
+        it "has many shared_environment_variables through join table" do
+          function = FunctionDefinition.create!(valid_attributes)
+          env_var = create(:environment_variable, key: "TEST_KEY", value: "test_value")
+
+          function.shared_environment_variables << env_var
+
+          expect(function.shared_environment_variables).to include(env_var)
+          expect(env_var.function_definitions).to include(function)
+        end
+      end
+
+      describe "#merged_environment_variables" do
+        it "returns empty hash when no variables are set" do
+          function = FunctionDefinition.create!(valid_attributes.merge(environment_variables: nil))
+          expect(function.merged_environment_variables).to eq({})
+        end
+
+        it "returns inline variables when no shared variables" do
+          function = FunctionDefinition.create!(valid_attributes)
+          expect(function.merged_environment_variables).to eq({ "OPENWEATHER_API_KEY" => "sk_test_123" })
+        end
+
+        it "returns shared variables when no inline variables" do
+          function = FunctionDefinition.create!(valid_attributes.merge(environment_variables: nil))
+          env_var = create(:environment_variable, key: "SHARED_KEY", value: "shared_value")
+          function.shared_environment_variables << env_var
+
+          expect(function.merged_environment_variables).to eq({ "SHARED_KEY" => "shared_value" })
+        end
+
+        it "merges shared and inline variables" do
+          function = FunctionDefinition.create!(valid_attributes)
+          env_var = create(:environment_variable, key: "SHARED_KEY", value: "shared_value")
+          function.shared_environment_variables << env_var
+
+          merged = function.merged_environment_variables
+          expect(merged["OPENWEATHER_API_KEY"]).to eq("sk_test_123")
+          expect(merged["SHARED_KEY"]).to eq("shared_value")
+        end
+
+        it "inline variables override shared variables with same key" do
+          function = FunctionDefinition.create!(valid_attributes)
+          env_var = create(:environment_variable, key: "OPENWEATHER_API_KEY", value: "shared_key_value")
+          function.shared_environment_variables << env_var
+
+          # Inline should override shared
+          expect(function.merged_environment_variables["OPENWEATHER_API_KEY"]).to eq("sk_test_123")
+        end
+      end
+    end
   end
 end

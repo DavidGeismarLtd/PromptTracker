@@ -184,6 +184,9 @@ PromptTracker::Engine.routes.draw do
     end
   end
 
+  # Environment Variables (shared secrets for functions)
+  resources :environment_variables, path: "environment-variables"
+
   # ========================================
   # API SECTION - Internal API endpoints
   # ========================================

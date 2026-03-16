@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_12_153330) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_16_095315) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -71,6 +71,17 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_12_153330) do
     t.index [ "testable_type", "testable_id" ], name: "index_prompt_tracker_datasets_on_testable_type_and_testable_id"
   end
 
+  create_table "prompt_tracker_environment_variables", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "key", null: false
+    t.text "value", null: false
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "key" ], name: "index_prompt_tracker_environment_variables_on_key", unique: true
+    t.index [ "name" ], name: "index_prompt_tracker_environment_variables_on_name"
+  end
+
   create_table "prompt_tracker_evaluations", force: :cascade do |t|
     t.bigint "llm_response_id"
     t.decimal "score", precision: 10, scale: 2, null: false
@@ -110,6 +121,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_12_153330) do
     t.index [ "configurable_type", "configurable_id" ], name: "index_evaluator_configs_on_configurable"
     t.index [ "depends_on" ], name: "index_prompt_tracker_evaluator_configs_on_depends_on"
     t.index [ "enabled" ], name: "index_prompt_tracker_evaluator_configs_on_enabled"
+  end
+
+  create_table "prompt_tracker_function_definition_environment_variables", force: :cascade do |t|
+    t.bigint "function_definition_id", null: false
+    t.bigint "environment_variable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "environment_variable_id" ], name: "index_func_def_env_vars_on_env_var_id"
+    t.index [ "function_definition_id", "environment_variable_id" ], name: "index_func_def_env_vars_unique", unique: true
+    t.index [ "function_definition_id" ], name: "index_func_def_env_vars_on_func_def_id"
   end
 
   create_table "prompt_tracker_function_definitions", force: :cascade do |t|
@@ -385,6 +406,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_12_153330) do
   add_foreign_key "prompt_tracker_ab_tests", "prompt_tracker_prompts", column: "prompt_id"
   add_foreign_key "prompt_tracker_dataset_rows", "prompt_tracker_datasets", column: "dataset_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_test_runs", column: "test_run_id"
+  add_foreign_key "prompt_tracker_function_definition_environment_variables", "prompt_tracker_environment_variables", column: "environment_variable_id"
+  add_foreign_key "prompt_tracker_function_definition_environment_variables", "prompt_tracker_function_definitions", column: "function_definition_id"
   add_foreign_key "prompt_tracker_function_executions", "prompt_tracker_function_definitions", column: "function_definition_id"
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_evaluations", column: "evaluation_id"
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_llm_responses", column: "llm_response_id"

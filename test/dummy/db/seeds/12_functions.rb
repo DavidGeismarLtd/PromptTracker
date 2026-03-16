@@ -8,8 +8,37 @@
 
 puts "\n🔧 Seeding Function Library..."
 
-# Clean up existing functions
+# Clean up existing data
 PromptTracker::FunctionDefinition.destroy_all
+PromptTracker::EnvironmentVariable.destroy_all
+
+# ============================================================================
+# Create Shared Environment Variables
+# ============================================================================
+puts "\n🔐 Creating shared environment variables..."
+
+openweather_key = PromptTracker::EnvironmentVariable.create!(
+  name: "OpenWeather API Key",
+  key: "OPENWEATHER_API_KEY",
+  value: "demo_openweather_key_12345",
+  description: "API key for OpenWeatherMap service - used by weather-related functions"
+)
+
+bitly_key = PromptTracker::EnvironmentVariable.create!(
+  name: "Bitly API Key",
+  key: "BITLY_API_KEY",
+  value: "demo_bitly_key_67890",
+  description: "API key for Bitly URL shortening service"
+)
+
+sendgrid_key = PromptTracker::EnvironmentVariable.create!(
+  name: "SendGrid API Key",
+  key: "SENDGRID_API_KEY",
+  value: "demo_sendgrid_key_abcdef",
+  description: "API key for SendGrid email service"
+)
+
+puts "  ✓ Created 3 shared environment variables"
 
 # ============================================================================
 # 1. Weather API Function
@@ -64,9 +93,6 @@ weather_function = PromptTracker::FunctionDefinition.create!(
     },
     "required" => [ "city" ]
   },
-  environment_variables: {
-    "OPENWEATHER_API_KEY" => "your_api_key_here"
-  },
   dependencies: [],
   example_input: {
     "city" => "Berlin",
@@ -82,8 +108,9 @@ weather_function = PromptTracker::FunctionDefinition.create!(
   },
   created_by: "system"
 )
+weather_function.shared_environment_variables << openweather_key
 
-puts "  ✓ Created weather API function"
+puts "  ✓ Created weather API function (using shared OPENWEATHER_API_KEY)"
 
 # ============================================================================
 # 2. Simple Calculator Function
@@ -296,9 +323,6 @@ url_shortener = PromptTracker::FunctionDefinition.create!(
     },
     "required" => [ "url" ]
   },
-  environment_variables: {
-    "BITLY_API_KEY" => "your_bitly_api_key_here"
-  },
   dependencies: [],
   example_input: {
     "url" => "https://www.example.com/very/long/url/path"
@@ -310,8 +334,9 @@ url_shortener = PromptTracker::FunctionDefinition.create!(
   },
   created_by: "system"
 )
+url_shortener.shared_environment_variables << bitly_key
 
-puts "  ✓ Created URL shortener function"
+puts "  ✓ Created URL shortener function (using shared BITLY_API_KEY)"
 
 # ============================================================================
 # 6. Email Validator Function
@@ -490,4 +515,6 @@ datetime_formatter = PromptTracker::FunctionDefinition.create!(
 
 puts "  ✓ Created date/time formatter function"
 
-puts "\n✅ Function Library seeded with 8 example functions"
+puts "\n✅ Function Library seeded:"
+puts "   - 3 shared environment variables"
+puts "   - 8 example functions (2 using shared variables)"

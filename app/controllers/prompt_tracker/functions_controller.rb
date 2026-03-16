@@ -183,11 +183,11 @@ module PromptTracker
     def deploy
       @function.update!(deployment_status: "deploying", deployment_error: nil)
 
-      # Deploy to Lambda
+      # Deploy to Lambda with merged environment variables (shared + inline)
       result = CodeExecutor::LambdaAdapter.deploy(
         function_definition: @function,
         code: @function.code,
-        environment_variables: @function.environment_variables || {},
+        environment_variables: @function.merged_environment_variables,
         dependencies: @function.dependencies || []
       )
 
@@ -265,7 +265,8 @@ module PromptTracker
         example_input: {},
         example_output: {},
         environment_variables: {},
-        dependencies: {}
+        dependencies: {},
+        shared_environment_variable_ids: []
       )
     end
   end

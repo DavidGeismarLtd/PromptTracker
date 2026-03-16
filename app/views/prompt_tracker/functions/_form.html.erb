@@ -151,24 +151,46 @@
 
   <!-- Environment Variables -->
   <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
         <i class="bi bi-shield-lock"></i> Environment Variables (Optional)
       </h5>
+      <%= link_to "Manage Shared Variables", environment_variables_path, class: "btn btn-sm btn-outline-secondary", target: "_blank" %>
     </div>
     <div class="card-body">
-      <%= f.label :environment_variables, "Environment Variables (JSON)", class: "form-label" %>
-      <div data-controller="monaco-editor"
-           data-monaco-editor-language-value="json"
-           data-monaco-editor-height-value="200px"
-           data-monaco-editor-minimap-value="false">
-        <div data-monaco-editor-target="container"></div>
-        <%= f.text_area :environment_variables,
-                        value: function.environment_variables.present? ? JSON.pretty_generate(function.environment_variables) : "",
-                        data: { monaco_editor_target: "textarea" } %>
+      <!-- Shared Environment Variables -->
+      <div class="mb-4">
+        <%= f.label :shared_environment_variable_ids, "Shared Variables", class: "form-label" %>
+        <%= f.collection_select :shared_environment_variable_ids,
+                                PromptTracker::EnvironmentVariable.ordered_by_name,
+                                :id,
+                                :display_name,
+                                {},
+                                { multiple: true, class: "form-select", size: 5 } %>
+        <div class="form-text">
+          <i class="bi bi-info-circle"></i> Select shared environment variables to use in this function.
+          Hold Cmd/Ctrl to select multiple.
+        </div>
       </div>
-      <div class="form-text mt-2">
-        <i class="bi bi-shield-lock"></i> These values will be encrypted and securely stored
+
+      <hr class="my-4">
+
+      <!-- Function-Specific Variables -->
+      <div>
+        <%= f.label :environment_variables, "Function-Specific Variables (JSON)", class: "form-label" %>
+        <div data-controller="monaco-editor"
+             data-monaco-editor-language-value="json"
+             data-monaco-editor-height-value="200px"
+             data-monaco-editor-minimap-value="false">
+          <div data-monaco-editor-target="container"></div>
+          <%= f.text_area :environment_variables,
+                          value: function.environment_variables.present? ? JSON.pretty_generate(function.environment_variables) : "",
+                          data: { monaco_editor_target: "textarea" } %>
+        </div>
+        <div class="form-text mt-2">
+          <i class="bi bi-shield-lock"></i> Add function-specific variables here. These will override shared variables with the same key.
+          All values are encrypted and securely stored.
+        </div>
       </div>
     </div>
   </div>

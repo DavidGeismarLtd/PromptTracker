@@ -73,6 +73,16 @@ module PromptTracker
              dependent: :destroy,
              inverse_of: :function_definition
 
+    has_many :function_definition_environment_variables,
+             class_name: "PromptTracker::FunctionDefinitionEnvironmentVariable",
+             dependent: :destroy,
+             inverse_of: :function_definition
+
+    has_many :shared_environment_variables,
+             through: :function_definition_environment_variables,
+             source: :environment_variable,
+             class_name: "PromptTracker::EnvironmentVariable"
+
     # Validations
     validates :name, presence: true, uniqueness: true
     validates :code, presence: true
@@ -172,6 +182,19 @@ module PromptTracker
       when "deployment_failed" then "✗ Failed"
       else "Not Deployed"
       end
+    end
+
+    # Merge environment variables from both shared associations and inline JSON
+    # Inline variables take precedence over shared ones
+    # @return [Hash] merged environment variables
+    def merged_environment_variables
+      shared_vars = shared_environment_variables.each_with_object({}) do |env_var, hash|
+        hash[env_var.key] = env_var.value
+      end
+
+      inline_vars = environment_variables || {}
+
+      shared_vars.merge(inline_vars)
     end
 
     private

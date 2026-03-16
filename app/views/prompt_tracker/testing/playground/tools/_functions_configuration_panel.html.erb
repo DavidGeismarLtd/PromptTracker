@@ -15,7 +15,8 @@
       id: fd.id,
       name: fd.name,
       description: fd.description,
-      parameters: fd.parameters
+      parameters: fd.parameters,
+      deployment_status: fd.deployment_status
     }
   end
 %>
@@ -33,12 +34,17 @@
     <div class="d-flex gap-2">
       <% if function_definitions.any? %>
         <select class="form-select form-select-sm"
-                style="width: auto;"
+                style="width: auto; min-width: 200px;"
                 data-playground-functions-target="definedFunctionSelect"
                 data-action="change->playground-functions#addDefinedFunction">
           <option value="">Add from library...</option>
           <% function_definitions.each do |fd| %>
-            <option value="<%= fd.id %>"><%= fd.name %></option>
+            <option value="<%= fd.id %>">
+              <%= fd.name %>
+              <% unless fd.deployed? %>
+                (not deployed)
+              <% end %>
+            </option>
           <% end %>
         </select>
       <% end %>

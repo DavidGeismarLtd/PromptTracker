@@ -247,17 +247,30 @@ module PromptTracker
     end
 
     def execute_single_function(func_def, arguments, conversation)
-      start_time = Time.current
+      Rails.logger.info "[AgentRuntimeService] Executing function: #{func_def.name} with arguments: #{arguments.inspect}"
 
-      # TODO: Execute via CodeExecutor (Lambda/Docker)
-      # For now, return a mock result
-      result = {
-        success?: true,
-        result: { message: "Function execution not yet implemented" },
-        error: nil
-      }
+      # Ensure function is deployed to Lambda
+      unless func_def.deployed?
+        Rails.logger.info "[AgentRuntimeService] Function #{func_def.name} not deployed. Deploying now..."
+        unless func_def.deploy
+          error_msg = "Failed to deploy function: #{func_def.deployment_error}"
+          Rails.logger.error "[AgentRuntimeService] #{error_msg}"
+          return {
+            success?: false,
+            result: nil,
+            error: error_msg
+          }
+        end
+        Rails.logger.info "[AgentRuntimeService] Function #{func_def.name} deployed successfully"
+      end
 
-      execution_time_ms = ((Time.current - start_time) * 1000).to_i
+      # Execute via CodeExecutor (Lambda)
+      result = PromptTracker::CodeExecutor.execute(
+        lambda_function_name: func_def.lambda_function_name,
+        arguments: arguments
+      )
+
+      Rails.logger.info "[AgentRuntimeService] Function #{func_def.name} completed. Success: #{result.success?}, Time: #{result.execution_time_ms}ms"
 
       # Track execution
       PromptTracker::FunctionExecution.create!(
@@ -265,16 +278,21 @@ module PromptTracker
         deployed_agent: deployed_agent,
         agent_conversation: conversation,
         arguments: arguments,
-        result: result[:result],
-        success: result[:success?],
-        error_message: result[:error],
-        execution_time_ms: execution_time_ms,
+        result: result.result,
+        success: result.success?,
+        error_message: result.error,
+        execution_time_ms: result.execution_time_ms,
         executed_at: Time.current
       )
 
-      result
+      # Convert CodeExecutor::Result to hash format expected by RubyLLM
+      {
+        success?: result.success?,
+        result: result.result,
+        error: result.error
+      }
     rescue StandardError => e
-      Rails.logger.error("Function execution error: #{e.message}")
+      Rails.logger.error("[AgentRuntimeService] Function execution error: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
       {
         success?: false,
         result: nil,

@@ -206,6 +206,58 @@ module PromptTracker
       shared_vars.merge(inline_vars)
     end
 
+    # Deploy the function to AWS Lambda
+    #
+    # @return [Boolean] true if deployment succeeded
+    def deploy
+      update!(deployment_status: "deploying", deployment_error: nil)
+
+      result = CodeExecutor::LambdaAdapter.deploy(
+        function_definition: self,
+        code: code,
+        environment_variables: merged_environment_variables,
+        dependencies: dependencies || []
+      )
+
+      if result[:success]
+        update!(
+          deployment_status: "deployed",
+          lambda_function_name: result[:function_name],
+          deployed_at: Time.current,
+          deployment_error: nil
+        )
+        true
+      else
+        update!(
+          deployment_status: "deployment_failed",
+          deployment_error: result[:error]
+        )
+        false
+      end
+    end
+
+    # Remove the function from AWS Lambda
+    #
+    # @return [Boolean] true if undeployment succeeded
+    def undeploy
+      return true if not_deployed?
+
+      result = CodeExecutor::LambdaAdapter.undeploy(lambda_function_name)
+
+      if result[:success]
+        update!(
+          deployment_status: "not_deployed",
+          lambda_function_name: nil,
+          deployed_at: nil,
+          deployment_error: nil
+        )
+        true
+      else
+        update!(deployment_error: result[:error])
+        false
+      end
+    end
+
     private
 
     def parameters_must_be_valid_json_schema

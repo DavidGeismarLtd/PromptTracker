@@ -201,12 +201,33 @@ module PromptTracker
       # TODO: Support full conversation history
       user_prompt = user_messages.last&.dig(:content) || message
 
+      # Create a custom executor that calls our execute_single_function method
+      executor = lambda do |function_name, arguments|
+        # Find the function definition
+        func_def = deployed_agent.function_definitions.find_by(name: function_name)
+        unless func_def
+          Rails.logger.error "[AgentRuntimeService] Function not found: #{function_name}"
+          return { error: "Function not found: #{function_name}" }
+        end
+
+        # Execute the function and return the result
+        result = execute_single_function(func_def, arguments, @conversation)
+
+        # Return the result in the format expected by RubyLLM
+        if result[:success?]
+          result[:result]
+        else
+          { error: result[:error] }
+        end
+      end
+
       LlmClients::RubyLlmService.call(
         model: model_config[:model],
         prompt: user_prompt,
         system: system_prompt,
         tools: parse_tool_symbols(tools),
         tool_config: { "functions" => tools }, # Use string key for RubyLlmService
+        function_executor: executor, # Pass our custom executor
         temperature: model_config[:temperature]
       )
     end

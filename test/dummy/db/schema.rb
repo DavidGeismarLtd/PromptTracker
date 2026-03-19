@@ -108,7 +108,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_16_172324) do
     t.integer "request_count", default: 0, null: false
     t.datetime "last_request_at"
     t.string "created_by"
-    t.string "api_key_digest"
+    t.text "api_key"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index [ "created_at" ], name: "index_prompt_tracker_deployed_agents_on_created_at"

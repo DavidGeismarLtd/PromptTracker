@@ -23,7 +23,7 @@ class CreateDeployedAgents < ActiveRecord::Migration[7.2]
       t.integer :request_count, default: 0, null: false
       t.datetime :last_request_at
       t.string :created_by
-      t.string :api_key_digest  # Hashed API key for authentication
+      t.text :api_key  # Encrypted API key for authentication
 
       t.timestamps
     end

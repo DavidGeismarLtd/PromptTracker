@@ -111,10 +111,8 @@ module PromptTracker
 
     # POST /agents/:slug/regenerate_api_key
     def regenerate_api_key
-      new_key = @agent.regenerate_api_key!
-      flash[:notice] = "API key regenerated successfully!"
-      flash[:api_key] = new_key
-      redirect_to deployed_agent_path(@agent.slug)
+      @agent.regenerate_api_key!
+      redirect_to deployed_agent_path(@agent.slug), notice: "API key regenerated successfully!"
     end
 
     private

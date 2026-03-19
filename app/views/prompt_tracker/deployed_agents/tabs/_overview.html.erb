@@ -26,47 +26,26 @@
           <div class="mb-3" data-controller="prompt-tracker--api-key">
             <label class="form-label fw-bold">API Key</label>
 
-            <% if flash[:api_key].present? %>
-              <!-- Show the newly generated API key -->
-              <div class="alert alert-success mb-2">
-                <i class="bi bi-check-circle"></i> <strong>New API key generated!</strong> Save it now - you won't be able to see it again.
-              </div>
-              <div class="input-group">
-                <input type="password"
-                       class="form-control font-monospace"
-                       value="<%= flash[:api_key] %>"
-                       readonly
-                       data-prompt-tracker--api-key-target="key" />
-                <button class="btn btn-outline-secondary"
-                        type="button"
-                        data-action="prompt-tracker--api-key#toggle"
-                        title="Show/Hide API Key">
-                  <i class="bi bi-eye" data-prompt-tracker--api-key-target="toggleIcon"></i>
-                </button>
-                <button class="btn btn-outline-secondary"
-                        type="button"
-                        data-action="prompt-tracker--api-key#copy"
-                        data-prompt-tracker--api-key-target="copyButton"
-                        title="Copy to Clipboard">
-                  <i class="bi bi-clipboard"></i> Copy
-                </button>
-              </div>
-            <% else %>
-              <!-- Show masked API key -->
-              <div class="input-group">
-                <input type="text"
-                       class="form-control font-monospace"
-                       value="<%= agent.masked_api_key %>"
-                       readonly
-                       disabled>
-                <button class="btn btn-outline-secondary" type="button" disabled title="API key is hidden for security">
-                  <i class="bi bi-eye-slash"></i>
-                </button>
-              </div>
-              <small class="text-muted">
-                <i class="bi bi-info-circle"></i> For security, the API key is only shown once when generated.
-              </small>
-            <% end %>
+            <div class="input-group">
+              <input type="password"
+                     class="form-control font-monospace"
+                     value="<%= agent.api_key %>"
+                     readonly
+                     data-prompt-tracker--api-key-target="key">
+              <button class="btn btn-outline-secondary"
+                      type="button"
+                      data-action="prompt-tracker--api-key#toggle"
+                      title="Show/Hide API Key">
+                <i class="bi bi-eye" data-prompt-tracker--api-key-target="toggleIcon"></i>
+              </button>
+              <button class="btn btn-outline-secondary"
+                      type="button"
+                      data-action="prompt-tracker--api-key#copy"
+                      data-prompt-tracker--api-key-target="copyButton"
+                      title="Copy to Clipboard">
+                <i class="bi bi-clipboard"></i> Copy
+              </button>
+            </div>
 
             <!-- Regenerate Button -->
             <div class="mt-2">
@@ -74,7 +53,6 @@
                   method: :post,
                   class: "btn btn-sm btn-outline-warning",
                   data: {
-                    action: "click->prompt-tracker--api-key#regenerate",
                     turbo_confirm: "Are you sure? The old API key will stop working immediately."
                   } do %>
                 <i class="bi bi-arrow-clockwise"></i> Regenerate API Key

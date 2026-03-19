@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "bcrypt"
-
 module PromptTracker
   # Represents a deployed prompt version accessible via a unique URL.
   #
@@ -60,11 +58,14 @@ module PromptTracker
                      format: { with: /\A[a-z0-9-]+\z/, message: "must be lowercase alphanumeric with hyphens" }
     validates :status, inclusion: { in: %w[active paused error] }
 
+    # Encrypted attributes
+    encrypts :api_key
+
     # Callbacks
     before_validation :generate_slug, on: :create
     before_create :set_deployed_at
+    before_create :generate_api_key
     after_create :extract_functions_from_version
-    after_create :generate_api_key
 
     # Scopes
     scope :active, -> { where(status: "active") }
@@ -104,23 +105,22 @@ module PromptTracker
     # @param key [String] plain text API key
     # @return [Boolean]
     def verify_api_key(key)
-      return false if api_key_digest.blank?
-      BCrypt::Password.new(api_key_digest) == key
+      return false if api_key.blank?
+      api_key == key
     end
 
     # Regenerate API key
     # @return [String] the new plain API key
     def regenerate_api_key!
-      key = SecureRandom.base58(32)
-      update!(api_key_digest: BCrypt::Password.create(key))
-      @plain_api_key = key
-      key
+      new_key = SecureRandom.base58(32)
+      update!(api_key: new_key)
+      new_key
     end
 
-    # Get masked API key for display (shows first 8 chars)
+    # Get masked API key for display
     # @return [String] masked API key
     def masked_api_key
-      return "Not generated" if api_key_digest.blank?
+      return "Not generated" if api_key.blank?
       "sk_••••••••••••••••••••••••"
     end
 
@@ -131,9 +131,6 @@ module PromptTracker
       config_with_symbols = (deployment_config || {}).deep_symbolize_keys
       PromptTracker.configuration.default_deployment_config.deep_merge(config_with_symbols)
     end
-
-    # Accessor for the plain API key (only available after creation)
-    attr_reader :plain_api_key
 
     private
 
@@ -176,12 +173,8 @@ module PromptTracker
     end
 
     def generate_api_key
-      # Generate a secure random API key
-      key = SecureRandom.base58(32)
-      # Store hashed version using update_columns to skip callbacks
-      update_columns(api_key_digest: BCrypt::Password.create(key))
-      # Store the plain key (only time it's visible)
-      @plain_api_key = key
+      # Generate a secure random API key (stored encrypted)
+      self.api_key = SecureRandom.base58(32)
     end
   end
 end

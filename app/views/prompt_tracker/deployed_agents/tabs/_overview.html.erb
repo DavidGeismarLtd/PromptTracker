@@ -23,7 +23,7 @@
 
         <!-- API Key Section -->
         <% if agent.config.dig(:auth, :type) == "api_key" %>
-          <div class="mb-3" data-controller="prompt-tracker--api-key">
+          <div class="mb-3" data-controller="api-key">
             <label class="form-label fw-bold">API Key</label>
 
             <% if agent.api_key.present? %>
@@ -32,17 +32,17 @@
                        class="form-control font-monospace"
                        value="<%= agent.api_key %>"
                        readonly
-                       data-prompt-tracker--api-key-target="key">
+                       data-api-key-target="key">
                 <button class="btn btn-outline-secondary"
                         type="button"
-                        data-action="prompt-tracker--api-key#toggle"
+                        data-action="api-key#toggle"
                         title="Show/Hide API Key">
-                  <i class="bi bi-eye" data-prompt-tracker--api-key-target="toggleIcon"></i>
+                  <i class="bi bi-eye" data-api-key-target="toggleIcon"></i>
                 </button>
                 <button class="btn btn-outline-secondary"
                         type="button"
-                        data-action="prompt-tracker--api-key#copy"
-                        data-prompt-tracker--api-key-target="copyButton"
+                        data-action="api-key#copy"
+                        data-api-key-target="copyButton"
                         title="Copy to Clipboard">
                   <i class="bi bi-clipboard"></i> Copy
                 </button>

@@ -26,36 +26,42 @@
           <div class="mb-3" data-controller="prompt-tracker--api-key">
             <label class="form-label fw-bold">API Key</label>
 
-            <div class="input-group">
-              <input type="password"
-                     class="form-control font-monospace"
-                     value="<%= agent.api_key %>"
-                     readonly
-                     data-prompt-tracker--api-key-target="key">
-              <button class="btn btn-outline-secondary"
-                      type="button"
-                      data-action="prompt-tracker--api-key#toggle"
-                      title="Show/Hide API Key">
-                <i class="bi bi-eye" data-prompt-tracker--api-key-target="toggleIcon"></i>
-              </button>
-              <button class="btn btn-outline-secondary"
-                      type="button"
-                      data-action="prompt-tracker--api-key#copy"
-                      data-prompt-tracker--api-key-target="copyButton"
-                      title="Copy to Clipboard">
-                <i class="bi bi-clipboard"></i> Copy
-              </button>
-            </div>
+            <% if agent.api_key.present? %>
+              <div class="input-group">
+                <input type="password"
+                       class="form-control font-monospace"
+                       value="<%= agent.api_key %>"
+                       readonly
+                       data-prompt-tracker--api-key-target="key">
+                <button class="btn btn-outline-secondary"
+                        type="button"
+                        data-action="prompt-tracker--api-key#toggle"
+                        title="Show/Hide API Key">
+                  <i class="bi bi-eye" data-prompt-tracker--api-key-target="toggleIcon"></i>
+                </button>
+                <button class="btn btn-outline-secondary"
+                        type="button"
+                        data-action="prompt-tracker--api-key#copy"
+                        data-prompt-tracker--api-key-target="copyButton"
+                        title="Copy to Clipboard">
+                  <i class="bi bi-clipboard"></i> Copy
+                </button>
+              </div>
+            <% else %>
+              <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> No API key generated yet. Click "Generate API Key" below to create one.
+              </div>
+            <% end %>
 
-            <!-- Regenerate Button -->
+            <!-- Regenerate/Generate Button -->
             <div class="mt-2">
               <%= button_to regenerate_api_key_deployed_agent_path(agent.slug),
                   method: :post,
-                  class: "btn btn-sm btn-outline-warning",
+                  class: "btn btn-sm btn-outline-#{agent.api_key.present? ? 'warning' : 'primary'}",
                   data: {
-                    turbo_confirm: "Are you sure? The old API key will stop working immediately."
+                    turbo_confirm: agent.api_key.present? ? "Are you sure? The old API key will stop working immediately." : nil
                   } do %>
-                <i class="bi bi-arrow-clockwise"></i> Regenerate API Key
+                <i class="bi bi-arrow-clockwise"></i> <%= agent.api_key.present? ? 'Regenerate' : 'Generate' %> API Key
               <% end %>
             </div>
           </div>

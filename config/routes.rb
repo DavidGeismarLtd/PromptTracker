@@ -200,6 +200,7 @@ PromptTracker::Engine.routes.draw do
     member do
       post :pause
       post :resume
+      post :regenerate_api_key
     end
   end
 

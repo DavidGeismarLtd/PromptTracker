@@ -3,7 +3,7 @@
 module PromptTracker
   # Controller for managing deployed agents
   class DeployedAgentsController < ApplicationController
-    before_action :set_agent, only: [ :show, :edit, :update, :destroy, :pause, :resume ]
+    before_action :set_agent, only: [ :show, :edit, :update, :destroy, :pause, :resume, :regenerate_api_key ]
 
     # GET /agents
     # Dashboard showing all deployed agents
@@ -107,6 +107,14 @@ module PromptTracker
     def resume
       @agent.resume!
       redirect_to deployed_agent_path(@agent.slug), notice: "Agent resumed."
+    end
+
+    # POST /agents/:slug/regenerate_api_key
+    def regenerate_api_key
+      new_key = @agent.regenerate_api_key!
+      flash[:notice] = "API key regenerated successfully!"
+      flash[:api_key] = new_key
+      redirect_to deployed_agent_path(@agent.slug)
     end
 
     private

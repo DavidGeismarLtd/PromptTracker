@@ -108,6 +108,22 @@ module PromptTracker
       BCrypt::Password.new(api_key_digest) == key
     end
 
+    # Regenerate API key
+    # @return [String] the new plain API key
+    def regenerate_api_key!
+      key = SecureRandom.base58(32)
+      update!(api_key_digest: BCrypt::Password.create(key))
+      @plain_api_key = key
+      key
+    end
+
+    # Get masked API key for display (shows first 8 chars)
+    # @return [String] masked API key
+    def masked_api_key
+      return "Not generated" if api_key_digest.blank?
+      "sk_••••••••••••••••••••••••"
+    end
+
     # Get deployment configuration with defaults
     # @return [Hash]
     def config

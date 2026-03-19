@@ -9,7 +9,7 @@ module PromptTracker
     # Show conversation details with full message history
     def show
       @agent = @conversation.deployed_agent
-      @messages = @conversation.messages_data || []
+      @messages = @conversation.messages || []
     end
 
     private

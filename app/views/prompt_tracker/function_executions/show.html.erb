@@ -104,18 +104,8 @@
         </div>
       </div>
 
-      <!-- Logs -->
-      <% if @execution.logs.present? %>
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-terminal"></i> Execution Logs</h5>
-          </div>
-          <div class="card-body">
-            <pre class="bg-dark text-light p-3 rounded mb-0" style="max-height: 400px; overflow-y: auto;"><code><%= @execution.logs %></code></pre>
-          </div>
-        </div>
-      <% end %>
+      <!-- Note: Logs are not currently persisted in the database -->
+      <!-- Future enhancement: Add logs column to function_executions table -->
     </div>
   </div>
 </div>
-

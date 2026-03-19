@@ -5,12 +5,14 @@ export default class extends Controller {
   static targets = ["key", "toggleIcon", "copyButton"]
 
   connect() {
+    console.log("API Key controller connected!")
     this.isVisible = false
   }
 
   toggle() {
+    console.log("Toggle clicked!")
     this.isVisible = !this.isVisible
-    
+
     if (this.isVisible) {
       this.keyTarget.type = "text"
       this.toggleIconTarget.classList.remove("bi-eye")
@@ -23,14 +25,16 @@ export default class extends Controller {
   }
 
   copy() {
+    console.log("Copy clicked!")
     const key = this.keyTarget.value
     navigator.clipboard.writeText(key).then(() => {
+      console.log("Copied to clipboard:", key)
       // Show success feedback
       const originalText = this.copyButtonTarget.innerHTML
       this.copyButtonTarget.innerHTML = '<i class="bi bi-check"></i> Copied!'
       this.copyButtonTarget.classList.remove("btn-outline-secondary")
       this.copyButtonTarget.classList.add("btn-success")
-      
+
       setTimeout(() => {
         this.copyButtonTarget.innerHTML = originalText
         this.copyButtonTarget.classList.remove("btn-success")
@@ -45,4 +49,3 @@ export default class extends Controller {
     }
   }
 }
-

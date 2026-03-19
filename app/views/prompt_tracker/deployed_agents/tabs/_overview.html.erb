@@ -36,16 +36,16 @@
                        class="form-control font-monospace"
                        value="<%= flash[:api_key] %>"
                        readonly
-                       data-prompt-tracker--api-key-target="key">
+                       data-prompt-tracker--api-key-target="key" />
                 <button class="btn btn-outline-secondary"
                         type="button"
-                        data-action="click->prompt-tracker--api-key#toggle"
+                        data-action="prompt-tracker--api-key#toggle"
                         title="Show/Hide API Key">
                   <i class="bi bi-eye" data-prompt-tracker--api-key-target="toggleIcon"></i>
                 </button>
                 <button class="btn btn-outline-secondary"
                         type="button"
-                        data-action="click->prompt-tracker--api-key#copy"
+                        data-action="prompt-tracker--api-key#copy"
                         data-prompt-tracker--api-key-target="copyButton"
                         title="Copy to Clipboard">
                   <i class="bi bi-clipboard"></i> Copy

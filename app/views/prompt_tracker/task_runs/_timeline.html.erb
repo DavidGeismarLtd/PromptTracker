@@ -1,0 +1,13 @@
+<%# Timeline content - extracted for Turbo Stream updates %>
+<% if timeline.any? %>
+  <div class="timeline-container">
+    <% timeline.each do |iteration| %>
+      <%= render "prompt_tracker/task_runs/iteration_group", iteration: iteration %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="alert alert-info mb-0">
+    <i class="bi bi-info-circle"></i> No execution events yet.
+  </div>
+<% end %>
+

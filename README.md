@@ -35,6 +35,8 @@ gem "prompt_tracker", git: "https://github.com/DavidGeismarLtd/PromptTracker.git
 bundle install
 ```
 
+**Note for Webpacker/Shakapacker users**: PromptTracker supports both importmap (default) and Webpacker. See [Webpacker Setup Guide](docs/webpacker_setup.md) for configuration details.
+
 ### Mount the engine
 
 Add to your `config/routes.rb`:

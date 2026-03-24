@@ -73,9 +73,11 @@ module PromptTracker
     initializer "prompt_tracker.assets" do |app|
       app.config.assets.paths << root.join("app/javascript")
     end
-    # Register importmap configuration
+
+    # Register importmap configuration (only if importmap-rails is available)
     initializer "prompt_tracker.importmap", before: "importmap" do |app|
-      if app.config.respond_to?(:importmap)
+      # Only configure importmap if the gem is loaded
+      if defined?(Importmap) && app.config.respond_to?(:importmap)
         app.config.importmap.paths << root.join("config/importmap.rb")
         # Add cache sweeper for development
         app.config.importmap.cache_sweepers << root.join("app/javascript")

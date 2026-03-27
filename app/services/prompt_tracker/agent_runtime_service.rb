@@ -186,7 +186,9 @@ module PromptTracker
 
     def call_openai_assistants(messages, model_config)
       # For Assistants API, we need assistant_id
-      assistant_id = model_config.dig(:metadata, :assistant_id)
+      # Handle both symbol and string keys (JSONB stores as strings)
+      assistant_id = model_config.dig(:metadata, :assistant_id) ||
+                     model_config.dig("metadata", "assistant_id")
       raise RuntimeError, "Assistant ID not configured" unless assistant_id.present?
 
       LlmClients::OpenaiAssistantService.call(

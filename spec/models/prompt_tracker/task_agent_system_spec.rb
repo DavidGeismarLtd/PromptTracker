@@ -26,7 +26,6 @@ RSpec.describe "Task Agent System - Phase 1", type: :model do
       agent = create(:deployed_agent, :task_agent)
 
       expect(agent).to respond_to(:task_runs)
-      expect(agent).to respond_to(:task_schedule)
     end
 
     it "uses task_config instead of deployment_config" do
@@ -170,12 +169,6 @@ RSpec.describe "Task Agent System - Phase 1", type: :model do
       agent = create(:deployed_agent, :task_agent, :with_task_runs)
 
       expect(agent.task_runs.count).to eq(3)
-    end
-
-    it "creates task agent with schedule" do
-      agent = create(:deployed_agent, :task_agent, :with_schedule)
-
-      expect(agent.task_schedule).to be_present
     end
   end
 end

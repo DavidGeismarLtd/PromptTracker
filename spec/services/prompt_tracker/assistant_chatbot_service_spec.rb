@@ -348,4 +348,43 @@ RSpec.describe PromptTracker::AssistantChatbotService do
       # Actual suggestions depend on ContextDetector implementation
     end
   end
+
+  describe "#suggested_models_for_prompt_creation" do
+    let(:config_double) do
+      instance_double(
+        "PromptTracker::Configuration",
+        assistant_chatbot: {},
+        enabled_providers: [ :openai, :anthropic ]
+      )
+    end
+
+    before do
+      allow(config_double).to receive(:default_api_for_provider).with(:openai).and_return(:chat_completions)
+      allow(config_double).to receive(:default_api_for_provider).with(:anthropic).and_return(:messages)
+
+      allow(config_double).to receive(:models_for_api).with(:openai, :chat_completions).and_return([
+        { id: "gpt-4o" },
+        { id: "gpt-4o-mini" }
+      ])
+
+      allow(config_double).to receive(:models_for_api).with(:anthropic, :messages).and_return([
+        { id: "claude-3-5-sonnet-20241022" }
+      ])
+
+      allow(config_double).to receive(:provider_name).with(:openai).and_return("OpenAI")
+      allow(config_double).to receive(:provider_name).with(:anthropic).and_return("Anthropic")
+
+      allow(PromptTracker).to receive(:configuration).and_return(config_double)
+    end
+
+    it "builds human-readable suggestions from enabled providers and models" do
+      service = described_class.new(message, session_id, context)
+
+      suggestions = service.send(:suggested_models_for_prompt_creation)
+
+      expect(suggestions).to include("OpenAI: gpt-4o")
+      expect(suggestions).to include("OpenAI: gpt-4o-mini")
+      expect(suggestions).to include("Anthropic: claude-3-5-sonnet-20241022")
+    end
+  end
 end

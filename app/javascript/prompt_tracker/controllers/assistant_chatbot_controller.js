@@ -116,12 +116,26 @@ export default class extends Controller {
       })
 
       if (response.success) {
-        this.addMessage('assistant', response.response, response.links || [])
+	        this.addMessage('assistant', response.response, response.links || [])
 
-        // Update suggestions
-        if (response.suggestions && response.suggestions.length > 0) {
-          this.updateSuggestions(response.suggestions)
-        }
+	        // If we just executed run_tests, redirect to the tests tab so the user
+	        // immediately sees real-time updates.
+	        if (this.pendingAction && this.pendingAction.function_name === 'run_tests') {
+	          const links = response.links || []
+	          const testsLink = links.find(link => link.url && link.url.includes('#tests')) || links[0]
+	          if (testsLink && testsLink.url) {
+	            if (window.Turbo && typeof Turbo.visit === 'function') {
+	              Turbo.visit(testsLink.url)
+	            } else {
+	              window.location.href = testsLink.url
+	            }
+	          }
+	        }
+
+	        // Update suggestions
+	        if (response.suggestions && response.suggestions.length > 0) {
+	          this.updateSuggestions(response.suggestions)
+	        }
       } else {
         this.addMessage('assistant', `❌ Error: ${response.error}`)
       }

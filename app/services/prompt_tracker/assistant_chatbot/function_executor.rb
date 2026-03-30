@@ -75,7 +75,9 @@ module PromptTracker
           "run_tests" => Functions::RunTests,
           "get_prompt_version_info" => Functions::GetPromptVersionInfo,
           "get_tests_summary" => Functions::GetTestsSummary,
-          "search_prompts" => Functions::SearchPrompts
+          "search_prompts" => Functions::SearchPrompts,
+          "available_tests_for_prompt_version" => Functions::AvailableTestsForPromptVersion,
+          "available_datasets_for_prompt_version" => Functions::AvailableDatasetsForPromptVersion
         }
 
         function_map[name]

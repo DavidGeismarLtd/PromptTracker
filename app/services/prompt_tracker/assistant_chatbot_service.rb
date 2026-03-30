@@ -267,14 +267,25 @@ module PromptTracker
 
         Rails.logger.debug("[AssistantChatbot] build_system_prompt page_type=#{@context[:page_type]} prompt_version_id=#{@context[:prompt_version_id].inspect}")
 
-        model_suggestions = suggested_models_for_prompt_creation
-        model_suggestions_line = if model_suggestions.any?
-          "          - When asking about the model in step 4, you can suggest one of these models when appropriate: #{model_suggestions.join(', ')}\n"
-        else
-          ""
-        end
+          model_suggestions = suggested_models_for_prompt_creation
+          model_suggestions_block = if model_suggestions.any?
+            bullet_lines = model_suggestions.map { |model| "          • #{model}" }.join("\n")
 
-          system_prompt = <<~PROMPT.strip
+            <<~BLOCK
+
+	      	    **Recommended models for this workspace:**
+	      #{bullet_lines}
+
+	      	    When you reach step 4 of the prompt creation wizard, you MUST:
+	      	    - Show these models as a short bullet list
+	      	    - Clearly highlight which one is the default (usually the first)
+	      	    - Ask the user to pick one, or confirm using the default
+            BLOCK
+          else
+            ""
+          end
+
+            system_prompt = <<~PROMPT.strip
 		        You are the PromptTracker Assistant, an expert AI helper for testing and deploying LLM prompts.
 
 		        Your capabilities:
@@ -296,11 +307,12 @@ module PromptTracker
 		        - Collect the following fields one by one, with a clear question for each step:
 		          1) Prompt name (required)
 		          2) Short description (optional - just ask for a brief explanation of what the prompt should do; we'll enhance it with AI later so keep it short)
-	          3) System prompt concept (required - ask the user to briefly describe what the AI assistant should do; this is a short concept, not the final long system prompt)
-	          4) Model to use (optional - default gpt-4o if the user does not specify)
-	          5) Temperature (optional - default 0.7 if the user does not specify)
-#{model_suggestions_line}	        - Do NOT ask the user to provide any user-facing prompt template; the backend will use a sensible default user message for new prompts.
-	        - Use previous answers from the conversation to avoid repeating questions.
+		          3) System prompt concept (required - ask the user to briefly descri be what the AI assistant should do; this is a short concept, not the final long system prompt)
+		          4) Model to use (optional - default gpt-4o if the user does not specify). When you reach this step, you MUST show the recommended models block (if present) and ask the user to choose.
+		          5) Temperature (optional - default 0.7 if the user does not specify)
+		#{model_suggestions_block}
+		        - Do NOT ask the user to provide any user-facing prompt template. The backend will leave the user prompt empty for new prompts; the prompt author can later add a user-facing template in the PromptTracker UI if needed.
+		        - Use previous answers from the conversation to avoid repeating questions.
 		        - IMPORTANT: Do NOT try to fully write the final system prompt yourself. Just collect a clear, concise concept from the user in step 3 and pass it as `system_prompt_concept` when calling `create_prompt`. The backend will enhance it into a detailed, professional system prompt using AI.
 		        - Only once you have at least the required fields (name and system_prompt_concept), you may call the `create_prompt` function.
 		        - Before calling `create_prompt`, briefly summarize the final configuration you plan to create.
@@ -326,6 +338,38 @@ module PromptTracker
 		        - Do NOT try to pre-generate test rows yourself; the backend will handle row generation and schema validation.
 		        - Before calling `create_dataset`, briefly summarize what you are about to create and how many rows (if any) will be generated.
 
+		        Wizard behavior for running tests:
+		        - When the user wants to run tests for a prompt version, act as a STRICT multi-step wizard.
+		        - CRITICAL: Ask ONLY ONE clear question at a time in your replies.
+		        - Always make sure you know which PromptVersion to use:
+		          * If the current page context includes prompt_version_id, you MUST use that value.
+		          * Otherwise, ask the user which prompt/version to use or help them find it.
+		        - Step 1: Decide which tests to run
+		          * First, ask the user whether they want to run ALL enabled tests or ONLY a specific subset.
+		          * Your first reply in this wizard MUST present these two options as a short bullet list:
+		            - "Run all tests"
+		            - "Run a specific test"
+		            followed by a question asking them to choose one.
+		          * If the user clearly says they want to "run all tests" (or similar), treat that as choosing ALL and move on without listing the tests.
+		          * Only if the user chooses to run specific tests, or explicitly asks what tests exist, should you call the `available_tests_for_prompt_version` function to list them.
+		          * The question should be explicit, e.g. "Do you want to run all enabled tests, or only specific tests? Reply with 'all' or a list of IDs like 12, 15."
+		        - Step 2: Choose data source (dataset vs custom variables)
+		          * Call the `available_datasets_for_prompt_version` function to see existing datasets (if any).
+		          * Then ask the user whether to run tests against one of these datasets or with a single set of custom variables.
+		          * The question should be explicit, e.g. "Do you want to run using a dataset (reply with a dataset ID) or run once with custom variables (reply 'custom')?"
+		        - Step 3A: If the user chooses a dataset
+		          * Confirm which dataset ID to use.
+		          * Once you know the tests to run and the dataset_id, briefly summarize what will happen and THEN call `run_tests` with prompt_version_id, any specific test_ids (if the user chose a subset), and dataset_id.
+		        - Step 3B: If the user chooses custom variables (no dataset)
+		          * First, ask whether they want a single-turn response or a simulated conversation.
+		          * For simulated conversations, remind them to provide an interlocutor_simulation_prompt and optionally max_turns.
+		          * Using the variable names from the variables section you saw earlier, ask the user for values for each variable that is relevant. You can collect several variables in a single message, but your question must still be clearly structured.
+		          * Once you have all necessary variables, summarize the configuration (tests + custom variables + single vs conversational) and THEN call `run_tests` with prompt_version_id, any specific test_ids, and a custom_variables object.
+		        - IMPORTANT: Never call `run_tests` until you have:
+		          * Decided which tests to run (all or specific IDs), AND
+		          * Chosen between dataset vs custom variables, AND
+		          * For custom variables: collected values for each required variable.
+
 		        Guidelines:
 		        - Be concise and helpful
 		        - Use emojis to make responses more engaging
@@ -334,11 +378,11 @@ module PromptTracker
 		        - Suggest follow-up actions when appropriate#{context_info}
           PROMPT
 
-        Rails.logger.debug("[AssistantChatbot] System prompt length: #{system_prompt.length} chars")
-        Rails.logger.debug("[AssistantChatbot] System prompt preview: #{system_prompt[0..400]}...") if system_prompt.length > 400
+          Rails.logger.debug("[AssistantChatbot] System prompt length: #{system_prompt.length} chars")
+          Rails.logger.debug("[AssistantChatbot] System prompt preview: #{system_prompt[0..400]}...") if system_prompt.length > 400
 
-        system_prompt
-    end
+          system_prompt
+          end
 
     def call_llm(system_prompt, history, message)
       Rails.logger.debug "[AssistantChatbot] ═══ CALL_LLM ═══"
@@ -531,7 +575,7 @@ module PromptTracker
         },
         {
           name: "run_tests",
-          description: "Run tests for a PromptVersion",
+              description: "Run tests for a PromptVersion using either datasets or custom variables.",
           parameters: {
             type: "object",
             properties: {
@@ -544,12 +588,26 @@ module PromptTracker
                 items: { type: "integer" },
                 description: "Specific test IDs to run (optional, runs all if omitted)"
               },
+                run_mode: {
+                  type: "string",
+                  description: "How to run the tests: 'dataset' to run against a dataset, or 'custom' to run once with custom variables.",
+                  enum: [ "dataset", "custom" ]
+                },
               dataset_id: {
                 type: "integer",
-                description: "Dataset to run tests against (optional)"
-              }
-            },
-            required: [ "prompt_version_id" ]
+                    description: "Dataset to run tests against (required when run_mode is 'dataset')."
+                  },
+                  execution_mode: {
+                    type: "string",
+                    description: "Execution mode for custom runs: 'single' for a single-turn response or 'conversation' for a multi-turn simulated conversation (default: 'single').",
+                    enum: [ "single", "conversation" ]
+                  },
+                  custom_variables: {
+                    type: "object",
+                    description: "Custom variables to use for a single run when not using a dataset. Keys should match variable names from the prompt version's variables_schema. For conversational runs, MUST include interlocutor_simulation_prompt and MAY include max_turns."
+                }
+              },
+              required: [ "prompt_version_id", "run_mode" ]
           }
         },
         {
@@ -580,6 +638,34 @@ module PromptTracker
             required: [ "prompt_version_id" ]
           }
         },
+          {
+            name: "available_tests_for_prompt_version",
+            description: "List enabled tests for a PromptVersion to help choose which tests to run.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: {
+                  type: "integer",
+                  description: "ID of the prompt version"
+                }
+              },
+              required: [ "prompt_version_id" ]
+            }
+          },
+          {
+            name: "available_datasets_for_prompt_version",
+            description: "List datasets for a PromptVersion to help choose between dataset runs and custom variables.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: {
+                  type: "integer",
+                  description: "ID of the prompt version"
+                }
+              },
+              required: [ "prompt_version_id" ]
+            }
+          },
         {
           name: "search_prompts",
           description: "Search for prompts by name or description",
@@ -611,14 +697,36 @@ module PromptTracker
       requires
     end
 
-      def suggested_models_for_prompt_creation
-        model_config = @config[:model] || {}
-        provider = (model_config[:provider] || :openai).to_sym
-        api = (model_config[:api] || PromptTracker.configuration.default_api_for_provider(provider)).to_sym
+          def suggested_models_for_prompt_creation
+            providers = PromptTracker.configuration.enabled_providers
 
-        models = PromptTracker.configuration.models_for_api(provider, api)
-        models.map { |model| model[:id] }.compact.first(5)
-      end
+            suggestions = []
+
+            providers.each do |provider|
+              api = PromptTracker.configuration.default_api_for_provider(provider)
+              next unless api
+
+              models = PromptTracker.configuration.models_for_api(provider, api)
+              next if models.empty?
+
+              provider_label = PromptTracker.configuration.provider_name(provider)
+              models.first(2).each do |model|
+                suggestions << "#{provider_label}: #{model[:id]}"
+              end
+            end
+
+            if suggestions.empty?
+              # Fallback suggestions when configuration does not expose any enabled providers
+              suggestions = [
+                "OpenAI: gpt-4o (balanced quality & cost)",
+                "OpenAI: gpt-4o-mini (fast & lower cost)",
+                "Anthropic: claude-3-5-sonnet-20241022 (great for long, complex tasks)",
+                "Anthropic: claude-3-5-haiku-20241022 (fast conversational model)"
+              ]
+            end
+
+            suggestions.first(5)
+          end
 
       def build_confirmation_message(function_name, arguments)
       Rails.logger.debug "[AssistantChatbot] Building confirmation message for: #{function_name}"

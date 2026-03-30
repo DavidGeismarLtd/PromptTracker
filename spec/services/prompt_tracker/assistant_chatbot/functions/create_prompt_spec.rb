@@ -47,7 +47,7 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::CreatePrompt do
 
       version = prompt.prompt_versions.last
       expect(version.system_prompt).to eq("Final system prompt")
-        expect(version.user_prompt).to eq("Hello! How can I help you?")
+        expect(version.user_prompt).to be_nil
       expect(version.status).to eq("draft")
       expect(version.model_config["model"]).to eq("gpt-4o-mini")
       expect(version.model_config["provider"]).to eq("openai")

@@ -9,8 +9,8 @@ module PromptTracker
       # - name: (required) Raw prompt name from the user
       # - description: (optional) Short, rough description from the user
       # - system_prompt_concept: (required) Brief concept of what the AI should do
-      # - user_prompt: (optional) User prompt template; if omitted we'll use a
-      #   sensible default greeting
+      # - user_prompt: (optional) User prompt template. If omitted, the
+      #   PromptVersion will have no user_prompt (system-prompt-only flow).
       # - model: (optional) Model name (e.g., "gpt-4o")
       # - provider: (optional) Provider name (e.g., "openai")
       # - temperature: (optional) Temperature setting
@@ -51,7 +51,7 @@ module PromptTracker
             variables = system_result[:variables] || []
             explanation = system_result[:explanation]
 
-            user_prompt = arg(:user_prompt).presence || default_user_prompt
+              user_prompt = arg(:user_prompt).presence
 
             prompt = Prompt.new(
               name: enhanced_name,
@@ -96,10 +96,6 @@ module PromptTracker
                 "required" => false
               }
             end
-          end
-
-          def default_user_prompt
-            "Hello! How can I help you?"
           end
 
         def build_model_config

@@ -51,18 +51,9 @@ module PromptTracker
           message: function_result.message,
           links: function_result.links,
           entities_created: function_result.entities_created,
-          error: function_result.error
-        )
-      rescue => e
-        Rails.logger.error("[FunctionExecutor] Error executing #{@function_name}: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
-        Result.new(
-          success?: false,
-          message: nil,
-          links: [],
-          entities_created: {},
-          error: "Failed to execute function: #{e.message}"
-        )
-      end
+            error: function_result.error
+          )
+        end
 
       private
 

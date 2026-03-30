@@ -44,8 +44,8 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::AvailableDatasetsForP
         expect(result.message).to include("conversational")
         expect(result.message).to include("rows: 1")
 
-        # Does not include datasets from other prompt versions
-        expect(result.message).not_to include(other_dataset.id.to_s)
+          # Does not include datasets from other prompt versions
+          expect(result.message).not_to include("ID #{other_dataset.id}:")
 
         # Link points to datasets tab for this prompt version
         expect(result.links.first[:url]).to eq(

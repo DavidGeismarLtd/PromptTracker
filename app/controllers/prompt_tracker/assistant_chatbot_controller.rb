@@ -9,8 +9,6 @@ module PromptTracker
   # - Resetting conversations
   # - Getting context-aware suggestions
   class AssistantChatbotController < ApplicationController
-    skip_before_action :verify_authenticity_token
-
     # POST /assistant/chat
     # Send a message and get a response from the assistant
     def chat

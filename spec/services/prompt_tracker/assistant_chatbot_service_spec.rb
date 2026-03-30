@@ -16,18 +16,12 @@ RSpec.describe PromptTracker::AssistantChatbotService do
     )
   end
 
-  let(:mock_llm_service) do
-    service = double("LlmClients::RubyLlmService")
-    allow(service).to receive(:call).and_return(mock_llm_response)
-    service
-  end
-
   before do
     # Clear cache before each test
     Rails.cache.clear
 
     # Mock LLM service
-    allow(PromptTracker::LlmClients::RubyLlmService).to receive(:new).and_return(mock_llm_service)
+    allow(PromptTracker::LlmClients::RubyLlmService).to receive(:call).and_return(mock_llm_response)
   end
 
   describe ".call" do
@@ -73,7 +67,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
       end
 
       it "includes previous conversation in LLM call" do
-        expect(mock_llm_service).to receive(:call) do |args|
+        expect(PromptTracker::LlmClients::RubyLlmService).to receive(:call) do |**args|
           # Verify history is passed correctly
           expect(args[:prompt]).to include("Hello")
           expect(args[:prompt]).to include("Hi! How can I help?")
@@ -119,7 +113,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
       end
 
       context "with create_dataset function call" do
-        let(:mock_llm_with_dataset_call) do
+          let(:mock_llm_with_dataset_call) do
           double(
             "NormalizedLlmResponse",
             text: "I'll create that dataset for you.",
@@ -135,9 +129,9 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           )
         end
 
-        before do
-          allow(mock_llm_service).to receive(:call).and_return(mock_llm_with_dataset_call)
-        end
+          before do
+            allow(PromptTracker::LlmClients::RubyLlmService).to receive(:call).and_return(mock_llm_with_dataset_call)
+          end
 
         it "treats create_dataset as an action that requires confirmation" do
           result = described_class.call(
@@ -153,9 +147,9 @@ RSpec.describe PromptTracker::AssistantChatbotService do
         end
       end
 
-      before do
-        allow(mock_llm_service).to receive(:call).and_return(mock_llm_with_tool_call)
-      end
+        before do
+          allow(PromptTracker::LlmClients::RubyLlmService).to receive(:call).and_return(mock_llm_with_tool_call)
+        end
 
       it "returns a pending_action when function requires confirmation" do
         result = described_class.call(
@@ -209,7 +203,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
       end
 
       before do
-        allow(mock_llm_service).to receive(:call).and_return(mock_llm_with_query_call)
+        allow(PromptTracker::LlmClients::RubyLlmService).to receive(:call).and_return(mock_llm_with_query_call)
         allow_any_instance_of(PromptTracker::AssistantChatbot::FunctionExecutor)
           .to receive(:call)
           .and_return(mock_function_result)
@@ -349,42 +343,44 @@ RSpec.describe PromptTracker::AssistantChatbotService do
     end
   end
 
-  describe "#suggested_models_for_prompt_creation" do
-    let(:config_double) do
-      instance_double(
-        "PromptTracker::Configuration",
-        assistant_chatbot: {},
-        enabled_providers: [ :openai, :anthropic ]
-      )
+    describe "#suggested_models_for_prompt_creation" do
+      let(:config_double) do
+        instance_double(
+          "PromptTracker::Configuration",
+          assistant_chatbot: {},
+          enabled_providers: [ :openai, :anthropic ]
+        )
+      end
+
+      before do
+        allow(config_double).to receive(:default_api_for_provider).with(:openai).and_return(:chat_completions)
+        allow(config_double).to receive(:default_api_for_provider).with(:anthropic).and_return(:messages)
+
+        allow(config_double).to receive(:models_for_api).with(:openai, :chat_completions).and_return([
+          { id: "gpt-4o" },
+          { id: "gpt-4o-mini" }
+        ])
+
+        allow(config_double).to receive(:models_for_api).with(:anthropic, :messages).and_return([
+          { id: "claude-3-5-sonnet-20241022" },
+          { id: "claude-3-7-sonnet-latest" }
+        ])
+
+        allow(config_double).to receive(:provider_name).with(:openai).and_return("OpenAI")
+        allow(config_double).to receive(:provider_name).with(:anthropic).and_return("Anthropic")
+
+        allow(PromptTracker).to receive(:configuration).and_return(config_double)
+      end
+
+      it "returns only the latest model for each enabled provider" do
+        service = described_class.new(message, session_id, context)
+
+        suggestions = service.send(:suggested_models_for_prompt_creation)
+
+        expect(suggestions).to contain_exactly(
+          "OpenAI: gpt-4o-mini",
+          "Anthropic: claude-3-7-sonnet-latest"
+        )
+      end
     end
-
-    before do
-      allow(config_double).to receive(:default_api_for_provider).with(:openai).and_return(:chat_completions)
-      allow(config_double).to receive(:default_api_for_provider).with(:anthropic).and_return(:messages)
-
-      allow(config_double).to receive(:models_for_api).with(:openai, :chat_completions).and_return([
-        { id: "gpt-4o" },
-        { id: "gpt-4o-mini" }
-      ])
-
-      allow(config_double).to receive(:models_for_api).with(:anthropic, :messages).and_return([
-        { id: "claude-3-5-sonnet-20241022" }
-      ])
-
-      allow(config_double).to receive(:provider_name).with(:openai).and_return("OpenAI")
-      allow(config_double).to receive(:provider_name).with(:anthropic).and_return("Anthropic")
-
-      allow(PromptTracker).to receive(:configuration).and_return(config_double)
-    end
-
-    it "builds human-readable suggestions from enabled providers and models" do
-      service = described_class.new(message, session_id, context)
-
-      suggestions = service.send(:suggested_models_for_prompt_creation)
-
-      expect(suggestions).to include("OpenAI: gpt-4o")
-      expect(suggestions).to include("OpenAI: gpt-4o-mini")
-      expect(suggestions).to include("Anthropic: claude-3-5-sonnet-20241022")
-    end
-  end
 end

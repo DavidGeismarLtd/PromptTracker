@@ -216,12 +216,19 @@ export default class extends Controller {
 
     let linksHTML = ''
     if (!isUser && links.length > 0) {
-      const linkButtons = links.map(link => `
-        <a href="${link.url}" class="btn btn-sm btn-outline-primary" target="_blank">
-          ${link.icon ? `<i class="bi bi-${link.icon} me-1"></i>` : ''}
-          ${link.text}
+      const linkButtons = links.map(link => {
+        const url = this.sanitizeUrl(link.url)
+        const text = this.escapeHtml(link.text || '')
+        const iconName = link.icon ? this.sanitizeIconName(link.icon) : null
+        const iconHtml = iconName ? `<i class="bi bi-${iconName} me-1"></i>` : ''
+
+        return `
+        <a href="${url}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener noreferrer">
+          ${iconHtml}
+          ${text}
         </a>
-      `).join('')
+      `
+      }).join('')
 
       linksHTML = `
         <div class="message-links mt-3 pt-3 border-top">
@@ -257,10 +264,38 @@ export default class extends Controller {
 
 
   formatContent(content) {
-    // Simple markdown-like formatting
-    return content
+    const safeText = this.escapeHtml(content ?? '')
+
+    // Simple markdown-like formatting on escaped text
+    return safeText
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br>')
+  }
+
+  escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
+  sanitizeUrl(url) {
+    try {
+      const parsed = new URL(String(url || ''), window.location.origin)
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.toString()
+      }
+    } catch (e) {
+      // If URL parsing fails, fall back to a safe placeholder
+    }
+
+    return '#'
+  }
+
+  sanitizeIconName(icon) {
+    return String(icon || '').replace(/[^a-z0-9-]/gi, '')
   }
 
   showConfirmationModal(pendingAction) {

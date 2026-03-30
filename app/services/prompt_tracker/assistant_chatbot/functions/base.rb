@@ -32,9 +32,6 @@ module PromptTracker
           execute
         rescue ArgumentError => e
           failure("Invalid arguments: #{e.message}")
-        rescue => e
-          Rails.logger.error("[#{self.class.name}] Error: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
-          failure("An error occurred: #{e.message}")
         end
 
         protected

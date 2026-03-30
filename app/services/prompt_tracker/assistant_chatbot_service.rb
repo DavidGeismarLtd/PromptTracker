@@ -114,17 +114,6 @@ module PromptTracker
           pending_action: nil
         )
       end
-    rescue => e
-      Rails.logger.error("[AssistantChatbot] ❌ ERROR: #{e.message}")
-      Rails.logger.error("[AssistantChatbot] Backtrace:\n#{e.backtrace.first(10).join("\n")}")
-      Result.new(
-        success?: false,
-        response: nil,
-        links: [],
-        suggestions: [],
-        pending_action: nil,
-        error: "Sorry, I encountered an error: #{e.message}"
-      )
     end
 
     def execute_function(function_name, arguments)
@@ -697,36 +686,33 @@ module PromptTracker
       requires
     end
 
-          def suggested_models_for_prompt_creation
-            providers = PromptTracker.configuration.enabled_providers
+        def suggested_models_for_prompt_creation
+          providers = PromptTracker.configuration.enabled_providers
 
-            suggestions = []
+          suggestions = []
 
-            providers.each do |provider|
-              api = PromptTracker.configuration.default_api_for_provider(provider)
-              next unless api
+          providers.each do |provider|
+            api = PromptTracker.configuration.default_api_for_provider(provider)
+            next unless api
 
-              models = PromptTracker.configuration.models_for_api(provider, api)
-              next if models.empty?
+            models = PromptTracker.configuration.models_for_api(provider, api)
+            next if models.empty?
 
-              provider_label = PromptTracker.configuration.provider_name(provider)
-              models.first(2).each do |model|
-                suggestions << "#{provider_label}: #{model[:id]}"
-              end
-            end
-
-            if suggestions.empty?
-              # Fallback suggestions when configuration does not expose any enabled providers
-              suggestions = [
-                "OpenAI: gpt-4o (balanced quality & cost)",
-                "OpenAI: gpt-4o-mini (fast & lower cost)",
-                "Anthropic: claude-3-5-sonnet-20241022 (great for long, complex tasks)",
-                "Anthropic: claude-3-5-haiku-20241022 (fast conversational model)"
-              ]
-            end
-
-            suggestions.first(5)
+            provider_label = PromptTracker.configuration.provider_name(provider)
+            latest_model = models.last
+            suggestions << "#{provider_label}: #{latest_model[:id]}"
           end
+
+          if suggestions.empty?
+            # Fallback suggestions when configuration does not expose any enabled providers
+            suggestions = [
+              "OpenAI: gpt-4.1 (latest balanced quality & cost)",
+              "Anthropic: claude-3.5-sonnet (latest for long, complex tasks)"
+            ]
+          end
+
+          suggestions
+        end
 
       def build_confirmation_message(function_name, arguments)
       Rails.logger.debug "[AssistantChatbot] Building confirmation message for: #{function_name}"

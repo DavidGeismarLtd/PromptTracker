@@ -8,27 +8,27 @@
 
 <div class="<%= role %>-message mb-3" data-timestamp="<%= timestamp.to_i %>">
   <div class="d-flex align-items-start gap-2 <%= 'flex-row-reverse' if role == 'user' %>">
-    
+
     <%# Avatar %>
     <% if role == 'assistant' %>
-      <div class="assistant-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+      <div class="assistant-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
            style="width: 32px; height: 32px; flex-shrink: 0;">
         <i class="bi bi-robot"></i>
       </div>
     <% else %>
-      <div class="user-avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" 
+      <div class="user-avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center"
            style="width: 32px; height: 32px; flex-shrink: 0;">
         <i class="bi bi-person"></i>
       </div>
     <% end %>
 
     <%# Message Content %>
-    <div class="message-content <%= role == 'assistant' ? 'bg-light' : 'bg-primary text-white' %> rounded-3 p-3 flex-grow-1" 
+    <div class="message-content <%= role == 'assistant' ? 'bg-light' : 'bg-primary text-white' %> rounded-3 p-3 flex-grow-1"
          style="<%= 'max-width: 85%;' if role == 'user' %>">
-      
+
       <%# Text Content with Markdown-like formatting %>
       <div class="message-text">
-        <%= simple_format(content, {}, sanitize: false) %>
+        <%= simple_format(h(content.to_s)) %>
       </div>
 
       <%# Links (only for assistant messages) %>
@@ -36,7 +36,7 @@
         <div class="message-links mt-3 pt-3 border-top">
           <div class="d-flex flex-wrap gap-2">
             <% links.each do |link| %>
-              <a href="<%= link[:url] || link['url'] %>" 
+              <a href="<%= link[:url] || link['url'] %>"
                  class="btn btn-sm btn-outline-primary"
                  target="_blank">
                 <% if link[:icon] || link['icon'] %>
@@ -101,4 +101,3 @@
     }
   }
 </style>
-

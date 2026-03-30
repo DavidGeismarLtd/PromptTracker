@@ -17,8 +17,9 @@ module PromptTracker
     let(:version_1) do
       prompt.prompt_versions.create!(
         user_prompt: "Hello {{name}}, how can I help you today?",
-        version_number: 1,
-        status: "active",
+          system_prompt: "You are a helpful assistant.",
+          version_number: 1,
+          status: "active",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true }
         ],
@@ -30,8 +31,9 @@ module PromptTracker
     let(:version_2) do
       prompt.prompt_versions.create!(
         user_prompt: "Hi {{name}}! Need help?",
-        version_number: 2,
-        status: "draft",
+          system_prompt: "You are a helpful assistant.",
+          version_number: 2,
+          status: "draft",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true }
         ],
@@ -269,6 +271,7 @@ module PromptTracker
           other_prompt = Prompt.create!(name: "other_prompt", description: "Other")
           other_version = other_prompt.prompt_versions.create!(
             user_prompt: "Other template",
+              system_prompt: "You are a helpful assistant.",
             version_number: 1,
             status: "active",
           )
@@ -524,6 +527,7 @@ module PromptTracker
       it "supports more than 2 variants" do
         version_3 = prompt.prompt_versions.create!(
           user_prompt: "Version 3",
+            system_prompt: "You are a helpful assistant.",
           version_number: 3,
           status: "draft",
         )

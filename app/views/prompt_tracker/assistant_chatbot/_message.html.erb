@@ -1,0 +1,104 @@
+<%# Message Component - renders both user and assistant messages %>
+<%# Params: role (user|assistant), content, links (optional), timestamp %>
+
+<% role ||= 'assistant' %>
+<% content ||= '' %>
+<% links ||= [] %>
+<% timestamp ||= Time.current %>
+
+<div class="<%= role %>-message mb-3" data-timestamp="<%= timestamp.to_i %>">
+  <div class="d-flex align-items-start gap-2 <%= 'flex-row-reverse' if role == 'user' %>">
+    
+    <%# Avatar %>
+    <% if role == 'assistant' %>
+      <div class="assistant-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+           style="width: 32px; height: 32px; flex-shrink: 0;">
+        <i class="bi bi-robot"></i>
+      </div>
+    <% else %>
+      <div class="user-avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" 
+           style="width: 32px; height: 32px; flex-shrink: 0;">
+        <i class="bi bi-person"></i>
+      </div>
+    <% end %>
+
+    <%# Message Content %>
+    <div class="message-content <%= role == 'assistant' ? 'bg-light' : 'bg-primary text-white' %> rounded-3 p-3 flex-grow-1" 
+         style="<%= 'max-width: 85%;' if role == 'user' %>">
+      
+      <%# Text Content with Markdown-like formatting %>
+      <div class="message-text">
+        <%= simple_format(content, {}, sanitize: false) %>
+      </div>
+
+      <%# Links (only for assistant messages) %>
+      <% if role == 'assistant' && links.present? %>
+        <div class="message-links mt-3 pt-3 border-top">
+          <div class="d-flex flex-wrap gap-2">
+            <% links.each do |link| %>
+              <a href="<%= link[:url] || link['url'] %>" 
+                 class="btn btn-sm btn-outline-primary"
+                 target="_blank">
+                <% if link[:icon] || link['icon'] %>
+                  <i class="bi bi-<%= link[:icon] || link['icon'] %> me-1"></i>
+                <% end %>
+                <%= link[:text] || link['text'] %>
+              </a>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Timestamp %>
+      <div class="message-timestamp text-muted small mt-2">
+        <%= timestamp.strftime('%l:%M %p') %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .message-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .message-text p:last-child {
+    margin-bottom: 0;
+  }
+
+  .message-text ul, .message-text ol {
+    margin-bottom: 0.5rem;
+  }
+
+  .user-message {
+    animation: slideInRight 0.3s ease;
+  }
+
+  .assistant-message {
+    animation: slideInLeft 0.3s ease;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+</style>
+

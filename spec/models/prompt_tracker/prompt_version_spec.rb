@@ -15,16 +15,17 @@ module PromptTracker
     let(:valid_attributes) do
       {
         prompt: prompt,
-        user_prompt: "Hello {{name}}, how can I help with {{issue}}?",
-        version_number: 1,
-        status: "active",
-        variables_schema: [
-          { "name" => "name", "type" => "string", "required" => true },
-          { "name" => "issue", "type" => "string", "required" => false }
-        ],
-        model_config: { "temperature" => 0.7, "max_tokens" => 150 }
-      }
-    end
+          system_prompt: "You are a helpful assistant.",
+          user_prompt: "Hello {{name}}, how can I help with {{issue}}?",
+          version_number: 1,
+          status: "active",
+          variables_schema: [
+            { "name" => "name", "type" => "string", "required" => true },
+            { "name" => "issue", "type" => "string", "required" => false }
+          ],
+          model_config: { "temperature" => 0.7, "max_tokens" => 150 }
+        }
+      end
 
     # Validation Tests
 
@@ -39,7 +40,13 @@ module PromptTracker
         expect(version).to be_valid
       end
 
-      it "auto-sets version_number if not provided" do
+        it "requires system_prompt" do
+          version = PromptVersion.new(valid_attributes.except(:system_prompt))
+          expect(version).not_to be_valid
+          expect(version.errors[:system_prompt]).to include("can't be blank")
+        end
+
+        it "auto-sets version_number if not provided" do
         version = PromptVersion.new(valid_attributes.except(:version_number))
         expect(version).to be_valid
         version.save!

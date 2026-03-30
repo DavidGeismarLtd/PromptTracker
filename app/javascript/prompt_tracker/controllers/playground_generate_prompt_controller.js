@@ -189,8 +189,8 @@ export default class extends Controller {
   }
 
   /**
-   * Insert generated prompts into the editors
-   * Directly accesses DOM elements by ID since they're well-known
+	   * Insert generated system prompt into the editor
+	   * Directly accesses DOM elements by ID since they're well-known
    */
   insertGeneratedPrompts(data) {
     console.log("[PlaygroundGeneratePromptController] insertGeneratedPrompts", data)
@@ -201,15 +201,6 @@ export default class extends Controller {
       if (systemEditor) {
         systemEditor.value = data.system_prompt
         systemEditor.dispatchEvent(new Event("input", { bubbles: true }))
-      }
-    }
-
-    // Insert user prompt
-    if (data.user_prompt) {
-      const userEditor = document.getElementById("user-prompt-editor")
-      if (userEditor) {
-        userEditor.value = data.user_prompt
-        userEditor.dispatchEvent(new Event("input", { bubbles: true }))
       }
     }
 

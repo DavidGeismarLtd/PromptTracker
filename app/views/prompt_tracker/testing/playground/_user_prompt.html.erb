@@ -4,7 +4,7 @@
   <div class="mb-3">
     <label for="user-prompt-editor" class="form-label">
       User Prompt Template
-      <span class="badge bg-secondary">Optional</span>
+	      <span class="badge bg-secondary">Optional</span>
     </label>
     <div class="highlighted-editor-wrapper" data-controller="syntax-highlighter">
       <div class="highlight-layer" data-syntax-highlighter-target="highlight"></div>
@@ -19,8 +19,9 @@
       ><%= version&.user_prompt %></textarea>
     </div>
     <div class="form-text">
-      Use Liquid syntax: <code>{{ variable }}</code> for substitution, filters, conditionals, and loops.
-      <br>Use sections like <code>#role</code>, <code>#goal</code>, <code>#context</code> to structure your prompt.
+	      Use Liquid syntax: <code>{{ variable }}</code> for substitution, filters, conditionals, and loops.
+	      <br>Use sections like <code>#role</code>, <code>#goal</code>, <code>#context</code> to structure your prompt.
+	      <br><strong>Note:</strong> The system prompt (above) is required and controls the assistant's behavior; this optional template controls what end users see and can reference the same variables.
     </div>
   </div>
 

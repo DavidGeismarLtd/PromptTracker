@@ -6,7 +6,7 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
   let(:prompt) { PromptTracker::Prompt.create!(name: "test_prompt", description: "Test") }
   let(:prompt_version) do
     prompt.prompt_versions.create!(
-      system_prompt: "",
+        system_prompt: "Initial system prompt that will be cleared in the UI",
       user_prompt: "placeholder",  # Will be cleared in the UI
       status: "draft"
     )
@@ -16,8 +16,7 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
     # Mock the PromptGeneratorService to avoid actual LLM calls
     allow(PromptTracker::PromptGeneratorService).to receive(:generate).and_return(
       {
-        system_prompt: "You are a helpful customer support assistant.",
-        user_prompt: "Help {{ customer_name }} with their {{ issue }}.",
+          system_prompt: "You are a helpful customer support assistant for {{ customer_name }} with {{ issue }}.",
         variables: [ "customer_name", "issue" ],
         explanation: "This prompt is designed for customer support interactions."
       }
@@ -100,8 +99,8 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
         'document.getElementById("user-prompt-editor").value'
       )
 
-      expect(system_prompt_value).to eq("You are a helpful customer support assistant.")
-      expect(user_prompt_value).to eq("Help {{ customer_name }} with their {{ issue }}.")
+        expect(system_prompt_value).to eq("You are a helpful customer support assistant for {{ customer_name }} with {{ issue }}.")
+        expect(user_prompt_value).to eq("")
 
       # Check that variables were detected and inputs created
       # Variable inputs have id="var-{name}" and data-variable="{name}"

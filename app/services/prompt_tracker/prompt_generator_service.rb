@@ -1,11 +1,12 @@
 require "ruby_llm/schema"
 
 module PromptTracker
-  # Service for generating prompts from scratch based on a user description.
-  # Uses a multi-step approach:
+  # Service for generating a system prompt from scratch based on a user
+  # description. Uses a multi-step approach:
   # 1. Understand and expand the brief description
   # 2. Propose dynamic variables
-  # 3. Generate system and user prompts with variables
+  # 3. Generate a structured system prompt with those variables and an
+  #    explanation of the design
   #
   # Configuration:
   # Uses the :prompt_generation context from PromptTracker.configuration.
@@ -134,30 +135,31 @@ module PromptTracker
           .with_temperature(temperature)
           .with_schema(schema)
 
-        response = chat.ask(prompt)
+          response = chat.ask(prompt)
 
-        # Response.content is a hash with the structured data
-        parse_generation_response(response.content, variables)
+          Rails.logger.debug "[PromptTracker::PromptGeneratorService] Generation response content keys: #{response.content.respond_to?(:keys) ? response.content.keys.inspect : 'n/a'}"
+
+          # Response.content is a hash with the structured data
+          parse_generation_response(response.content, variables)
       end
     end
 
     def build_generation_prompt(requirements, variables)
       variables_section = if variables.any?
-        "Include these Liquid variables in the prompts where appropriate: #{variables.map { |v| "{{ #{v} }}" }.join(', ')}"
+        "Include these Liquid variables in the system prompt where appropriate: #{variables.map { |v| "{{ #{v} }}" }.join(', ')}"
       else
-        "If helpful, include Liquid variables using {{ variable_name }} syntax."
+        "If helpful, include Liquid variables using {{ variable_name }} syntax in the system prompt."
       end
 
       <<~PROMPT
-        You are an expert prompt engineer following industry best practices. Create effective system and user prompts based on these requirements.
+        You are an expert prompt engineer following industry best practices. Create an effective system prompt based on these requirements.
 
         Requirements:
         #{requirements}
 
         #{variables_section}
 
-        IMPORTANT - Use structured sections in your prompts:
-        Structure your prompts using these sections (use the ones that are relevant):
+        IMPORTANT - Use structured sections in your system prompt (use the ones that are relevant):
         - #role - Define the AI persona, expertise, and capabilities
         - #goal - Specify the main objective or task
         - #context - Provide background information
@@ -170,35 +172,35 @@ module PromptTracker
         - #resources - Mention any resources that could be used
 
         Guidelines:
-        - System prompt: Use sections like #role, #goal, #tone and style to structure the AI's behavior
-        - User prompt: Use sections like #context, #format, #example to structure the user's request
-        - Include Liquid variables using {{ variable_name }} syntax where dynamic content is needed
-        - Make prompts clear, specific, and well-structured
-        - Each section should start on a new line with the # prefix
-        - Ensure the prompts work well together
+        - Focus only on the system prompt; do NOT generate a separate user prompt.
+        - Include Liquid variables using {{ variable_name }} syntax where dynamic content is needed.
+        - Make the prompt clear, specific, and well-structured.
+        - Each section should start on a new line with the # prefix.
 
-        Generate the prompts now with proper section structure.
+        Alongside the system prompt, provide a brief explanation of your design decisions.
       PROMPT
     end
 
     def build_generation_schema
       Class.new(RubyLLM::Schema) do
         string :system_prompt, description: "The system prompt that defines the AI's role and behavior"
-        string :user_prompt, description: "The user prompt template with {{ variables }} for dynamic content"
         string :explanation, description: "Brief explanation of the prompt design and how to use it"
       end
     end
 
-    def parse_generation_response(content, variables)
-      # Content is a hash with string or symbol keys from RubyLLM
-      content = content.with_indifferent_access if content.respond_to?(:with_indifferent_access)
+      def parse_generation_response(content, variables)
+        data = content.respond_to?(:with_indifferent_access) ? content.with_indifferent_access : content
 
-      {
-        system_prompt: content[:system_prompt] || content["system_prompt"] || "",
-        user_prompt: content[:user_prompt] || content["user_prompt"] || "",
-        variables: variables,
-        explanation: content[:explanation] || content["explanation"] || "Prompt generated successfully"
-      }
-    end
+        system_prompt = data[:system_prompt]
+        explanation = data[:explanation]
+
+        Rails.logger.info "[PromptTracker::PromptGeneratorService] Parsed system_prompt length: #{system_prompt.to_s.length} characters"
+
+        {
+          system_prompt: system_prompt,
+          variables: variables,
+          explanation: explanation.presence || "Prompt generated successfully"
+        }
+      end
   end
 end

@@ -15,6 +15,7 @@ email_summary = PromptTracker::Prompt.create!(
 )
 
 email_summary_v1 = email_summary.prompt_versions.create!(
+  system_prompt: "You are an assistant that writes concise, neutral email summaries.",
   user_prompt: "Summarize the following email thread in 2-3 sentences:\n\n{{email_thread}}",
   status: "active",
   variables_schema: [
@@ -32,6 +33,7 @@ email_summary_v1 = email_summary.prompt_versions.create!(
 
 # Version 2 - Draft: Bullet point format using Claude
 email_summary_v2 = email_summary.prompt_versions.create!(
+  system_prompt: "You are an assistant that extracts 3–5 key bullet points from long email threads.",
   user_prompt: "Summarize the following email thread as bullet points (3-5 key points):\n\n{{email_thread}}",
   status: "draft",
   variables_schema: [

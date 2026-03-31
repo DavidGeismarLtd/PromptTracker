@@ -15,7 +15,8 @@ code_review = PromptTracker::Prompt.create!(
 )
 
 code_review_v1 = code_review.prompt_versions.create!(
-  user_prompt: <<~TEMPLATE,
+    system_prompt: "You are a code review assistant that provides constructive feedback on code snippets.",
+    user_prompt: <<~TEMPLATE,
     Review the following {{language}} code and provide constructive feedback:
 
     ```{{language}}

@@ -118,9 +118,9 @@
                 <td>
                   <div class="btn-group" role="group">
                     <%= link_to "View", testing_prompt_prompt_version_path(@prompt, version), class: "btn btn-sm btn-outline-primary" %>
-                    <%= link_to "Tests", testing_prompt_prompt_version_prompt_tests_path(@prompt, version), class: "btn btn-sm btn-outline-secondary", title: "View Tests" %>
+                    <%= link_to "Tests", testing_prompt_version_tests_path(version), class: "btn btn-sm btn-outline-secondary", title: "View Tests" %>
                     <% unless version.active? %>
-                      <%= button_to "Activate", activate_testing_prompt_prompt_version_path(@prompt, version), method: :post, class: "btn btn-sm btn-outline-success", title: "Activate", data: { confirm: "Activate this version? This will deprecate all other versions." } %>
+	                      <%= button_to "Activate", activate_testing_prompt_prompt_version_path(@prompt, version), method: :post, class: "btn btn-sm btn-outline-success", title: "Activate", data: { confirm: "Activate this version? This will deprecate all other versions." } %>
                     <% end %>
                   </div>
                 </td>

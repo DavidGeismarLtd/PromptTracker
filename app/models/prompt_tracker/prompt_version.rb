@@ -26,7 +26,7 @@ module PromptTracker
   # historical accuracy and reproducibility of results.
   #
   # Each version has:
-  # - system_prompt: Optional instructions that set the AI's role and behavior
+  # - system_prompt: Required instructions that set the AI's role and behavior
   # - user_prompt: Optional prompt template with variables
   #
   # @example Creating a new version
@@ -92,12 +92,12 @@ module PromptTracker
     # Validations
     validates :version_number, presence: true, numericality: { only_integer: true, greater_than: 0 }
     validates :status, presence: true, inclusion: { in: STATUSES }
+      validates :system_prompt, presence: true
 
     validates :version_number,
               uniqueness: { scope: :prompt_id, message: "already exists for this prompt" }
 
     validate :enforce_version_immutability, on: :update
-    validate :at_least_one_prompt_present
     validate :variables_schema_must_be_array
     validate :model_config_must_be_hash
     validate :model_config_tool_config_structure
@@ -533,15 +533,8 @@ module PromptTracker
       errors.add(:variables_schema, "must be an array")
     end
 
-    # Validates that at least one prompt (system_prompt or user_prompt) is present
-    def at_least_one_prompt_present
-      return if system_prompt.present? || user_prompt.present?
-
-      errors.add(:base, "At least one of system prompt or user prompt must be present")
-    end
-
-    # Validates that model_config is a hash
-    def model_config_must_be_hash
+      # Validates that model_config is a hash
+      def model_config_must_be_hash
       return if model_config.nil? || model_config.is_a?(Hash)
 
       errors.add(:model_config, "must be a hash")

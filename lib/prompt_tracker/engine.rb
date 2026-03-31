@@ -70,6 +70,7 @@ module PromptTracker
         prompt_tracker/controllers/agent_type_selector_controller.js
         prompt_tracker/controllers/task_timeline_controller.js
         prompt_tracker/controllers/agent_type_selector_controller.js
+        prompt_tracker/controllers/assistant_chatbot_controller.js
       ]
     end
     # # Make engine JS available to Sprockets (so importmap can find it)

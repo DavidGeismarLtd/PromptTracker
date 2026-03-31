@@ -106,7 +106,6 @@ module PromptTracker
       render json: {
         success: true,
         system_prompt: result[:system_prompt],
-        user_prompt: result[:user_prompt],
         variables: result[:variables],
         explanation: result[:explanation]
       }

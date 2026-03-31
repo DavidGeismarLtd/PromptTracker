@@ -194,6 +194,16 @@ PromptTracker::Engine.routes.draw do
   resources :agent_conversations, only: [ :show ]
 
   # ========================================
+  # ASSISTANT CHATBOT - Global AI assistant
+  # ========================================
+  scope path: "assistant", as: "assistant" do
+    post "chat", to: "assistant_chatbot#chat", as: :chat
+    post "execute_action", to: "assistant_chatbot#execute_action", as: :execute_action
+    post "reset", to: "assistant_chatbot#reset", as: :reset
+    post "suggestions", to: "assistant_chatbot#suggestions", as: :suggestions
+  end
+
+  # ========================================
   # DEPLOYED AGENTS - Live agent deployments
   # ========================================
   resources :deployed_agents, path: "agents", param: :slug do

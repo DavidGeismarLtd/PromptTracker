@@ -85,8 +85,9 @@ module PromptTracker
         let!(:existing_version) do
           prompt.prompt_versions.create!(
             user_prompt: "Old prompt",
-            version_number: 1,
-            status: "active"
+              system_prompt: "You are a helpful assistant.",
+              version_number: 1,
+              status: "active"
           )
         end
 
@@ -210,8 +211,9 @@ module PromptTracker
         let!(:draft_version) do
           prompt.prompt_versions.create!(
             user_prompt: "Old prompt",
-            version_number: 1,
-            status: "draft"
+              system_prompt: "You are a helpful assistant.",
+              version_number: 1,
+              status: "draft"
           )
         end
         let(:update_params) { valid_params.merge(save_action: "update") }
@@ -287,6 +289,7 @@ module PromptTracker
         it "clears response_schema when nil is passed" do
           version = prompt.prompt_versions.create!(
             user_prompt: "Test",
+              system_prompt: "You are a helpful assistant.",
             version_number: 1,
             status: "draft",
             response_schema: response_schema

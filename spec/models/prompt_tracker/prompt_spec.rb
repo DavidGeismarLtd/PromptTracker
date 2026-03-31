@@ -70,6 +70,7 @@ module PromptTracker
 
       it "destroys associated prompt_versions when destroyed" do
         version = prompt.prompt_versions.create!(
+            system_prompt: "You are a helpful assistant.",
           user_prompt: "Hello {{name}}",
           version_number: 1,
           status: "active",
@@ -122,11 +123,13 @@ module PromptTracker
       describe "#active_version" do
         it "returns the active version" do
           active_version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Active version",
             version_number: 2,
             status: "active",
           )
           deprecated_version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Old version",
             version_number: 1,
             status: "deprecated",
@@ -143,12 +146,14 @@ module PromptTracker
       describe "#latest_version" do
         it "returns most recently created version" do
           first_version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "First",
             version_number: 1,
             status: "deprecated",
           )
           sleep 0.01 # Ensure different timestamps
           latest_version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Latest",
             version_number: 2,
             status: "active",
@@ -168,6 +173,7 @@ module PromptTracker
 
         it "deprecates all versions" do
           version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Test",
             version_number: 1,
             status: "active",
@@ -205,6 +211,7 @@ module PromptTracker
 
           # Create version and response
           version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Test",
             version_number: 1,
             status: "active",
@@ -229,6 +236,7 @@ module PromptTracker
 
         it "returns sum of costs across all responses" do
           version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Test",
             version_number: 1,
             status: "active",
@@ -263,6 +271,7 @@ module PromptTracker
 
         it "returns average response time" do
           version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Test",
             version_number: 1,
             status: "active",
@@ -293,6 +302,7 @@ module PromptTracker
       describe "#active_evaluator_configs" do
         it "returns configs for the active version" do
           version = prompt.prompt_versions.create!(
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Test",
             version_number: 1,
             status: "active",

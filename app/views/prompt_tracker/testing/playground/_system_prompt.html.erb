@@ -4,11 +4,7 @@
      style="<%= playground_ui.include?(:system_prompt) ? '' : 'display: none;' %>">
   <label for="system-prompt-editor" class="form-label">
     System Prompt
-    <% if playground_ui.include?(:user_prompt_template) %>
-      <span class="badge bg-secondary">Optional</span>
-    <% else %>
-      <span class="badge bg-info">Instructions</span>
-    <% end %>
+	    <span class="badge bg-danger">Required</span>
   </label>
   <div class="highlighted-editor-wrapper" data-controller="syntax-highlighter">
     <div class="highlight-layer" data-syntax-highlighter-target="highlight"></div>
@@ -23,10 +19,7 @@
     ><%= version&.system_prompt %></textarea>
   </div>
   <div class="form-text">
-    <% if playground_ui.include?(:user_prompt_template) %>
-      Defines the AI's role and behavior. This is sent to the LLM as the system message.
-    <% else %>
-      Main instructions for the assistant. This defines how the assistant should behave and respond.
-    <% end %>
+	    In PromptTracker, the <strong>system prompt</strong> defines the assistant's role, behavior, and constraints and is always required.
+	    When present, the <strong>User Prompt Template</strong> is optional and controls the end-user message that uses variables defined in this prompt.
   </div>
 </div>

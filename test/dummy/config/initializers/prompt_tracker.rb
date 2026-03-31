@@ -105,4 +105,39 @@ PromptTracker.configure do |config|
     openai_assistant_sync: true, # Show "Sync OpenAI Assistants" button in Testing Dashboard
     functions: true             # Enable the Functions section (code-based agent functions) - requires AWS Lambda config
   }
+
+  # ===========================================================================
+  # 6. ASSISTANT CHATBOT
+  # ===========================================================================
+  config.assistant_chatbot = {
+    enabled: true,
+    model: {
+      provider: :openai,
+      api: :chat_completions,
+      model: "gpt-4o",
+      temperature: 0.7
+    },
+    ui: {
+      name: "PromptTracker Assistant",
+      position: :bottom_right,
+      theme: :auto
+    },
+    conversation: {
+      max_messages: 50,
+      ttl: 3600,
+      storage: :session
+    },
+    capabilities: {
+      create_prompts: true,
+      generate_tests: true,
+      run_tests: true,
+      get_info: true,
+      search: true
+    },
+    security: {
+      rate_limit: 60,
+      require_auth: false,
+      audit_enabled: true
+    }
+  }
 end

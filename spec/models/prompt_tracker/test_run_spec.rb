@@ -16,8 +16,9 @@ module PromptTracker
     let(:version) do
       prompt.prompt_versions.create!(
         user_prompt: "Hello {{name}}",
-        version_number: 1,
-        status: "active",
+          system_prompt: "You are a helpful assistant.",
+          version_number: 1,
+          status: "active",
         variables_schema: [
           { "name" => "name", "type" => "string", "required" => true }
         ]

@@ -11,7 +11,6 @@ module PromptTracker
       let(:mock_generation_response) do
         double('response', content: {
           system_prompt: 'You are a helpful customer support assistant.',
-          user_prompt: 'Hello {{ customer_name }}, I can help with {{ issue_type }}.',
           explanation: 'This prompt provides friendly customer support.'
         })
       end
@@ -35,13 +34,12 @@ module PromptTracker
 
         # Step 3: Generate prompts
         expect(mock_chat).to receive(:ask).with(
-          a_string_including("Create effective system and user prompts")
+          a_string_including("Create an effective system prompt")
         ).and_return(mock_generation_response)
 
         result = described_class.generate(description: description)
 
         expect(result[:system_prompt]).to eq('You are a helpful customer support assistant.')
-        expect(result[:user_prompt]).to eq('Hello {{ customer_name }}, I can help with {{ issue_type }}.')
         expect(result[:variables]).to eq([ 'customer_name', 'issue_type', 'product_name' ])
         expect(result[:explanation]).to eq('This prompt provides friendly customer support.')
       end
@@ -92,7 +90,6 @@ module PromptTracker
         result = described_class.generate(description: special_description)
 
         expect(result).to have_key(:system_prompt)
-        expect(result).to have_key(:user_prompt)
         expect(result).to have_key(:variables)
         expect(result).to have_key(:explanation)
       end

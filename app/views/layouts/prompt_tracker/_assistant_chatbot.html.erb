@@ -1,0 +1,195 @@
+<%# Global Assistant Chatbot Component %>
+<%# This partial is included in the main layout and renders on every page %>
+
+<% if PromptTracker.configuration.assistant_chatbot_enabled? %>
+  <div id="assistant-chatbot-container"
+       data-controller="assistant-chatbot"
+       data-assistant-chatbot-session-id-value="<%= session.id %>"
+       data-assistant-chatbot-context-value="<%= { page_type: @assistant_context&.dig(:page_type), prompt_version_id: @assistant_context&.dig(:prompt_version_id) }.to_json %>"
+       class="assistant-chatbot">
+
+    <%# Floating Action Button (FAB) to open chatbot %>
+    <button type="button"
+            class="btn btn-primary assistant-chatbot-fab shadow-lg"
+            data-action="click->assistant-chatbot#toggle"
+            data-assistant-chatbot-target="fab"
+            title="Open Assistant">
+      <i class="bi bi-chat-dots fs-4"></i>
+      <span class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill visually-hidden"
+            data-assistant-chatbot-target="unreadBadge">
+        0
+      </span>
+    </button>
+
+    <%# Slide-in Panel %>
+    <div class="assistant-chatbot-panel shadow-lg"
+         data-assistant-chatbot-target="panel">
+
+      <%# Header %>
+      <div class="assistant-chatbot-header bg-primary text-white p-3 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-robot fs-4"></i>
+          <div>
+            <h5 class="mb-0"><%= PromptTracker.configuration.assistant_chatbot.dig(:ui, :name) || "PromptTracker Assistant" %></h5>
+            <small class="text-white-50">Ask me anything about your prompts</small>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button"
+                  class="btn btn-sm btn-link text-white"
+                  data-action="click->assistant-chatbot#reset"
+                  title="Reset conversation">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+          <button type="button"
+                  class="btn btn-sm btn-link text-white"
+                  data-action="click->assistant-chatbot#toggle"
+                  title="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <%# Messages Container %>
+      <div class="assistant-chatbot-messages flex-grow-1 p-3"
+           data-assistant-chatbot-target="messagesContainer">
+        <%# Welcome message %>
+        <div class="assistant-message mb-3">
+          <div class="d-flex align-items-start gap-2">
+            <div class="assistant-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; flex-shrink: 0;">
+              <i class="bi bi-robot"></i>
+            </div>
+            <div class="message-content bg-light rounded-3 p-3 flex-grow-1">
+              <p class="mb-2">👋 Hi! I'm your PromptTracker Assistant. I can help you:</p>
+              <ul class="mb-0 ps-3">
+                <li>Create and configure prompts</li>
+                <li>Generate comprehensive test suites</li>
+                <li>Run tests and analyze results</li>
+                <li>Search and discover prompts</li>
+              </ul>
+              <p class="mt-2 mb-0 text-muted small">What would you like to do?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%# Suggestions %>
+      <div class="assistant-chatbot-suggestions px-3 pb-2"
+           data-assistant-chatbot-target="suggestionsContainer">
+        <%# Dynamic suggestions will be inserted here %>
+      </div>
+
+      <%# Input Area %>
+      <div class="assistant-chatbot-input border-top p-3">
+        <form data-action="submit->assistant-chatbot#sendMessage">
+          <div class="input-group">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Ask me anything..."
+                   data-assistant-chatbot-target="input"
+                   autocomplete="off">
+            <button type="submit"
+                    class="btn btn-primary"
+                    data-assistant-chatbot-target="sendButton">
+              <i class="bi bi-send"></i>
+            </button>
+          </div>
+        </form>
+        <div class="text-muted small mt-2">
+          <i class="bi bi-info-circle me-1"></i>
+          I'll ask for confirmation before making any changes
+        </div>
+      </div>
+
+      <%# Loading Indicator %>
+      <div class="assistant-chatbot-loading position-absolute top-50 start-50 translate-middle visually-hidden"
+           data-assistant-chatbot-target="loading">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <%# Confirmation Modal %>
+    <%= render "prompt_tracker/assistant_chatbot/confirmation_modal" %>
+  </div>
+
+  <%# Styles %>
+  <style>
+    .assistant-chatbot-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      z-index: 1040;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .assistant-chatbot-fab:hover {
+      transform: scale(1.1);
+    }
+
+    .assistant-chatbot-panel {
+      position: fixed;
+      right: -400px;
+      top: 0;
+      width: 400px;
+      height: 100vh;
+      background: white;
+      z-index: 1050;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.3s ease;
+    }
+
+    .assistant-chatbot-panel.open {
+      right: 0;
+    }
+
+    .assistant-chatbot-messages {
+      overflow-y: auto;
+      max-height: calc(100vh - 280px);
+    }
+
+    .assistant-chatbot-messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .assistant-chatbot-messages::-webkit-scrollbar-thumb {
+      background: #dee2e6;
+      border-radius: 3px;
+    }
+
+	    /* Typing indicator bubble */
+	    .assistant-typing-message .message-content {
+	      opacity: 0.7;
+	      font-style: italic;
+	    }
+
+	    /* Action (tool execution) messages */
+	    .assistant-action-message {
+	      border-left: 4px solid #0d6efd;
+	      background-color: #e7f1ff;
+	      border-radius: 0.5rem;
+	      padding: 0.75rem 0.9rem;
+	    }
+
+	    .assistant-action-message--planned {
+	      border-left-color: #ffc107;
+	    }
+
+	    .assistant-action-message--executing {
+	      border-left-color: #198754;
+	    }
+
+    @media (max-width: 768px) {
+      .assistant-chatbot-panel {
+        width: 100%;
+        right: -100%;
+      }
+    }
+  </style>
+<% end %>

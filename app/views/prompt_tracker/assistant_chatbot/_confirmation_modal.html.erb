@@ -1,0 +1,97 @@
+<%# Confirmation Modal - shown before executing action functions %>
+
+<div class="modal fade" 
+     id="assistantConfirmationModal" 
+     tabindex="-1" 
+     aria-labelledby="assistantConfirmationModalLabel" 
+     aria-hidden="true"
+     data-assistant-chatbot-target="confirmationModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      
+      <%# Header %>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="assistantConfirmationModalLabel">
+          <i class="bi bi-check-circle me-2"></i>
+          Confirm Action
+        </h5>
+        <button type="button" 
+                class="btn-close btn-close-white" 
+                data-bs-dismiss="modal" 
+                aria-label="Close"></button>
+      </div>
+
+      <%# Body %>
+      <div class="modal-body">
+        <div class="alert alert-info mb-3">
+          <i class="bi bi-info-circle me-2"></i>
+          I need your confirmation before proceeding with this action.
+        </div>
+
+        <%# Function Details %>
+        <div class="mb-3">
+          <h6 class="text-muted mb-2">Action:</h6>
+          <p class="mb-0" data-assistant-chatbot-target="confirmationAction">
+            <strong data-assistant-chatbot-target="confirmationFunctionName"></strong>
+          </p>
+        </div>
+
+        <%# Arguments %>
+        <div class="mb-3" data-assistant-chatbot-target="confirmationArgumentsContainer">
+          <h6 class="text-muted mb-2">Details:</h6>
+          <div class="bg-light rounded p-3">
+            <dl class="mb-0" data-assistant-chatbot-target="confirmationArguments">
+              <%# Arguments will be dynamically inserted here %>
+            </dl>
+          </div>
+        </div>
+
+        <%# Message %>
+        <div class="mb-0" data-assistant-chatbot-target="confirmationMessageContainer">
+          <p class="text-muted small mb-0" data-assistant-chatbot-target="confirmationMessage">
+            <%# Confirmation message will be inserted here %>
+          </p>
+        </div>
+      </div>
+
+      <%# Footer %>
+      <div class="modal-footer">
+        <button type="button" 
+                class="btn btn-secondary" 
+                data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-1"></i>
+          Cancel
+        </button>
+        <button type="button" 
+                class="btn btn-primary" 
+                data-action="click->assistant-chatbot#confirmAction">
+          <i class="bi bi-check-circle me-1"></i>
+          Confirm & Execute
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal-body dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+  }
+
+  .modal-body dt {
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .modal-body dd {
+    margin-bottom: 0;
+    color: #212529;
+  }
+
+  .modal-body dd:last-child {
+    grid-column: 1 / -1;
+  }
+</style>
+

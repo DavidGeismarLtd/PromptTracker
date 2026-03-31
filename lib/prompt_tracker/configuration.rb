@@ -177,6 +177,34 @@ module PromptTracker
     #   }
     attr_accessor :default_deployment_config
 
+    # Assistant chatbot configuration.
+    # @return [Hash] chatbot config hash
+    # @example
+    #   {
+    #     enabled: true,
+    #     model: {
+    #       provider: :openai,
+    #       api: :chat_completions,
+    #       model: "gpt-4o",
+    #       temperature: 0.7
+    #     },
+    #     ui: {
+    #       name: "PromptTracker Assistant",
+    #       position: :bottom_right,
+    #       theme: :light
+    #     },
+    #     conversation: {
+    #       max_messages: 50,
+    #       ttl: 24.hours
+    #     },
+    #     capabilities: {
+    #       create_prompts: true,
+    #       generate_tests: true,
+    #       run_tests: true
+    #     }
+    #   }
+    attr_accessor :assistant_chatbot
+
     # Initialize with default values.
     def initialize
       @basic_auth_username = nil
@@ -195,6 +223,41 @@ module PromptTracker
         rate_limit: { requests_per_minute: 60 },
         conversation_ttl: 3600,  # 1 hour
         allowed_origins: []
+      }
+      @assistant_chatbot = {
+        enabled: false,
+        model: {
+          provider: :openai,
+          api: :chat_completions,
+          model: "gpt-4o",
+          temperature: 0.7
+        },
+        ui: {
+          name: "PromptTracker Assistant",
+          position: :bottom_right,
+          theme: :light
+        },
+        conversation: {
+          max_messages: 50,
+          ttl: 24.hours,
+          storage: :session
+        },
+        capabilities: {
+          create_prompts: true,
+          generate_tests: true,
+          run_tests: true,
+          get_prompt_info: true,
+          get_tests_summary: true,
+          search_prompts: true
+        },
+        security: {
+          rate_limit: {
+            enabled: true,
+            requests_per_minute: 30
+          },
+          require_auth: true,
+          audit_enabled: true
+        }
       }
     end
 
@@ -382,6 +445,53 @@ module PromptTracker
     # @return [Boolean] true if the feature is enabled
     def feature_enabled?(feature)
       effective_features[feature.to_sym] == true
+    end
+
+    # =========================================================================
+    # Assistant Chatbot Methods
+    # =========================================================================
+
+    # Check if the assistant chatbot is enabled.
+    # @return [Boolean] true if the chatbot is enabled
+    def assistant_chatbot_enabled?
+      @assistant_chatbot[:enabled] == true
+    end
+
+    # Get the assistant chatbot model configuration.
+    # @return [Hash] hash with :provider, :api, :model, :temperature
+    def assistant_chatbot_model
+      @assistant_chatbot[:model] || {}
+    end
+
+    # Get the assistant chatbot UI configuration.
+    # @return [Hash] hash with :name, :position, :theme
+    def assistant_chatbot_ui
+      @assistant_chatbot[:ui] || {}
+    end
+
+    # Get the assistant chatbot conversation settings.
+    # @return [Hash] hash with :max_messages, :ttl, :storage
+    def assistant_chatbot_conversation
+      @assistant_chatbot[:conversation] || {}
+    end
+
+    # Get the assistant chatbot capabilities.
+    # @return [Hash] hash of capability symbol => boolean
+    def assistant_chatbot_capabilities
+      @assistant_chatbot[:capabilities] || {}
+    end
+
+    # Check if a specific chatbot capability is enabled.
+    # @param capability [Symbol] the capability name
+    # @return [Boolean] true if the capability is enabled
+    def assistant_chatbot_capability_enabled?(capability)
+      assistant_chatbot_capabilities[capability.to_sym] == true
+    end
+
+    # Get the assistant chatbot security settings.
+    # @return [Hash] hash with :rate_limit, :require_auth, :audit_enabled
+    def assistant_chatbot_security
+      @assistant_chatbot[:security] || {}
     end
 
     # =========================================================================

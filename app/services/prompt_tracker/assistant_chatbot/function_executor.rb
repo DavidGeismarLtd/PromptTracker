@@ -64,6 +64,7 @@ module PromptTracker
           "create_dataset" => Functions::CreateDataset,
           "generate_tests" => Functions::GenerateTests,
           "run_tests" => Functions::RunTests,
+            "deploy_agent" => Functions::DeployAgent,
           "get_prompt_version_info" => Functions::GetPromptVersionInfo,
           "get_tests_summary" => Functions::GetTestsSummary,
           "search_prompts" => Functions::SearchPrompts,

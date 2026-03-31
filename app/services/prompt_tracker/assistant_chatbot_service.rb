@@ -36,6 +36,7 @@ module PromptTracker
       @session_id = session_id
       @context = context
       @config = PromptTracker.configuration.assistant_chatbot
+        @assistant_mode = AssistantChatbot::Router.assistant_for(message: message, context: context)
     end
 
     def call
@@ -240,21 +241,36 @@ module PromptTracker
         "assistant_chatbot_conversation:#{session_id}"
       end
 
-      def build_system_prompt
-        context_info = if @context[:page_type]
-          case @context[:page_type]
-          when :prompt_version_detail
-            "\n\nCurrent context: Viewing PromptVersion ##{@context[:prompt_version_id]}"
-          when :prompts_list
-            "\n\nCurrent context: Browsing prompts list"
+          def build_system_prompt
+            case assistant_mode
+            when :test_wizard
+              Rails.logger.debug("[AssistantChatbot] Using TestWizardAssistant system prompt")
+              return test_wizard_assistant.system_prompt
+            when :dataset_wizard
+              Rails.logger.debug("[AssistantChatbot] Using DatasetWizardAssistant system prompt")
+              return dataset_wizard_assistant.system_prompt
+            when :deployment_wizard
+              Rails.logger.debug("[AssistantChatbot] Using DeploymentWizardAssistant system prompt")
+              return deployment_wizard_assistant.system_prompt
+            when :prompt_creation_wizard
+              Rails.logger.debug("[AssistantChatbot] Using PromptCreationWizardAssistant system prompt")
+              return prompt_creation_wizard_assistant.system_prompt
+            end
+
+          context_info = if @context[:page_type]
+            case @context[:page_type]
+            when :prompt_version_detail
+              "\n\nCurrent context: Viewing PromptVersion ##{@context[:prompt_version_id]}"
+            when :prompts_list
+              "\n\nCurrent context: Browsing prompts list"
+            else
+              ""
+            end
           else
             ""
           end
-        else
-          ""
-        end
 
-        Rails.logger.debug("[AssistantChatbot] build_system_prompt page_type=#{@context[:page_type]} prompt_version_id=#{@context[:prompt_version_id].inspect}")
+          Rails.logger.debug("[AssistantChatbot] build_system_prompt page_type=#{@context[:page_type]} prompt_version_id=#{@context[:prompt_version_id].inspect}")
 
           model_suggestions = suggested_models_for_prompt_creation
           model_suggestions_block = if model_suggestions.any?
@@ -262,19 +278,19 @@ module PromptTracker
 
             <<~BLOCK
 
-	      	    **Recommended models for this workspace:**
-	      #{bullet_lines}
+		          **Recommended models for this workspace:**
+		  #{bullet_lines}
 
-	      	    When you reach step 4 of the prompt creation wizard, you MUST:
-	      	    - Show these models as a short bullet list
-	      	    - Clearly highlight which one is the default (usually the first)
-	      	    - Ask the user to pick one, or confirm using the default
+		          When you reach step 4 of the prompt creation wizard, you MUST:
+		          - Show these models as a short bullet list
+		          - Clearly highlight which one is the default (usually the first)
+		          - Ask the user to pick one, or confirm using the default
             BLOCK
           else
             ""
           end
 
-            system_prompt = <<~PROMPT.strip
+          system_prompt = <<~PROMPT.strip
 		        You are the PromptTracker Assistant, an expert AI helper for testing and deploying LLM prompts.
 
 		        Your capabilities:
@@ -296,10 +312,10 @@ module PromptTracker
 		        - Collect the following fields one by one, with a clear question for each step:
 		          1) Prompt name (required)
 		          2) Short description (optional - just ask for a brief explanation of what the prompt should do; we'll enhance it with AI later so keep it short)
-		          3) System prompt concept (required - ask the user to briefly descri be what the AI assistant should do; this is a short concept, not the final long system prompt)
+		          3) System prompt concept (required - ask the user to briefly describe what the AI assistant should do; this is a short concept, not the final long system prompt)
 		          4) Model to use (optional - default gpt-4o if the user does not specify). When you reach this step, you MUST show the recommended models block (if present) and ask the user to choose.
 		          5) Temperature (optional - default 0.7 if the user does not specify)
-		#{model_suggestions_block}
+		  #{model_suggestions_block}
 		        - Do NOT ask the user to provide any user-facing prompt template. The backend will leave the user prompt empty for new prompts; the prompt author can later add a user-facing template in the PromptTracker UI if needed.
 		        - Use previous answers from the conversation to avoid repeating questions.
 		        - IMPORTANT: Do NOT try to fully write the final system prompt yourself. Just collect a clear, concise concept from the user in step 3 and pass it as `system_prompt_concept` when calling `create_prompt`. The backend will enhance it into a detailed, professional system prompt using AI.
@@ -365,15 +381,15 @@ module PromptTracker
 		        - Always confirm before performing destructive actions
 		        - Provide direct links to resources
 		        - Suggest follow-up actions when appropriate#{context_info}
-          PROMPT
+            PROMPT
 
           Rails.logger.debug("[AssistantChatbot] System prompt length: #{system_prompt.length} chars")
           Rails.logger.debug("[AssistantChatbot] System prompt preview: #{system_prompt[0..400]}...") if system_prompt.length > 400
 
           system_prompt
-          end
+        end
 
-    def call_llm(system_prompt, history, message)
+        def call_llm(system_prompt, history, message)
       Rails.logger.debug "[AssistantChatbot] ═══ CALL_LLM ═══"
 
       model_config = @config[:model] || {}
@@ -416,11 +432,24 @@ module PromptTracker
       Rails.logger.debug "[AssistantChatbot] Final prompt length: #{prompt.length} chars"
       Rails.logger.debug "[AssistantChatbot] Final prompt preview: #{prompt[0..200]}..." if prompt.length > 200
 
-        # Build tool config for RubyLlmService + DynamicToolBuilder
-        # Convert to string keys as DynamicToolBuilder expects string keys
-        tool_defs = build_tool_definitions.map(&:deep_stringify_keys)
-        Rails.logger.info "[AssistantChatbot] Built #{tool_defs.length} tool definitions: #{tool_defs.map { |t| t['name'] }.inspect}"
-        tool_config = { "functions" => tool_defs }
+          # Build tool config for RubyLlmService + DynamicToolBuilder
+          # Convert to string keys as DynamicToolBuilder expects string keys
+          raw_tool_defs =
+              if test_wizard_mode?
+                build_test_wizard_tool_definitions
+              elsif dataset_wizard_mode?
+                build_dataset_wizard_tool_definitions
+              elsif deployment_wizard_mode?
+                build_deployment_wizard_tool_definitions
+              elsif prompt_creation_wizard_mode?
+                build_prompt_creation_wizard_tool_definitions
+              else
+                build_tool_definitions
+              end
+
+          tool_defs = raw_tool_defs.map(&:deep_stringify_keys)
+          Rails.logger.info "[AssistantChatbot] Built #{tool_defs.length} tool definitions: #{tool_defs.map { |t| t['name'] }.inspect}"
+          tool_config = { "functions" => tool_defs }
 
         # Use unified RubyLlmService so we benefit from existing normalization logic
         # and RubyLLM's native tool handling. We intentionally do NOT pass a
@@ -431,7 +460,7 @@ module PromptTracker
 
       Rails.logger.info "[AssistantChatbot] Calling RubyLlmService with tools: #{tools.inspect}"
 
-        normalized = LlmClients::RubyLlmService.call(
+          normalized = LlmClients::RubyLlmService.call(
           model: model,
           prompt: prompt,
           system: system_prompt,
@@ -440,35 +469,53 @@ module PromptTracker
           temperature: temperature
         )
 
-      Rails.logger.info "[AssistantChatbot] RubyLlmService returned successfully"
-        Rails.logger.info "[AssistantChatbot] Normalized response - text length: #{normalized.text&.length || 0}, tool_calls: #{normalized.tool_calls.length}"
+          Rails.logger.info "[AssistantChatbot] RubyLlmService returned successfully"
+          Rails.logger.info "[AssistantChatbot] Normalized response - text length: #{normalized.text&.length || 0}, tool_calls: #{normalized.tool_calls.length}"
 
-        # If the model issued any tool calls, surface the LAST one as a
-        # pending function_call for confirmation. Arguments are returned as a
-        # hash and we convert to indifferent access for convenience.
-        if normalized.tool_calls.present?
-        Rails.logger.info "[AssistantChatbot] Found #{normalized.tool_calls.length} tool call(s), using last one"
+            if test_wizard_mode? || dataset_wizard_mode? || deployment_wizard_mode? || prompt_creation_wizard_mode?
+              function_call =
+                if test_wizard_mode?
+                  extract_run_tests_function_call_from_text(normalized.text)
+                elsif dataset_wizard_mode?
+                  extract_create_dataset_function_call_from_text(normalized.text)
+                elsif deployment_wizard_mode?
+                  extract_deploy_agent_function_call_from_text(normalized.text)
+                elsif prompt_creation_wizard_mode?
+                  extract_create_prompt_function_call_from_text(normalized.text)
+                end
 
-          tool_call = normalized.tool_calls.last
-        Rails.logger.debug "[AssistantChatbot] Tool call details: #{tool_call.inspect}"
+              return function_call if function_call
 
-          args = (tool_call[:arguments] || {}).with_indifferent_access
+              Rails.logger.info "[AssistantChatbot] Wizard response without JSON plan - returning text"
+              return { text: normalized.text }
+            end
 
-        Rails.logger.info "[AssistantChatbot] Returning function_call: #{tool_call[:function_name]}"
+          # If the model issued any tool calls, surface the LAST one as a
+          # pending function_call for confirmation. Arguments are returned as a
+          # hash and we convert to indifferent access for convenience.
+          if normalized.tool_calls.present?
+            Rails.logger.info "[AssistantChatbot] Found #{normalized.tool_calls.length} tool call(s), using last one"
 
-          {
-            function_call: {
-              name: tool_call[:function_name],
-              arguments: args
+            tool_call = normalized.tool_calls.last
+            Rails.logger.debug "[AssistantChatbot] Tool call details: #{tool_call.inspect}"
+
+            args = (tool_call[:arguments] || {}).with_indifferent_access
+
+            Rails.logger.info "[AssistantChatbot] Returning function_call: #{tool_call[:function_name]}"
+
+            {
+              function_call: {
+                name: tool_call[:function_name],
+                arguments: args
+              }
             }
-          }
-        else
-        Rails.logger.info "[AssistantChatbot] No tool calls - returning text response"
-          { text: normalized.text }
+          else
+            Rails.logger.info "[AssistantChatbot] No tool calls - returning text response"
+            { text: normalized.text }
+          end
         end
-      end
 
-    def build_tool_definitions
+      def build_tool_definitions
       [
         {
           name: "create_prompt",
@@ -597,10 +644,142 @@ module PromptTracker
                 }
               },
               required: [ "prompt_version_id", "run_mode" ]
-          }
-        },
-        {
-          name: "get_prompt_version_info",
+            }
+          },
+          {
+            name: "deploy_agent",
+            description: "Deploy a PromptVersion as a conversational or task agent.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: {
+                  type: "integer",
+                  description: "ID of the prompt version to deploy"
+                },
+                name: {
+                  type: "string",
+                  description: "Optional name for the deployed agent (e.g., 'Support Agent')"
+                },
+                agent_type: {
+                  type: "string",
+                  description: "Type of agent to create: 'conversational' (chat UI + API) or 'task' (background task agent).",
+                  enum: [ "conversational", "task" ]
+                },
+                deployment_config: {
+                  type: "object",
+                  description: "Configuration for conversational agents.",
+                  properties: {
+                    conversation_ttl: {
+                      type: "integer",
+                      description: "How long to keep conversations alive in seconds (e.g., 3600)."
+                    },
+                    enable_web_ui: {
+                      type: "boolean",
+                      description: "Whether to enable the public web chat UI."
+                    },
+                    auth: {
+                      type: "object",
+                      description: "Authentication configuration (optional).",
+                      properties: {
+                        type: {
+                          type: "string",
+                          description: "Auth type identifier (implementation-specific)."
+                        }
+                      }
+                    },
+                    rate_limit: {
+                      type: "object",
+                      description: "Optional rate limiting configuration.",
+                      properties: {
+                        requests_per_minute: {
+                          type: "integer",
+                          description: "Maximum number of requests per minute for this agent."
+                        }
+                      }
+                    },
+                    cors: {
+                      type: "object",
+                      description: "Optional CORS configuration for browser clients.",
+                      properties: {
+                        allowed_origins: {
+                          type: "array",
+                          items: { type: "string" },
+                          description: "List of allowed origins (e.g., ['https://example.com'])."
+                        }
+                      }
+                    }
+                  }
+                },
+                task_config: {
+                  type: "object",
+                  description: "Configuration for task agents.",
+                  properties: {
+                    initial_prompt: {
+                      type: "string",
+                      description: "Instruction describing the task the agent should perform."
+                    },
+                    variables: {
+                      type: "object",
+                      description: "Optional default variables object for the task."
+                    },
+                    execution: {
+                      type: "object",
+                      description: "Execution configuration (iterations, timeouts, retries).",
+                      properties: {
+                        max_iterations: {
+                          type: "integer",
+                          description: "Maximum number of agent iterations (default 5)."
+                        },
+                        timeout_seconds: {
+                          type: "integer",
+                          description: "Maximum time allowed for the task in seconds (default 3600)."
+                        },
+                        retry_on_failure: {
+                          type: "boolean",
+                          description: "Whether to retry the task on failure (default false)."
+                        },
+                        max_retries: {
+                          type: "integer",
+                          description: "Maximum number of retries (default 3)."
+                        }
+                      }
+                    },
+                    planning: {
+                      type: "object",
+                      description: "Optional planning configuration.",
+                      properties: {
+                        enabled: {
+                          type: "boolean",
+                          description: "Whether explicit planning is enabled."
+                        },
+                        max_steps: {
+                          type: "integer",
+                          description: "Maximum number of planning steps (default 20)."
+                        },
+                        allow_plan_modifications: {
+                          type: "boolean",
+                          description: "Whether the agent may modify its plan as it executes."
+                        }
+                      }
+                    },
+                    completion_criteria: {
+                      type: "object",
+                      description: "Optional completion criteria.",
+                      properties: {
+                        type: {
+                          type: "string",
+                          description: "Completion criteria type identifier (implementation-specific)."
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              required: [ "prompt_version_id" ]
+            }
+          },
+          {
+            name: "get_prompt_version_info",
           description: "Get detailed information about a PromptVersion including model config, status, and test statistics",
           parameters: {
             type: "object",
@@ -676,9 +855,66 @@ module PromptTracker
       ]
     end
 
+        def build_test_wizard_tool_definitions
+          # Reuse the full tool definitions but restrict to read-only helpers
+          # that are useful during the test wizard. The run_tests action
+          # itself is triggered via a JSON plan, not exposed as a direct
+          # tool to the LLM.
+          allowed = %w[
+            get_prompt_version_info
+            get_tests_summary
+            available_tests_for_prompt_version
+            available_datasets_for_prompt_version
+          ]
+
+          build_tool_definitions.select do |tool|
+            allowed.include?(tool[:name])
+          end
+        end
+
+        def build_dataset_wizard_tool_definitions
+          # Dataset wizard may call read-only helpers for context, but not create_dataset directly.
+          allowed = %w[
+            get_prompt_version_info
+            available_datasets_for_prompt_version
+          ]
+
+          build_tool_definitions.select do |tool|
+            allowed.include?(tool[:name])
+          end
+        end
+
+        def build_deployment_wizard_tool_definitions
+          # Deployment wizard can inspect prompt and test context but must NOT call deploy_agent directly.
+          allowed = %w[
+            get_prompt_version_info
+            get_tests_summary
+            available_tests_for_prompt_version
+            available_datasets_for_prompt_version
+          ]
+
+          build_tool_definitions.select do |tool|
+            allowed.include?(tool[:name])
+          end
+        end
+
+        def build_prompt_creation_wizard_tool_definitions
+          # Prompt creation wizard can inspect existing prompts or prompt versions
+          # but must NOT call create_prompt directly.
+          allowed = %w[
+            get_prompt_version_info
+            get_tests_summary
+            search_prompts
+          ]
+
+          build_tool_definitions.select do |tool|
+            allowed.include?(tool[:name])
+          end
+        end
+
     def requires_confirmation?(function_name)
-        # Action functions require confirmation
-        action_functions = %w[create_prompt create_dataset generate_tests run_tests]
+          # Action functions require confirmation
+          action_functions = %w[create_prompt create_dataset generate_tests run_tests deploy_agent]
       requires = action_functions.include?(function_name)
 
       Rails.logger.debug "[AssistantChatbot] requires_confirmation?(#{function_name}) => #{requires}"
@@ -721,5 +957,178 @@ module PromptTracker
           "#{arguments.inspect}\n\n" \
           "Do you want me to proceed?"
       end
+
+          def assistant_mode
+            @assistant_mode || :default
+          end
+
+          def test_wizard_mode?
+            assistant_mode == :test_wizard
+          end
+
+          def dataset_wizard_mode?
+            assistant_mode == :dataset_wizard
+          end
+
+          def deployment_wizard_mode?
+            assistant_mode == :deployment_wizard
+          end
+
+          def prompt_creation_wizard_mode?
+            assistant_mode == :prompt_creation_wizard
+          end
+
+          def test_wizard_assistant
+            @test_wizard_assistant ||= AssistantChatbot::Assistants::TestWizardAssistant.new(context: @context)
+          end
+
+          def dataset_wizard_assistant
+            @dataset_wizard_assistant ||= AssistantChatbot::Assistants::DatasetWizardAssistant.new(context: @context)
+          end
+
+          def deployment_wizard_assistant
+            @deployment_wizard_assistant ||= AssistantChatbot::Assistants::DeploymentWizardAssistant.new(context: @context)
+          end
+
+          def prompt_creation_wizard_assistant
+            @prompt_creation_wizard_assistant ||= AssistantChatbot::Assistants::PromptCreationWizardAssistant.new(context: @context)
+          end
+
+          def extract_run_tests_function_call_from_text(text)
+          return nil if text.blank?
+
+          stripped = text.strip
+
+          begin
+            data = JSON.parse(stripped)
+          rescue JSON::ParserError
+            Rails.logger.debug "[AssistantChatbot] Test wizard response not valid JSON plan"
+            return nil
+          end
+
+          unless data.is_a?(Hash)
+            Rails.logger.debug "[AssistantChatbot] JSON plan is not an object"
+            return nil
+          end
+
+          # Require at least the core run_tests arguments
+          unless data.key?("prompt_version_id") && data.key?("run_mode")
+            Rails.logger.debug "[AssistantChatbot] JSON plan missing required keys"
+            return nil
+          end
+
+          args = data.deep_symbolize_keys.with_indifferent_access
+
+          Rails.logger.info "[AssistantChatbot] Parsed run_tests JSON plan: #{args.inspect}"
+
+          {
+            function_call: {
+              name: "run_tests",
+              arguments: args
+            }
+          }
+        end
+
+          def extract_create_dataset_function_call_from_text(text)
+            return nil if text.blank?
+
+            stripped = text.strip
+
+            begin
+              data = JSON.parse(stripped)
+            rescue JSON::ParserError
+              Rails.logger.debug "[AssistantChatbot] Dataset wizard response not valid JSON plan"
+              return nil
+            end
+
+            unless data.is_a?(Hash)
+              Rails.logger.debug "[AssistantChatbot] Dataset wizard JSON plan is not an object"
+              return nil
+            end
+
+            unless data.key?("prompt_version_id")
+              Rails.logger.debug "[AssistantChatbot] Dataset JSON plan missing prompt_version_id"
+              return nil
+            end
+
+            args = data.deep_symbolize_keys.with_indifferent_access
+
+            Rails.logger.info "[AssistantChatbot] Parsed create_dataset JSON plan: #{args.inspect}"
+
+            {
+              function_call: {
+                name: "create_dataset",
+                arguments: args
+              }
+            }
+          end
+
+          def extract_deploy_agent_function_call_from_text(text)
+            return nil if text.blank?
+
+            stripped = text.strip
+
+            begin
+              data = JSON.parse(stripped)
+            rescue JSON::ParserError
+              Rails.logger.debug "[AssistantChatbot] Deployment wizard response not valid JSON plan"
+              return nil
+            end
+
+            unless data.is_a?(Hash)
+              Rails.logger.debug "[AssistantChatbot] Deployment wizard JSON plan is not an object"
+              return nil
+            end
+
+            unless data.key?("prompt_version_id") && data.key?("agent_type")
+              Rails.logger.debug "[AssistantChatbot] Deployment JSON plan missing required keys"
+              return nil
+            end
+
+            args = data.deep_symbolize_keys.with_indifferent_access
+
+            Rails.logger.info "[AssistantChatbot] Parsed deploy_agent JSON plan: #{args.inspect}"
+
+            {
+              function_call: {
+                name: "deploy_agent",
+                arguments: args
+              }
+            }
+          end
+
+          def extract_create_prompt_function_call_from_text(text)
+            return nil if text.blank?
+
+            stripped = text.strip
+
+            begin
+              data = JSON.parse(stripped)
+            rescue JSON::ParserError
+              Rails.logger.debug "[AssistantChatbot] Prompt creation wizard response not valid JSON plan"
+              return nil
+            end
+
+            unless data.is_a?(Hash)
+              Rails.logger.debug "[AssistantChatbot] Prompt creation JSON plan is not an object"
+              return nil
+            end
+
+            unless data.key?("name") && data.key?("system_prompt_concept")
+              Rails.logger.debug "[AssistantChatbot] Prompt creation JSON plan missing required keys"
+              return nil
+            end
+
+            args = data.deep_symbolize_keys.with_indifferent_access
+
+            Rails.logger.info "[AssistantChatbot] Parsed create_prompt JSON plan: #{args.inspect}"
+
+            {
+              function_call: {
+                name: "create_prompt",
+                arguments: args
+              }
+            }
+          end
   end
 end

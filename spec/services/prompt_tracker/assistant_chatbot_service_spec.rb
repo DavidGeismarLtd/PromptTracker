@@ -66,20 +66,19 @@ RSpec.describe PromptTracker::AssistantChatbotService do
         )
       end
 
-      it "includes previous conversation in LLM call" do
-        expect(PromptTracker::LlmClients::RubyLlmService).to receive(:call) do |**args|
-          # Verify history is passed correctly
-          expect(args[:prompt]).to include("Hello")
-          expect(args[:prompt]).to include("Hi! How can I help?")
-          mock_llm_response
-        end
+        it "includes previous conversation in LLM call" do
+          described_class.call(
+            message: "Create a prompt",
+            session_id: session_id,
+            context: context
+          )
 
-        described_class.call(
-          message: "Create a prompt",
-          session_id: session_id,
-          context: context
-        )
-      end
+          expect(PromptTracker::LlmClients::RubyLlmService).to have_received(:call).with(
+            hash_including(
+              prompt: a_string_including("Hello", "Hi! How can I help?")
+            )
+          )
+        end
 
       it "appends new messages to existing history" do
         described_class.call(
@@ -110,6 +109,208 @@ RSpec.describe PromptTracker::AssistantChatbotService do
             }
           ]
         )
+      end
+
+        context "in dataset wizard mode with a final JSON plan" do
+          let(:context) do
+            { page_type: :prompt_version_detail, prompt_version_id: 99 }
+          end
+
+          let(:json_plan) do
+            {
+              "prompt_version_id" => 99,
+              "name" => "Wizard dataset",
+              "description" => "Synthetic dataset from wizard",
+              "dataset_type" => "single_turn",
+              "count" => 25,
+              "instructions" => "Generate diverse examples",
+              "model" => "gpt-4o-mini"
+            }.to_json
+          end
+
+          let(:mock_llm_with_dataset_plan) do
+            double(
+              "NormalizedLlmResponse",
+              text: json_plan,
+              tool_calls: []
+            )
+          end
+
+          before do
+            allow(PromptTracker::AssistantChatbot::Router)
+              .to receive(:assistant_for)
+              .and_return(:dataset_wizard)
+
+            allow(PromptTracker::LlmClients::RubyLlmService)
+              .to receive(:call)
+              .and_return(mock_llm_with_dataset_plan)
+          end
+
+          it "returns a pending_action for create_dataset built from the JSON plan" do
+            result = described_class.call(
+              message: "Create a dataset via wizard",
+              session_id: session_id,
+              context: context
+            )
+
+            expect(result.success?).to be true
+            expect(result.pending_action).to be_present
+            expect(result.pending_action[:function_name]).to eq("create_dataset")
+            expect(result.pending_action[:arguments][:prompt_version_id]).to eq(99)
+            expect(result.pending_action[:arguments][:dataset_type]).to eq("single_turn")
+            expect(result.pending_action[:arguments][:count]).to eq(25)
+          end
+        end
+
+        context "in deployment wizard mode with a final JSON plan" do
+          let(:context) do
+            { page_type: :prompt_version_detail, prompt_version_id: 42 }
+          end
+
+          let(:json_plan) do
+            {
+              "prompt_version_id" => 42,
+              "name" => "Support Agent",
+              "agent_type" => "conversational",
+              "deployment_config" => {
+                "conversation_ttl" => 1800,
+                "enable_web_ui" => true
+              },
+              "task_config" => nil
+            }.to_json
+          end
+
+          let(:mock_llm_with_deployment_plan) do
+            double(
+              "NormalizedLlmResponse",
+              text: json_plan,
+              tool_calls: []
+            )
+          end
+
+          before do
+            allow(PromptTracker::AssistantChatbot::Router)
+              .to receive(:assistant_for)
+              .and_return(:deployment_wizard)
+
+            allow(PromptTracker::LlmClients::RubyLlmService)
+              .to receive(:call)
+              .and_return(mock_llm_with_deployment_plan)
+          end
+
+          it "returns a pending_action for deploy_agent built from the JSON plan" do
+            result = described_class.call(
+              message: "Deploy this prompt as an agent",
+              session_id: session_id,
+              context: context
+            )
+
+            expect(result.success?).to be true
+            expect(result.pending_action).to be_present
+            expect(result.pending_action[:function_name]).to eq("deploy_agent")
+            expect(result.pending_action[:arguments][:prompt_version_id]).to eq(42)
+            expect(result.pending_action[:arguments][:agent_type]).to eq("conversational")
+          end
+        end
+
+        context "in prompt creation wizard mode with a final JSON plan" do
+          let(:context) do
+            { page_type: :prompts_list }
+          end
+
+          let(:json_plan) do
+            {
+              "name" => "Wizard prompt",
+              "description" => "Prompt created via wizard",
+              "system_prompt_concept" => "Help with customer support",
+              "model" => "gpt-4o-mini",
+              "temperature" => 0.5
+            }.to_json
+          end
+
+          let(:mock_llm_with_prompt_plan) do
+            double(
+              "NormalizedLlmResponse",
+              text: json_plan,
+              tool_calls: []
+            )
+          end
+
+          before do
+            allow(PromptTracker::AssistantChatbot::Router)
+              .to receive(:assistant_for)
+              .and_return(:prompt_creation_wizard)
+
+            allow(PromptTracker::LlmClients::RubyLlmService)
+              .to receive(:call)
+              .and_return(mock_llm_with_prompt_plan)
+          end
+
+          it "returns a pending_action for create_prompt built from the JSON plan" do
+            result = described_class.call(
+              message: "Create a new prompt via wizard",
+              session_id: session_id,
+              context: context
+            )
+
+            expect(result.success?).to be true
+            expect(result.pending_action).to be_present
+            expect(result.pending_action[:function_name]).to eq("create_prompt")
+            expect(result.pending_action[:arguments][:name]).to eq("Wizard prompt")
+            expect(result.pending_action[:arguments][:system_prompt_concept]).to eq("Help with customer support")
+            expect(result.pending_action[:arguments][:model]).to eq("gpt-4o-mini")
+            expect(result.pending_action[:arguments][:temperature]).to eq(0.5)
+          end
+        end
+
+      context "in test wizard mode with a final JSON plan" do
+        let(:context) do
+          { page_type: :prompt_version_detail, prompt_version_id: 27 }
+        end
+
+        let(:json_plan) do
+          {
+            "prompt_version_id" => 27,
+            "run_mode" => "dataset",
+            "dataset_id" => 10,
+            "test_ids" => nil,
+            "execution_mode" => nil,
+            "custom_variables" => nil
+          }.to_json
+        end
+
+        let(:mock_llm_with_json_plan) do
+          double(
+            "NormalizedLlmResponse",
+            text: json_plan,
+            tool_calls: []
+          )
+        end
+
+        before do
+          allow(PromptTracker::AssistantChatbot::Router)
+            .to receive(:assistant_for)
+            .and_return(:test_wizard)
+
+          allow(PromptTracker::LlmClients::RubyLlmService)
+            .to receive(:call)
+            .and_return(mock_llm_with_json_plan)
+        end
+
+        it "returns a pending_action for run_tests built from the JSON plan" do
+          result = described_class.call(
+            message: "Run all tests",
+            session_id: session_id,
+            context: context
+          )
+
+          expect(result.success?).to be true
+          expect(result.pending_action).to be_present
+          expect(result.pending_action[:function_name]).to eq("run_tests")
+          expect(result.pending_action[:arguments][:prompt_version_id]).to eq(27)
+          expect(result.pending_action[:arguments][:run_mode]).to eq("dataset")
+          expect(result.pending_action[:arguments][:dataset_id]).to eq(10)
+        end
       end
 
       context "with create_dataset function call" do

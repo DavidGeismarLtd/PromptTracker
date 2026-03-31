@@ -44,6 +44,18 @@ module PromptTracker
               expect(result[:temperature]).to eq(0.8)
             end
 
+              it "omits temperature for models that do not support it (gpt-5 family)" do
+                builder = described_class.new(
+                  model: "gpt-5",
+                  input: "Hello",
+                  temperature: 0.8
+                )
+
+                result = builder.build
+
+                expect(result).not_to have_key(:temperature)
+              end
+
             it "includes max_output_tokens when provided" do
               builder = described_class.new(
                 model: "gpt-4o",

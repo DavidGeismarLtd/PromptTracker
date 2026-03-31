@@ -35,6 +35,11 @@ module PromptTracker
             :pricing
           )
         end
+
+            it "returns models with unique IDs" do
+              model_ids = openai_models.map { |m| m[:id] }
+              expect(model_ids).to eq(model_ids.uniq)
+            end
       end
 
       context "with Anthropic provider" do
@@ -147,6 +152,30 @@ module PromptTracker
           expect(models.map { |m| m[:id] }).to include("claude-3-5-haiku-20241022")
         end
       end
+
+        describe "display name deduplication" do
+          it "prefers non-dated canonical IDs when multiple IDs share the same name" do
+            models = [
+              { id: "gpt-5", name: "GPT-5" },
+              { id: "gpt-5-2025-08-07", name: "GPT-5" }
+            ]
+
+            result = described_class.send(:deduplicate_by_display_name, models)
+
+            expect(result.map { |m| m[:id] }).to eq([ "gpt-5" ])
+          end
+
+          it "chooses latest dated ID when no non-dated ID exists" do
+            models = [
+              { id: "model-20240101", name: "Model" },
+              { id: "model-20250101", name: "Model" }
+            ]
+
+            result = described_class.send(:deduplicate_by_display_name, models)
+
+            expect(result.map { |m| m[:id] }).to eq([ "model-20250101" ])
+          end
+        end
     end
   end
 end

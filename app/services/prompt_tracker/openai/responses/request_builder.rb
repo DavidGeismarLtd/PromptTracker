@@ -104,15 +104,21 @@ module PromptTracker
           params[:tools] = tool_formatter.format if tools.any?
         end
 
-        # Build parameters for single-turn requests
-        #
-        # @param params [Hash] the parameters hash to modify
-        def build_single_turn_params(params)
-          params[:instructions] = instructions if instructions.present?
-          params[:temperature] = temperature if temperature
-          params[:max_output_tokens] = max_tokens if max_tokens
-          params[:tools] = tool_formatter.format if tools.any?
-        end
+          # Build parameters for single-turn requests
+          #
+          # @param params [Hash] the parameters hash to modify
+          def build_single_turn_params(params)
+            params[:instructions] = instructions if instructions.present?
+
+            if temperature && supports_temperature?
+              params[:temperature] = temperature
+            elsif temperature && !supports_temperature?
+              Rails.logger.debug "[Openai::Responses::RequestBuilder] Skipping temperature for model #{model} (unsupported by Responses API)"
+            end
+
+            params[:max_output_tokens] = max_tokens if max_tokens
+            params[:tools] = tool_formatter.format if tools.any?
+          end
 
         # Add web search source includes if web search tool is enabled
         #
@@ -138,10 +144,18 @@ module PromptTracker
           params.merge!(options.except(:timeout, :include))
         end
 
-        # @return [ToolFormatter] formatter for tools
-        def tool_formatter
-          @tool_formatter ||= ToolFormatter.new(tools: tools, tool_config: tool_config)
-        end
+          # @return [ToolFormatter] formatter for tools
+          def tool_formatter
+            @tool_formatter ||= ToolFormatter.new(tools: tools, tool_config: tool_config)
+          end
+
+          TEMPERATURE_UNSUPPORTED_MODEL_PREFIXES = %w[gpt-5].freeze
+
+          def supports_temperature?
+            return true if model.blank?
+
+            !TEMPERATURE_UNSUPPORTED_MODEL_PREFIXES.any? { |prefix| model.start_with?(prefix) }
+          end
       end
     end
   end

@@ -48,9 +48,12 @@ module PromptTracker
         ruby_llm_provider = PROVIDER_MAPPING[provider.to_sym]
         return [] unless ruby_llm_provider
 
-        chat_models(ruby_llm_provider)
-          .reject { |m| convenience_alias?(m, provider) }
-          .map { |m| normalize_model(m) }
+          models = chat_models(ruby_llm_provider)
+            .reject { |m| convenience_alias?(m, provider) }
+            .map { |m| normalize_model(m) }
+            .uniq { |model| model[:id] }
+
+          deduplicate_by_display_name(models)
       end
 
       # Find a specific model by ID across all providers.
@@ -79,12 +82,43 @@ module PromptTracker
 
       private
 
+        DATE_SUFFIX_PATTERNS = [
+          /-.{4}-\d{2}-\d{2}\z/,
+          /-\d{8}\z/
+        ].freeze
+
       # Filter RubyLLM models to chat-capable models for a specific provider.
       def chat_models(ruby_llm_provider)
         RubyLLM.models.select do |model|
           model.provider == ruby_llm_provider && chat_capable?(model)
         end
       end
+
+        # When multiple models share the same display name (e.g., "GPT-5" for both
+        # gpt-5 and gpt-5-2025-08-07), keep a single canonical entry so the
+        # playground dropdown stays simple.
+        #
+        # Canonical selection rules per display name:
+        # - Prefer non-dated IDs (e.g., "gpt-5") when present.
+        # - Otherwise, pick the lexicographically latest ID, which corresponds
+        #   to the most recent dated version for ISO-like date suffixes.
+        def deduplicate_by_display_name(models)
+          models
+            .group_by { |model| model[:name] }
+            .values
+            .map { |group| pick_canonical_model(group) }
+        end
+
+        def pick_canonical_model(group)
+          non_dated = group.reject { |model| dated_id?(model[:id]) }
+          return non_dated.first if non_dated.any?
+
+          group.max_by { |model| model[:id] }
+        end
+
+        def dated_id?(id)
+          DATE_SUFFIX_PATTERNS.any? { |pattern| pattern.match?(id) }
+        end
 
       # Determine if a model is chat-capable (not embedding, TTS, or image generation).
       def chat_capable?(model)

@@ -21,6 +21,7 @@ module PromptTracker
 
     let(:version) do
       v = prompt.prompt_versions.create!(
+          system_prompt: "You are a helpful assistant.",
         user_prompt: "Hello {{name}}, your issue is {{issue}}",
         version_number: 1,
         status: "active"
@@ -55,6 +56,7 @@ module PromptTracker
 
       it "allows same name for different versions" do
         version2 = prompt.prompt_versions.create!(
+            system_prompt: "You are a helpful assistant.",
           user_prompt: "Different {{name}}",
           version_number: 2,
           status: "draft",

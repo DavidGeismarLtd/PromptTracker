@@ -93,6 +93,7 @@ module PromptTracker
         expect {
           post :save, params: {
             prompt_id: prompt.id,
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "New template {{var}}",
             notes: "Test draft",
             save_action: "new_version"
@@ -118,6 +119,7 @@ module PromptTracker
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: draft_version.id,
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Updated template {{var}}",
             notes: "Updated notes",
             save_action: "update"
@@ -143,6 +145,7 @@ module PromptTracker
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: version_with_responses.id,
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "New template {{var}}",
             notes: "Should create new version",
             save_action: "update"
@@ -166,6 +169,7 @@ module PromptTracker
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: draft_version.id,
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "New template {{var}}",
             notes: "Force new version",
             save_action: "new_version"
@@ -208,6 +212,7 @@ module PromptTracker
           expect {
             post :save, params: {
               prompt_id: prompt.id,
+                system_prompt: "You are a helpful assistant.",
               user_prompt: "Analyze: {{text}}",
               notes: "With structured output",
               save_action: "new_version",
@@ -230,6 +235,7 @@ module PromptTracker
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: draft_version.id,
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Analyze: {{text}}",
             notes: "Added structured output",
             save_action: "update",
@@ -256,6 +262,7 @@ module PromptTracker
           post :save, params: {
             prompt_id: prompt.id,
             prompt_version_id: version_with_schema.id,
+              system_prompt: "You are a helpful assistant.",
             user_prompt: "Updated template",
             notes: "Removed structured output",
             save_action: "update",

@@ -20,9 +20,13 @@ module PromptTracker
       end
 
       def assistant
-        return :default unless route_with_llm?
+          # Only call the LLM router when there is an actual user message.
+          # This avoids unnecessary LLM calls for things like suggestions,
+          # where we don't have a message and just want context-based hints.
+          return :default if message.strip.empty?
+          return :default unless route_with_llm?
 
-        classify_with_llm
+          classify_with_llm
       end
 
       private

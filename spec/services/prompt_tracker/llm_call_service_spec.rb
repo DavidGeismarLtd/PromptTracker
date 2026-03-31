@@ -14,6 +14,7 @@ module PromptTracker
 
     let(:version_with_config) do
       prompt.prompt_versions.create!(
+          system_prompt: "You are a helpful assistant.",
         user_prompt: "Hello {{name}}",
         version_number: 1,
         status: "active",
@@ -30,6 +31,7 @@ module PromptTracker
 
     let(:version_without_config) do
       prompt.prompt_versions.create!(
+          system_prompt: "You are a helpful assistant.",
         user_prompt: "Hello {{name}}",
         version_number: 2,
         status: "draft",

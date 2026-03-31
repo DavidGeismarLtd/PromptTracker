@@ -73,57 +73,62 @@ module PromptTracker
     class VersionNotFoundError < StandardError; end
     class NoBlockGivenError < StandardError; end
 
-    attr_reader :prompt_slug, :version_number, :variables, :provider, :model,
-                :user_id, :session_id, :environment, :metadata, :ab_test, :ab_variant
+      attr_reader :prompt_slug, :version_number, :variables, :provider, :model,
+                  :user_id, :session_id, :environment, :metadata, :ab_test, :ab_variant,
+                  :trace, :span
 
-    # Track an LLM call
-    #
-    # @param prompt_slug [String] slug of the prompt to use
-    # @param variables [Hash] variables to render in the template
-    # @param provider [String, nil] LLM provider (e.g., "openai", "anthropic") - defaults to version's model_config
-    # @param model [String, nil] model name (e.g., "gpt-4", "claude-3-opus") - defaults to version's model_config
-    # @param version [Integer, nil] specific version number (defaults to active version)
-    # @param user_id [String, nil] user identifier for context
-    # @param session_id [String, nil] session identifier for context
-    # @param environment [String, nil] environment (defaults to Rails.env)
-    # @param metadata [Hash, nil] additional metadata to store
-    # @yield [rendered_prompt] block that executes the LLM call
-    # @yieldparam rendered_prompt [String] the rendered prompt template
-    # @yieldreturn [String, Hash] LLM response - String (just text) or Hash with :text, :tokens_prompt, :tokens_completion, :metadata
-    # @return [Hash] result hash with :llm_response, :response_text, :tracking_id
-    # @raise [PromptNotFoundError] if prompt not found
-    # @raise [VersionNotFoundError] if version not found
-    # @raise [NoBlockGivenError] if no block provided
-    # @raise [ArgumentError] if provider/model not specified and not in version's model_config
-    # @raise [LlmResponseContract::InvalidResponseError] if block returns invalid response format
-    def self.track(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
-                   user_id: nil, session_id: nil, environment: nil, metadata: nil, &block)
+      # Track an LLM call
+      #
+      # @param prompt_slug [String] slug of the prompt to use
+      # @param variables [Hash] variables to render in the template
+      # @param provider [String, nil] LLM provider (e.g., "openai", "anthropic") - defaults to version's model_config
+      # @param model [String, nil] model name (e.g., "gpt-4", "claude-3-opus") - defaults to version's model_config
+      # @param version [Integer, nil] specific version number (defaults to active version)
+      # @param user_id [String, nil] user identifier for context
+      # @param session_id [String, nil] session identifier for context
+      # @param environment [String, nil] environment (defaults to Rails.env)
+      # @param metadata [Hash, nil] additional metadata to store
+      # @yield [rendered_prompt] block that executes the LLM call
+      # @yieldparam rendered_prompt [String] the rendered prompt template
+      # @yieldreturn [String, Hash] LLM response - String (just text) or Hash with :text, :tokens_prompt, :tokens_completion, :metadata
+      # @return [Hash] result hash with :llm_response, :response_text, :tracking_id
+      # @raise [PromptNotFoundError] if prompt not found
+      # @raise [VersionNotFoundError] if version not found
+      # @raise [NoBlockGivenError] if no block provided
+      # @raise [ArgumentError] if provider/model not specified and not in version's model_config
+      # @raise [LlmResponseContract::InvalidResponseError] if block returns invalid response format
+      def self.track(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
+                     user_id: nil, session_id: nil, environment: nil, metadata: nil,
+                     trace: nil, span: nil, &block)
       new(
         prompt_slug: prompt_slug,
         variables: variables,
         provider: provider,
         model: model,
         version: version,
-        user_id: user_id,
-        session_id: session_id,
-        environment: environment,
-        metadata: metadata
+          user_id: user_id,
+          session_id: session_id,
+          environment: environment,
+          metadata: metadata,
+          trace: trace,
+          span: span
       ).track(&block)
     end
 
-    # Initialize a new LLM call tracker
-    #
-    # @param prompt_slug [String] slug of the prompt
-    # @param variables [Hash] variables for template rendering
-    # @param provider [String, nil] LLM provider (optional - will use version's model_config)
-    # @param model [String, nil] model name (optional - will use version's model_config)
-    # @param version [Integer, nil] specific version number
-    # @param user_id [String, nil] user identifier
-    # @param session_id [String, nil] session identifier
-    # @param environment [String, nil] environment
-    # @param metadata [Hash, nil] additional metadata
-    def initialize(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
-                   user_id: nil, session_id: nil, environment: nil, metadata: nil)
+      # Initialize a new LLM call tracker
+      #
+      # @param prompt_slug [String] slug of the prompt
+      # @param variables [Hash] variables for template rendering
+      # @param provider [String, nil] LLM provider (optional - will use version's model_config)
+      # @param model [String, nil] model name (optional - will use version's model_config)
+      # @param version [Integer, nil] specific version number
+      # @param user_id [String, nil] user identifier
+      # @param session_id [String, nil] session identifier
+      # @param environment [String, nil] environment
+      # @param metadata [Hash, nil] additional metadata
+      def initialize(prompt_slug:, variables: {}, provider: nil, model: nil, version: nil,
+                     user_id: nil, session_id: nil, environment: nil, metadata: nil,
+                     trace: nil, span: nil)
       @prompt_slug = prompt_slug
       @version_number = version
       @variables = variables || {}
@@ -137,6 +142,8 @@ module PromptTracker
       @metadata = metadata || {}
       @ab_test = nil
       @ab_variant = nil
+        @trace = trace
+        @span = span
     end
 
     # Execute the tracking flow
@@ -270,7 +277,9 @@ module PromptTracker
         environment: environment,
         context: metadata,
         ab_test: ab_test,
-        ab_variant: ab_variant
+          ab_variant: ab_variant,
+          trace_id: trace&.id,
+          span_id: span&.id
       )
     end
 

@@ -1,0 +1,147 @@
+<div class="monitoring-traces-index">
+  <div class="page-header" style="background-color: #ECFDF5; border-left: 4px solid #10B981; padding: 1.5rem; margin-bottom: 2rem;">
+    <h1 style="color: #065F46; margin: 0;">
+      🧵 Traces
+    </h1>
+    <p style="color: #065F46; margin: 0.5rem 0 0 0;">
+      Hierarchical view of runtime flows (traces, spans, and LLM calls)
+    </p>
+  </div>
+
+  <!-- Filters -->
+  <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+    <%= form_with url: monitoring_traces_path, method: :get, local: true, style: "margin: 0;" do |f| %>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+        <div>
+          <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">
+            Session ID
+          </label>
+          <%= f.select :session_id,
+              options_for_select([["All Sessions", ""]] + @session_ids.map { |s| [s, s] }, params[:session_id]),
+              {},
+              style: "width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 0.875rem;" %>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">
+            Status
+          </label>
+          <%= f.select :status,
+              options_for_select([["All Statuses", ""]] + @statuses.map { |s| [s.titleize, s] }, params[:status]),
+              {},
+              style: "width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 0.875rem;" %>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">
+            Name contains
+          </label>
+          <%= f.text_field :q,
+              value: params[:q],
+              placeholder: "e.g. question_1",
+              style: "width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 0.875rem;" %>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">
+            Start date
+          </label>
+          <%= f.date_field :start_date,
+              value: params[:start_date],
+              style: "width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 0.875rem;" %>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">
+            End date
+          </label>
+          <%= f.date_field :end_date,
+              value: params[:end_date],
+              style: "width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 0.875rem;" %>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <%= f.submit "Apply Filters", style: "background-color: #10B981; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; font-weight: 500;" %>
+          <%= link_to "Clear", monitoring_traces_path, style: "background-color: #6B7280; color: white; padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.875rem; text-decoration: none; display: inline-block; font-weight: 500;" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @traces.any? %>
+    <div style="background: white; border: 2px solid #D1FAE5; border-radius: 8px; padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="color: #065F46; margin: 0;">Recent Traces</h2>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid #D1FAE5;">
+              <th style="text-align: left; padding: 0.75rem; color: #64748B;">Started At</th>
+              <th style="text-align: left; padding: 0.75rem; color: #64748B;">Name</th>
+              <th style="text-align: left; padding: 0.75rem; color: #64748B;">Session</th>
+              <th style="text-align: left; padding: 0.75rem; color: #64748B;">Status</th>
+              <th style="text-align: left; padding: 0.75rem; color: #64748B;">Duration</th>
+              <th style="text-align: left; padding: 0.75rem; color: #64748B;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @traces.each do |trace| %>
+              <tr style="border-bottom: 1px solid #F1F5F9;">
+                <td style="padding: 0.75rem; font-size: 0.875rem; color: #374151; white-space: nowrap;">
+                  <%= trace.started_at&.strftime("%Y-%m-%d %H:%M:%S") %>
+                </td>
+                <td style="padding: 0.75rem; font-size: 0.875rem; color: #111827;">
+                  <strong><%= trace.name %></strong>
+                </td>
+                <td style="padding: 0.75rem; font-size: 0.875rem; color: #374151;">
+                  <% if trace.session_id.present? %>
+                    <code style="font-size: 0.75rem; color: #475569;"><%= trace.session_id %></code>
+                  <% else %>
+                    <span style="color: #94A3B8; font-size: 0.75rem;">-</span>
+                  <% end %>
+                </td>
+                <td style="padding: 0.75rem;">
+                  <% if trace.status == "success" %>
+                    <span class="badge bg-success">Success</span>
+                  <% elsif trace.status == "error" %>
+                    <span class="badge bg-danger">Error</span>
+                  <% elsif trace.status == "running" %>
+                    <span class="badge bg-warning text-dark">Running</span>
+                  <% else %>
+                    <span class="badge bg-secondary"><%= trace.status %></span>
+                  <% end %>
+                </td>
+                <td style="padding: 0.75rem; font-size: 0.875rem; color: #374151; white-space: nowrap;">
+                  <% if trace.duration_ms.present? %>
+                    <%= trace.duration_ms %> ms
+                  <% elsif trace.running? %>
+                    <span style="color: #6B7280;">in progress</span>
+                  <% else %>
+                    <span style="color: #6B7280;">-</span>
+                  <% end %>
+                </td>
+                <td style="padding: 0.75rem;">
+                  <%= link_to "View", monitoring_trace_path(trace),
+                              style: "background-color: #10B981; color: white; padding: 0.35rem 0.75rem; border-radius: 4px; font-size: 0.8rem; text-decoration: none;" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if @traces.respond_to?(:total_pages) && @traces.total_pages > 1 %>
+        <div style="margin-top: 1.5rem; text-align: center;">
+          <%= paginate @traces %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div style="background: white; border: 2px solid #E5E7EB; border-radius: 8px; padding: 3rem; text-align: center;">
+      <i class="bi bi-diagram-3" style="font-size: 3rem; color: #ccc;"></i>
+      <p style="color: #64748B; margin-top: 1rem;">No traces found yet. Start instrumenting your flows with PromptTracker::Trace and PromptTracker::Span.</p>
+    </div>
+  <% end %>
+</div>

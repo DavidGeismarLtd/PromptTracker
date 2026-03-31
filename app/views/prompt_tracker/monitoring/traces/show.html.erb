@@ -1,0 +1,143 @@
+<div class="monitoring-trace-show">
+  <div class="page-header" style="background-color: #ECFDF5; border-left: 4px solid #10B981; padding: 1.5rem; margin-bottom: 2rem;">
+    <h1 style="color: #065F46; margin: 0;">
+      🧵 Trace: <%= @trace.name %>
+    </h1>
+    <p style="color: #065F46; margin: 0.5rem 0 0 0;">
+      Hierarchical view of spans and LLM calls for this trace.
+    </p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.5rem; align-items: flex-start;">
+    <!-- Summary card -->
+    <div style="background: white; border: 2px solid #D1FAE5; border-radius: 8px; padding: 1.5rem;">
+      <h2 style="color: #065F46; font-size: 1.1rem; margin-bottom: 1rem;">Trace Summary</h2>
+      <table class="table table-sm" style="margin-bottom: 0;">
+        <tr>
+          <th style="width: 160px;">Name</th>
+          <td><code style="font-size: 0.85rem;"><%= @trace.name %></code></td>
+        </tr>
+        <tr>
+          <th>Session ID</th>
+          <td>
+            <% if @trace.session_id.present? %>
+              <code style="font-size: 0.85rem;"><%= @trace.session_id %></code>
+            <% else %>
+              <span class="text-muted">-</span>
+            <% end %>
+          </td>
+        </tr>
+        <tr>
+          <th>User ID</th>
+          <td>
+            <% if @trace.user_id.present? %>
+              <code style="font-size: 0.85rem;"><%= @trace.user_id %></code>
+            <% else %>
+              <span class="text-muted">-</span>
+            <% end %>
+          </td>
+        </tr>
+        <tr>
+          <th>Status</th>
+          <td>
+            <% if @trace.status == "success" %>
+              <span class="badge bg-success">Success</span>
+            <% elsif @trace.status == "error" %>
+              <span class="badge bg-danger">Error</span>
+            <% elsif @trace.status == "running" %>
+              <span class="badge bg-warning text-dark">Running</span>
+            <% else %>
+              <span class="badge bg-secondary"><%= @trace.status %></span>
+            <% end %>
+          </td>
+        </tr>
+        <tr>
+          <th>Started At</th>
+          <td><%= @trace.started_at&.strftime("%Y-%m-%d %H:%M:%S") %></td>
+        </tr>
+        <tr>
+          <th>Ended At</th>
+          <td>
+            <% if @trace.ended_at.present? %>
+              <%= @trace.ended_at.strftime("%Y-%m-%d %H:%M:%S") %>
+            <% else %>
+              <span class="text-muted">-</span>
+            <% end %>
+          </td>
+        </tr>
+        <tr>
+          <th>Duration</th>
+          <td>
+            <% if @trace.duration_ms.present? %>
+              <%= @trace.duration_ms %> ms
+            <% elsif @trace.running? %>
+              <span class="text-muted">in progress</span>
+            <% else %>
+              <span class="text-muted">-</span>
+            <% end %>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Simple metadata viewer -->
+    <div style="background: white; border: 2px solid #E5E7EB; border-radius: 8px; padding: 1.5rem;">
+      <h2 style="color: #111827; font-size: 1.1rem; margin-bottom: 1rem;">Metadata</h2>
+      <% if @trace.metadata.present? && @trace.metadata.any? %>
+        <pre style="font-size: 0.75rem; margin: 0; padding: 0.75rem; background: #F9FAFB; border-radius: 4px; max-height: 260px; overflow: auto;"><%= JSON.pretty_generate(@trace.metadata) %></pre>
+      <% else %>
+        <p class="text-muted" style="margin: 0;">No metadata.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Hierarchy -->
+  <div style="margin-top: 2rem;">
+    <h2 style="color: #065F46; font-size: 1.1rem; margin-bottom: 0.75rem;">Trace Hierarchy</h2>
+    <% if @root_spans.any? || @root_responses.any? %>
+      <ul style="padding-left: 0; margin: 0;">
+        <% @root_spans.each do |span| %>
+          <%= render "prompt_tracker/monitoring/traces/span_node",
+                     span: span,
+                     spans_by_parent: @spans_by_parent,
+                     responses_by_span: @responses_by_span,
+                     level: 0 %>
+        <% end %>
+
+        <% @root_responses.each do |response| %>
+          <li style="margin: 0.25rem 0; list-style: none;">
+            <div style="padding: 0.35rem 0.5rem; border-radius: 4px; background: #EFF6FF; border: 1px solid #DBEAFE;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>LLM Call</strong>
+                  <span style="margin-left: 0.5rem; font-size: 0.75rem; color: #6B7280;">
+                    <%= response.provider %> / <%= response.model %>
+                  </span>
+                </div>
+                <div style="font-size: 0.75rem; color: #6B7280;">
+                  <% if response.status == "success" %>
+                    <span class="badge bg-success">Success</span>
+                  <% elsif response.status == "error" %>
+                    <span class="badge bg-danger">Error</span>
+                  <% else %>
+                    <span class="badge bg-secondary"><%= response.status %></span>
+                  <% end %>
+                  <% if response.response_time_ms.present? %>
+                    <span style="margin-left: 0.5rem;">⏱ <%= response.response_time_ms %> ms</span>
+                  <% end %>
+                </div>
+              </div>
+              <% if response.response_text.present? %>
+                <div style="margin-top: 0.25rem; font-size: 0.8rem; color: #4B5563; max-height: 4.5rem; overflow: hidden; text-overflow: ellipsis;">
+                  <%= truncate(response.response_text, length: 160) %>
+                </div>
+              <% end %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-muted">No spans or LLM calls are attached to this trace yet.</p>
+    <% end %>
+  </div>
+</div>

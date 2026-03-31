@@ -114,6 +114,16 @@ module PromptTracker
                optional: true,
                inverse_of: :llm_responses
 
+      belongs_to :trace,
+                 class_name: "PromptTracker::Trace",
+                 optional: true,
+                 inverse_of: :llm_responses
+
+      belongs_to :span,
+                 class_name: "PromptTracker::Span",
+                 optional: true,
+                 inverse_of: :llm_responses
+
     # Callbacks
     # Auto-evaluate all production tracked calls
     after_create :trigger_auto_evaluation

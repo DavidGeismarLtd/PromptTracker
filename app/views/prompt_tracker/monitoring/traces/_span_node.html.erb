@@ -1,0 +1,74 @@
+<%# Renders a single span and its children (spans + LlmResponses) recursively %>
+<li style="margin: 0.25rem 0 0.25rem <%= level * 1.0 %>rem; list-style: none;">
+  <div style="padding: 0.35rem 0.5rem; border-radius: 4px; background: #F9FAFB; border: 1px solid #E5E7EB;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong><%= span.name %></strong>
+        <% if span.span_type.present? %>
+          <span style="margin-left: 0.5rem; font-size: 0.75rem; color: #6B7280;">(<%= span.span_type %>)</span>
+        <% end %>
+      </div>
+      <div style="font-size: 0.75rem; color: #6B7280;">
+        <% if span.status == "success" %>
+          <span class="badge bg-success">Success</span>
+        <% elsif span.status == "error" %>
+          <span class="badge bg-danger">Error</span>
+        <% elsif span.status == "running" %>
+          <span class="badge bg-warning text-dark">Running</span>
+        <% else %>
+          <span class="badge bg-secondary"><%= span.status %></span>
+        <% end %>
+        <% if span.duration_ms.present? %>
+          <span style="margin-left: 0.5rem;">⏱ <%= span.duration_ms %> ms</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <% child_spans = spans_by_parent[span.id] || [] %>
+  <% span_responses = responses_by_span[span.id] || [] %>
+
+  <% if child_spans.any? || span_responses.any? %>
+    <ul style="margin: 0.25rem 0 0 0; padding-left: 0;">
+      <% child_spans.each do |child| %>
+        <%= render "prompt_tracker/monitoring/traces/span_node",
+                   span: child,
+                   spans_by_parent: spans_by_parent,
+                   responses_by_span: responses_by_span,
+                   level: level + 1 %>
+      <% end %>
+
+      <% span_responses.each do |response| %>
+        <li style="margin: 0.25rem 0 0.25rem <%= (level + 1) * 1.0 %>rem; list-style: none;">
+          <div style="padding: 0.35rem 0.5rem; border-radius: 4px; background: #EFF6FF; border: 1px solid #DBEAFE;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>LLM Call</strong>
+                <span style="margin-left: 0.5rem; font-size: 0.75rem; color: #6B7280;">
+                  <%= response.provider %> / <%= response.model %>
+                </span>
+              </div>
+              <div style="font-size: 0.75rem; color: #6B7280;">
+                <% if response.status == "success" %>
+                  <span class="badge bg-success">Success</span>
+                <% elsif response.status == "error" %>
+                  <span class="badge bg-danger">Error</span>
+                <% else %>
+                  <span class="badge bg-secondary"><%= response.status %></span>
+                <% end %>
+                <% if response.response_time_ms.present? %>
+                  <span style="margin-left: 0.5rem;">⏱ <%= response.response_time_ms %> ms</span>
+                <% end %>
+              </div>
+            </div>
+            <% if response.response_text.present? %>
+              <div style="margin-top: 0.25rem; font-size: 0.8rem; color: #4B5563; max-height: 4.5rem; overflow: hidden; text-overflow: ellipsis;">
+                <%= truncate(response.response_text, length: 160) %>
+              </div>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</li>

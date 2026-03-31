@@ -39,6 +39,7 @@
             <% end %>
             <th data-column="environment" style="text-align: left; padding: 0.75rem; color: #64748B;">Environment</th>
             <th data-column="user_id" style="text-align: left; padding: 0.75rem; color: #64748B;">User ID</th>
+            <th data-column="trace" style="text-align: left; padding: 0.75rem; color: #64748B;">Session / Trace</th>
             <th data-column="status" style="text-align: left; padding: 0.75rem; color: #64748B;">Status</th>
             <th data-column="tokens_cost" style="text-align: left; padding: 0.75rem; color: #64748B;">Tokens / Cost</th>
             <th data-column="rendered_prompt" style="text-align: left; padding: 0.75rem; color: #64748B;">Rendered Prompt</th>
@@ -84,7 +85,32 @@
                   <%= call.user_id.present? ? call.user_id : "-" %>
                 </div>
               </td>
-              <td data-column="status" style="padding: 0.75rem; vertical-align: top;">
+	              <td data-column="trace" style="padding: 0.75rem; vertical-align: top;">
+	                <div style="font-size: 0.875rem; color: #374151;">
+	                  <% if call.session_id.present? %>
+	                    <%= link_to monitoring_llm_responses_path(session_id: call.session_id), style: "color: #0F172A; text-decoration: none;" do %>
+	                      <code style="font-size: 0.75rem; color: #475569;"><%= call.session_id %></code>
+	                    <% end %>
+	                  <% else %>
+	                    <span class="text-muted">-</span>
+	                  <% end %>
+	                </div>
+	                <% if call.trace.present? %>
+	                  <div style="margin-top: 0.25rem; font-size: 0.75rem;">
+	                    <%= link_to monitoring_trace_path(call.trace),
+	                                style: "color: #10B981; text-decoration: none; font-weight: 500;" do %>
+	                      Trace: <%= call.trace.name %>
+	                    <% end %>
+	                    <% if call.span.present? %>
+	                      <div style="margin-top: 0.15rem; color: #64748B;">
+	                        <span>Span: </span>
+	                        <code style="font-size: 0.75rem;"><%= call.span.name %></code>
+	                      </div>
+	                    <% end %>
+	                  </div>
+	                <% end %>
+	              </td>
+	              <td data-column="status" style="padding: 0.75rem; vertical-align: top;">
                 <% if call.status == "success" %>
                   <span class="badge bg-success">Success</span>
                 <% elsif call.status == "error" %>

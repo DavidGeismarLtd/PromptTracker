@@ -193,6 +193,36 @@ module PromptTracker
         end
       end
 
+        context "with trace and span" do
+          before { version_with_config }  # Ensure version is created
+
+          it "stores trace and span references on the LlmResponse" do
+            trace = Trace.create!(
+              name: "checkout_flow",
+              status: "running",
+              started_at: Time.current
+            )
+
+            span = Span.create!(
+              trace: trace,
+              name: "search_kb",
+              status: "running",
+              started_at: Time.current
+            )
+
+            result = described_class.track(
+              prompt_slug: "test_prompt",
+              variables: { name: "Ivan" },
+              trace: trace,
+              span: span
+            ) { |_| "Hello Ivan!" }
+
+            llm_response = result[:llm_response]
+            expect(llm_response.trace).to eq(trace)
+            expect(llm_response.span).to eq(span)
+          end
+        end
+
       context "with specific version" do
         it "uses specified version instead of active" do
           version_with_config.update!(status: "deprecated")

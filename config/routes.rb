@@ -123,6 +123,9 @@ PromptTracker::Engine.routes.draw do
       # Human evaluations nested under llm_responses
       resources :human_evaluations, only: [ :create ]
     end
+
+      # Traces (hierarchical view of spans and LLM calls)
+      resources :traces, only: [ :index, :show ]
   end
 
   # Documentation

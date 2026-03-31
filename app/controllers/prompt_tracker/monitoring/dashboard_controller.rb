@@ -12,10 +12,10 @@ module PromptTracker
     #
     class DashboardController < BaseController
       def index
-        # Only show tracked calls (not test runs)
-        @recent_responses = LlmResponse.tracked_calls
-                                       .includes(:prompt_version, :prompt, :human_evaluations, evaluations: [])
-                                       .order(created_at: :desc)
+          # Only show tracked calls (not test runs)
+          @recent_responses = LlmResponse.tracked_calls
+                                         .includes(:trace, :span, :evaluations, :human_evaluations, prompt_version: :prompt)
+                                         .order(created_at: :desc)
 
         # Apply filters
         if params[:prompt_id].present?

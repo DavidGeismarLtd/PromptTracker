@@ -243,9 +243,12 @@ module PromptTracker
 
           def build_system_prompt
             case assistant_mode
-            when :test_wizard
-              Rails.logger.debug("[AssistantChatbot] Using TestWizardAssistant system prompt")
-              return test_wizard_assistant.system_prompt
+            when :test_runner_wizard
+              Rails.logger.debug("[AssistantChatbot] Using TestRunnerWizardAssistant system prompt")
+              return test_runner_wizard_assistant.system_prompt
+            when :test_creator_wizard
+              Rails.logger.debug("[AssistantChatbot] Using TestCreatorWizardAssistant system prompt")
+              return test_creator_wizard_assistant.system_prompt
             when :dataset_wizard
               Rails.logger.debug("[AssistantChatbot] Using DatasetWizardAssistant system prompt")
               return dataset_wizard_assistant.system_prompt
@@ -434,8 +437,10 @@ module PromptTracker
           # Build tool config for RubyLlmService + DynamicToolBuilder
           # Convert to string keys as DynamicToolBuilder expects string keys
           raw_tool_defs =
-              if test_wizard_mode?
-                build_test_wizard_tool_definitions
+              if test_runner_wizard_mode?
+                build_test_runner_wizard_tool_definitions
+              elsif test_creator_wizard_mode?
+                build_test_creator_wizard_tool_definitions
               elsif dataset_wizard_mode?
                 build_dataset_wizard_tool_definitions
               elsif deployment_wizard_mode?
@@ -471,10 +476,12 @@ module PromptTracker
           Rails.logger.info "[AssistantChatbot] RubyLlmService returned successfully"
           Rails.logger.info "[AssistantChatbot] Normalized response - text length: #{normalized.text&.length || 0}, tool_calls: #{normalized.tool_calls.length}"
 
-            if test_wizard_mode? || dataset_wizard_mode? || deployment_wizard_mode? || prompt_creation_wizard_mode?
+            if test_runner_wizard_mode? || test_creator_wizard_mode? || dataset_wizard_mode? || deployment_wizard_mode? || prompt_creation_wizard_mode?
               function_call =
-                if test_wizard_mode?
+                if test_runner_wizard_mode?
                   extract_run_tests_function_call_from_text(normalized.text)
+                elsif test_creator_wizard_mode?
+                  extract_generate_tests_function_call_from_text(normalized.text)
                 elsif dataset_wizard_mode?
                   extract_create_dataset_function_call_from_text(normalized.text)
                 elsif deployment_wizard_mode?
@@ -854,9 +861,9 @@ module PromptTracker
       ]
     end
 
-        def build_test_wizard_tool_definitions
+        def build_test_runner_wizard_tool_definitions
           # Reuse the full tool definitions but restrict to read-only helpers
-          # that are useful during the test wizard. The run_tests action
+          # that are useful during the test runner wizard. The run_tests action
           # itself is triggered via a JSON plan, not exposed as a direct
           # tool to the LLM.
           allowed = %w[
@@ -864,6 +871,19 @@ module PromptTracker
             get_tests_summary
             available_tests_for_prompt_version
             available_datasets_for_prompt_version
+          ]
+
+          build_tool_definitions.select do |tool|
+            allowed.include?(tool[:name])
+          end
+        end
+
+        def build_test_creator_wizard_tool_definitions
+          # Test creator wizard needs to understand the prompt to generate
+          # appropriate tests. The generate_tests action is triggered via
+          # a JSON plan, not exposed as a direct tool to the LLM.
+          allowed = %w[
+            get_prompt_version_info
           ]
 
           build_tool_definitions.select do |tool|
@@ -974,8 +994,12 @@ module PromptTracker
             @assistant_mode || :default
           end
 
-          def test_wizard_mode?
-            assistant_mode == :test_wizard
+          def test_runner_wizard_mode?
+            assistant_mode == :test_runner_wizard
+          end
+
+          def test_creator_wizard_mode?
+            assistant_mode == :test_creator_wizard
           end
 
           def dataset_wizard_mode?
@@ -990,8 +1014,12 @@ module PromptTracker
             assistant_mode == :prompt_creation_wizard
           end
 
-          def test_wizard_assistant
-            @test_wizard_assistant ||= AssistantChatbot::Assistants::TestWizardAssistant.new(context: @context)
+          def test_runner_wizard_assistant
+            @test_runner_wizard_assistant ||= AssistantChatbot::Assistants::TestRunnerWizardAssistant.new(context: @context)
+          end
+
+          def test_creator_wizard_assistant
+            @test_creator_wizard_assistant ||= AssistantChatbot::Assistants::TestCreatorWizardAssistant.new(context: @context)
           end
 
           def dataset_wizard_assistant
@@ -1040,6 +1068,40 @@ module PromptTracker
             }
           }
         end
+
+          def extract_generate_tests_function_call_from_text(text)
+            return nil if text.blank?
+
+            stripped = text.strip
+
+            begin
+              data = JSON.parse(stripped)
+            rescue JSON::ParserError
+              Rails.logger.debug "[AssistantChatbot] Test creator wizard response not valid JSON plan"
+              return nil
+            end
+
+            unless data.is_a?(Hash)
+              Rails.logger.debug "[AssistantChatbot] Test creator JSON plan is not an object"
+              return nil
+            end
+
+            unless data.key?("prompt_version_id")
+              Rails.logger.debug "[AssistantChatbot] Test creator JSON plan missing prompt_version_id"
+              return nil
+            end
+
+            args = data.deep_symbolize_keys.with_indifferent_access
+
+            Rails.logger.info "[AssistantChatbot] Parsed generate_tests JSON plan: #{args.inspect}"
+
+            {
+              function_call: {
+                name: "generate_tests",
+                arguments: args
+              }
+            }
+          end
 
           def extract_create_dataset_function_call_from_text(text)
             return nil if text.blank?

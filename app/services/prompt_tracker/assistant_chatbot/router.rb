@@ -58,16 +58,22 @@ module PromptTracker
 
           Return exactly ONE word from this list:
           - "default"
-          - "test_wizard"
+          - "test_runner_wizard"
+          - "test_creator_wizard"
           - "dataset_wizard"
           - "prompt_creation_wizard"
           - "deployment_wizard"
 
           Use these guidelines:
-          - Use "test_wizard" when the user clearly wants to run tests
-            for a prompt or prompt version (e.g. "run all tests",
-            "execute the tests", "run regression tests"). This is
-            most relevant on prompt version pages.
+          - Use "test_runner_wizard" when the user clearly wants to run
+            or execute existing tests for a prompt or prompt version
+            (e.g. "run all tests", "execute the tests", "run regression
+            tests"). This is most relevant on prompt version pages.
+          - Use "test_creator_wizard" when the user wants to create,
+            write, or generate new tests for a prompt or prompt version
+            (e.g. "write tests for this prompt", "generate tests",
+            "create tests", "add tests"). This is most relevant on
+            prompt version pages.
           - Use "dataset_wizard" when the user wants to create or set
             up a dataset for a prompt version (e.g. "create a dataset",
             "generate a dataset for this version").
@@ -103,8 +109,10 @@ module PromptTracker
         label = normalized.text.to_s.strip.downcase
 
         case label
-        when "test_wizard"
-          :test_wizard
+        when "test_runner_wizard"
+          :test_runner_wizard
+        when "test_creator_wizard"
+          :test_creator_wizard
         when "dataset_wizard"
           :dataset_wizard
         when "prompt_creation_wizard"

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe PromptTracker::AssistantChatbot::Assistants::TestWizardAssistant do
+RSpec.describe PromptTracker::AssistantChatbot::Assistants::TestRunnerWizardAssistant do
   describe "#system_prompt" do
     it "includes the prompt version id when present in context" do
       assistant = described_class.new(context: { prompt_version_id: 27 })
@@ -10,7 +10,7 @@ RSpec.describe PromptTracker::AssistantChatbot::Assistants::TestWizardAssistant 
       prompt = assistant.system_prompt
 
       expect(prompt).to include("PromptVersion #27")
-      expect(prompt).to include("Test Wizard Assistant")
+      expect(prompt).to include("Test Runner Wizard Assistant")
     end
 
     it "mentions missing prompt version when not provided" do

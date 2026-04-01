@@ -275,24 +275,6 @@ module PromptTracker
 
           Rails.logger.debug("[AssistantChatbot] build_system_prompt page_type=#{@context[:page_type]} prompt_version_id=#{@context[:prompt_version_id].inspect}")
 
-          model_suggestions = suggested_models_for_prompt_creation
-          model_suggestions_block = if model_suggestions.any?
-            bullet_lines = model_suggestions.map { |model| "          • #{model}" }.join("\n")
-
-            <<~BLOCK
-
-		          **Recommended models for this workspace:**
-		  #{bullet_lines}
-
-		          When you reach step 4 of the prompt creation wizard, you MUST:
-		          - Show these models as a short bullet list
-		          - Clearly highlight which one is the default (usually the first)
-		          - Ask the user to pick one, or confirm using the default
-            BLOCK
-          else
-            ""
-          end
-
           system_prompt = <<~PROMPT.strip
 		        You are the PromptTracker Assistant, an expert AI helper for testing and deploying LLM prompts.
 
@@ -309,73 +291,6 @@ module PromptTracker
 		          Assistant: ...
 		        - Treat this as the chat history and continue the conversation naturally.
 		        - Use information the user already provided earlier instead of asking again.
-
-	        		Wizard behavior for creating prompts:
-	        		- When the user wants to create a new prompt, act as a step-by-step setup wizard.
-	        		- Collect the following fields one by one, with a clear question for each step:
-	        		  1) Prompt name (required)
-	        		  2) Short description of what the assistant should do (ask once; keep it short – it will be enhanced with AI later).
-	        		  3) Model to use (optional - default gpt-4o if the user does not specify). When you reach this step, you MUST show the recommended models block (if present) and ask the user to choose.
-	        		  4) Temperature (optional - default 0.7 if the user does not specify)
-			  #{model_suggestions_block}
-	        		- Do NOT ask the user explicitly for a separate "system prompt" or "system prompt concept" question. You will derive it yourself.
-	        		- Use previous answers from the conversation to avoid repeating questions.
-	        		- IMPORTANT: When calling `create_prompt`, you MUST derive a concise `system_prompt_concept` from the prompt name, the short description, and any earlier conversation context. Do NOT ask the user for this field directly – generate it yourself as a short, clear description of the assistant's behavior. The backend will then enhance it into a detailed, professional system prompt using AI.
-	        		- Only once you have at least the required fields (name and an internally derived system_prompt_concept), you may call the `create_prompt` function.
-		        - Before calling `create_prompt`, briefly summarize the final configuration you plan to create.
-
-		        Wizard behavior for creating datasets:
-		        - When the user wants to create a dataset for a prompt, act as a STRICT step-by-step wizard.
-		        - CRITICAL: Ask ONLY ONE question at a time. Never ask about multiple fields in the same message.
-		        - First, make sure you know which PromptVersion the dataset should belong to:
-		          * If the current page context includes prompt_version_id, you MUST use that value as the prompt_version_id.
-		          * Otherwise, ask the user which prompt/version to use or help them find it.
-		        - Always follow this exact order of questions, and only move to the next step after the user has answered the current one:
-		          1) Dataset type (single_turn or conversational - default to single_turn if the user is unsure)
-		          2) Short dataset purpose / description (optional - a brief explanation of what scenarios this dataset should cover; it will be enhanced with AI)
-		          3) Dataset name (optional - you can suggest a short rough name; it will be enhanced with AI)
-		          4) Whether the user wants you to auto-generate rows with AI after creation
-		          5) If yes, how many rows to generate (count, e.g. 10-50) and any extra instructions for the rows
-		        - Each time you reply during the dataset wizard, your entire message MUST contain exactly ONE concrete question (optionally with a 1–2 sentence explanation), not a list of several questions.
-		        - When calling the `create_dataset` function, pass the raw values you collected:
-		          * prompt_version_id
-		          * dataset_type
-		          * description and name as provided by the user (even if rough)
-		          * count and instructions for row generation (if requested)
-		        - Do NOT try to pre-generate test rows yourself; the backend will handle row generation and schema validation.
-		        - Before calling `create_dataset`, briefly summarize what you are about to create and how many rows (if any) will be generated.
-
-		        Wizard behavior for running tests:
-		        - When the user wants to run tests for a prompt version, act as a STRICT multi-step wizard.
-		        - CRITICAL: Ask ONLY ONE clear question at a time in your replies.
-		        - Always make sure you know which PromptVersion to use:
-		          * If the current page context includes prompt_version_id, you MUST use that value.
-		          * Otherwise, ask the user which prompt/version to use or help them find it.
-		        - Step 1: Decide which tests to run
-		          * First, ask the user whether they want to run ALL enabled tests or ONLY a specific subset.
-		          * Your first reply in this wizard MUST present these two options as a short bullet list:
-		            - "Run all tests"
-		            - "Run a specific test"
-		            followed by a question asking them to choose one.
-		          * If the user clearly says they want to "run all tests" (or similar), treat that as choosing ALL and move on without listing the tests.
-		          * Only if the user chooses to run specific tests, or explicitly asks what tests exist, should you call the `available_tests_for_prompt_version` function to list them.
-		          * The question should be explicit, e.g. "Do you want to run all enabled tests, or only specific tests? Reply with 'all' or a list of IDs like 12, 15."
-		        - Step 2: Choose data source (dataset vs custom variables)
-		          * Call the `available_datasets_for_prompt_version` function to see existing datasets (if any).
-		          * Then ask the user whether to run tests against one of these datasets or with a single set of custom variables.
-		          * The question should be explicit, e.g. "Do you want to run using a dataset (reply with a dataset ID) or run once with custom variables (reply 'custom')?"
-		        - Step 3A: If the user chooses a dataset
-		          * Confirm which dataset ID to use.
-		          * Once you know the tests to run and the dataset_id, briefly summarize what will happen and THEN call `run_tests` with prompt_version_id, any specific test_ids (if the user chose a subset), and dataset_id.
-		        - Step 3B: If the user chooses custom variables (no dataset)
-		          * First, ask whether they want a single-turn response or a simulated conversation.
-		          * For simulated conversations, remind them to provide an interlocutor_simulation_prompt and optionally max_turns.
-		          * Using the variable names from the variables section you saw earlier, ask the user for values for each variable that is relevant. You can collect several variables in a single message, but your question must still be clearly structured.
-		          * Once you have all necessary variables, summarize the configuration (tests + custom variables + single vs conversational) and THEN call `run_tests` with prompt_version_id, any specific test_ids, and a custom_variables object.
-		        - IMPORTANT: Never call `run_tests` until you have:
-		          * Decided which tests to run (all or specific IDs), AND
-		          * Chosen between dataset vs custom variables, AND
-		          * For custom variables: collected values for each required variable.
 
 		        Guidelines:
 		        - Be concise and helpful
@@ -940,47 +855,6 @@ module PromptTracker
 
       requires
     end
-
-          PREFERRED_CHAT_MODELS_FOR_PROMPT_CREATION = {
-            openai: %w[gpt-4.1 gpt-4o gpt-4o-mini gpt-4.1-mini]
-          }.freeze
-
-          def suggested_models_for_prompt_creation
-            providers = PromptTracker.configuration.enabled_providers
-
-            suggestions = providers.each_with_object([]) do |provider, acc|
-              api = PromptTracker.configuration.default_api_for_provider(provider)
-              next unless api
-
-              models = PromptTracker.configuration.models_for_api(provider, api)
-              next if models.empty?
-
-              provider_label = PromptTracker.configuration.provider_name(provider)
-              chosen_model = default_model_for_prompt_creation(provider, models)
-              next unless chosen_model
-
-              acc << "#{provider_label}: #{chosen_model[:id]}"
-            end
-
-            return suggestions if suggestions.any?
-
-            [
-              "OpenAI: gpt-4.1 (latest balanced quality & cost)",
-              "Anthropic: claude-3.5-sonnet (latest for long, complex tasks)"
-            ]
-          end
-
-          def default_model_for_prompt_creation(provider, models)
-            preferred_ids = PREFERRED_CHAT_MODELS_FOR_PROMPT_CREATION[provider.to_sym] || []
-
-            preferred_ids.each do |model_id|
-              model = models.find { |m| m[:id] == model_id }
-              return model if model
-            end
-
-            # Fallback: keep existing behavior of choosing the last model
-            models.last
-          end
 
       def build_confirmation_message(function_name, arguments)
       Rails.logger.debug "[AssistantChatbot] Building confirmation message for: #{function_name}"

@@ -263,7 +263,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           end
         end
 
-      context "in test wizard mode with a final JSON plan" do
+      context "in test runner wizard mode with a final JSON plan" do
         let(:context) do
           { page_type: :prompt_version_detail, prompt_version_id: 27 }
         end
@@ -290,7 +290,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
         before do
           allow(PromptTracker::AssistantChatbot::Router)
             .to receive(:assistant_for)
-            .and_return(:test_wizard)
+            .and_return(:test_runner_wizard)
 
           allow(PromptTracker::LlmClients::RubyLlmService)
             .to receive(:call)
@@ -543,59 +543,4 @@ RSpec.describe PromptTracker::AssistantChatbotService do
       # Actual suggestions depend on ContextDetector implementation
     end
   end
-
-    describe "#suggested_models_for_prompt_creation" do
-      let(:config_double) do
-        instance_double(
-          "PromptTracker::Configuration",
-          assistant_chatbot: {},
-          enabled_providers: [ :openai, :anthropic ]
-        )
-      end
-
-      before do
-        allow(config_double).to receive(:default_api_for_provider).with(:openai).and_return(:chat_completions)
-        allow(config_double).to receive(:default_api_for_provider).with(:anthropic).and_return(:messages)
-
-        allow(config_double).to receive(:models_for_api).with(:openai, :chat_completions).and_return([
-          { id: "gpt-4o" },
-          { id: "gpt-4o-mini" }
-        ])
-
-        allow(config_double).to receive(:models_for_api).with(:anthropic, :messages).and_return([
-          { id: "claude-3-5-sonnet-20241022" },
-          { id: "claude-3-7-sonnet-latest" }
-        ])
-
-        allow(config_double).to receive(:provider_name).with(:openai).and_return("OpenAI")
-        allow(config_double).to receive(:provider_name).with(:anthropic).and_return("Anthropic")
-
-        allow(PromptTracker).to receive(:configuration).and_return(config_double)
-      end
-
-        it "returns preferred chat models for each enabled provider" do
-        service = described_class.new(message, session_id, context)
-
-        suggestions = service.send(:suggested_models_for_prompt_creation)
-
-        expect(suggestions).to contain_exactly(
-            "OpenAI: gpt-4o",
-          "Anthropic: claude-3-7-sonnet-latest"
-        )
-      end
-
-        it "prefers a chat model for OpenAI even if a TTS model is present" do
-          allow(config_double).to receive(:models_for_api).with(:openai, :chat_completions).and_return([
-            { id: "gpt-4o" },
-            { id: "tts-1-hd-1106" }
-          ])
-
-          service = described_class.new(message, session_id, context)
-
-          suggestions = service.send(:suggested_models_for_prompt_creation)
-
-          expect(suggestions).to include("OpenAI: gpt-4o")
-          expect(suggestions).not_to include("OpenAI: tts-1-hd-1106")
-        end
-    end
 end

@@ -573,15 +573,29 @@ RSpec.describe PromptTracker::AssistantChatbotService do
         allow(PromptTracker).to receive(:configuration).and_return(config_double)
       end
 
-      it "returns only the latest model for each enabled provider" do
+        it "returns preferred chat models for each enabled provider" do
         service = described_class.new(message, session_id, context)
 
         suggestions = service.send(:suggested_models_for_prompt_creation)
 
         expect(suggestions).to contain_exactly(
-          "OpenAI: gpt-4o-mini",
+            "OpenAI: gpt-4o",
           "Anthropic: claude-3-7-sonnet-latest"
         )
       end
+
+        it "prefers a chat model for OpenAI even if a TTS model is present" do
+          allow(config_double).to receive(:models_for_api).with(:openai, :chat_completions).and_return([
+            { id: "gpt-4o" },
+            { id: "tts-1-hd-1106" }
+          ])
+
+          service = described_class.new(message, session_id, context)
+
+          suggestions = service.send(:suggested_models_for_prompt_creation)
+
+          expect(suggestions).to include("OpenAI: gpt-4o")
+          expect(suggestions).not_to include("OpenAI: tts-1-hd-1106")
+        end
     end
 end

@@ -325,38 +325,21 @@ export default class extends Controller {
     const name = this.humanizeFunctionName(pendingAction.function_name)
     const argsSummary = this.summarizeArguments(pendingAction.arguments)
 
-	    const details = argsSummary ? `With ${argsSummary}.` : ''
+		    const header = `🔧 Planned action: **${name}**`
+		    const details = argsSummary ? `\nWith ${argsSummary}.` : ''
+		    const footer = "\nWaiting for your confirmation."
 
-	    return `
-<div class="assistant-action-message assistant-action-message--planned">
-	<div class="d-flex align-items-center mb-1">
-		<span class="badge bg-warning text-dark me-2">Planned</span>
-		<span class="fw-semibold">${name}</span>
-	</div>
-	<div class="small text-muted">
-		${details} Waiting for your confirmation.
-	</div>
-</div>
-	    `.trim()
+		    return `${header}${details}${footer}`.trim()
   }
 
   formatExecutingActionMessage(pendingAction) {
     const name = this.humanizeFunctionName(pendingAction.function_name)
     const argsSummary = this.summarizeArguments(pendingAction.arguments)
 
-	    const details = argsSummary ? `With ${argsSummary}...` : 'Running action...'
+		    const header = `✅ Executing: **${name}**`
+		    const details = argsSummary ? `\nWith ${argsSummary}...` : "\nRunning action..."
 
-	    return `
-<div class="assistant-action-message assistant-action-message--executing">
-	<div class="d-flex align-items-center mb-1">
-		<span class="badge bg-success me-2">Executing</span>
-		<span class="fw-semibold">${name}</span>
-	</div>
-	<div class="small">
-		${details}
-	</div>
-</div>
-	    `.trim()
+		    return `${header}${details}`.trim()
   }
 
   summarizeArguments(args = {}) {

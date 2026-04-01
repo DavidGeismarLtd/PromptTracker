@@ -243,9 +243,12 @@ module PromptTracker
 
           def build_system_prompt
             case assistant_mode
-            when :test_wizard
-              Rails.logger.debug("[AssistantChatbot] Using TestWizardAssistant system prompt")
-              return test_wizard_assistant.system_prompt
+            when :test_runner_wizard
+              Rails.logger.debug("[AssistantChatbot] Using TestRunnerWizardAssistant system prompt")
+              return test_runner_wizard_assistant.system_prompt
+            when :test_creator_wizard
+              Rails.logger.debug("[AssistantChatbot] Using TestCreatorWizardAssistant system prompt")
+              return test_creator_wizard_assistant.system_prompt
             when :dataset_wizard
               Rails.logger.debug("[AssistantChatbot] Using DatasetWizardAssistant system prompt")
               return dataset_wizard_assistant.system_prompt
@@ -307,19 +310,18 @@ module PromptTracker
 		        - Treat this as the chat history and continue the conversation naturally.
 		        - Use information the user already provided earlier instead of asking again.
 
-		        Wizard behavior for creating prompts:
-		        - When the user wants to create a new prompt, act as a step-by-step setup wizard.
-		        - Collect the following fields one by one, with a clear question for each step:
-		          1) Prompt name (required)
-		          2) Short description (optional - just ask for a brief explanation of what the prompt should do; we'll enhance it with AI later so keep it short)
-		          3) System prompt concept (required - ask the user to briefly describe what the AI assistant should do; this is a short concept, not the final long system prompt)
-		          4) Model to use (optional - default gpt-4o if the user does not specify). When you reach this step, you MUST show the recommended models block (if present) and ask the user to choose.
-		          5) Temperature (optional - default 0.7 if the user does not specify)
-		  #{model_suggestions_block}
-		        - Do NOT ask the user to provide any user-facing prompt template. The backend will leave the user prompt empty for new prompts; the prompt author can later add a user-facing template in the PromptTracker UI if needed.
-		        - Use previous answers from the conversation to avoid repeating questions.
-		        - IMPORTANT: Do NOT try to fully write the final system prompt yourself. Just collect a clear, concise concept from the user in step 3 and pass it as `system_prompt_concept` when calling `create_prompt`. The backend will enhance it into a detailed, professional system prompt using AI.
-		        - Only once you have at least the required fields (name and system_prompt_concept), you may call the `create_prompt` function.
+	        		Wizard behavior for creating prompts:
+	        		- When the user wants to create a new prompt, act as a step-by-step setup wizard.
+	        		- Collect the following fields one by one, with a clear question for each step:
+	        		  1) Prompt name (required)
+	        		  2) Short description of what the assistant should do (ask once; keep it short – it will be enhanced with AI later).
+	        		  3) Model to use (optional - default gpt-4o if the user does not specify). When you reach this step, you MUST show the recommended models block (if present) and ask the user to choose.
+	        		  4) Temperature (optional - default 0.7 if the user does not specify)
+			  #{model_suggestions_block}
+	        		- Do NOT ask the user explicitly for a separate "system prompt" or "system prompt concept" question. You will derive it yourself.
+	        		- Use previous answers from the conversation to avoid repeating questions.
+	        		- IMPORTANT: When calling `create_prompt`, you MUST derive a concise `system_prompt_concept` from the prompt name, the short description, and any earlier conversation context. Do NOT ask the user for this field directly – generate it yourself as a short, clear description of the assistant's behavior. The backend will then enhance it into a detailed, professional system prompt using AI.
+	        		- Only once you have at least the required fields (name and an internally derived system_prompt_concept), you may call the `create_prompt` function.
 		        - Before calling `create_prompt`, briefly summarize the final configuration you plan to create.
 
 		        Wizard behavior for creating datasets:
@@ -435,8 +437,10 @@ module PromptTracker
           # Build tool config for RubyLlmService + DynamicToolBuilder
           # Convert to string keys as DynamicToolBuilder expects string keys
           raw_tool_defs =
-              if test_wizard_mode?
-                build_test_wizard_tool_definitions
+              if test_runner_wizard_mode?
+                build_test_runner_wizard_tool_definitions
+              elsif test_creator_wizard_mode?
+                build_test_creator_wizard_tool_definitions
               elsif dataset_wizard_mode?
                 build_dataset_wizard_tool_definitions
               elsif deployment_wizard_mode?
@@ -472,10 +476,12 @@ module PromptTracker
           Rails.logger.info "[AssistantChatbot] RubyLlmService returned successfully"
           Rails.logger.info "[AssistantChatbot] Normalized response - text length: #{normalized.text&.length || 0}, tool_calls: #{normalized.tool_calls.length}"
 
-            if test_wizard_mode? || dataset_wizard_mode? || deployment_wizard_mode? || prompt_creation_wizard_mode?
+            if test_runner_wizard_mode? || test_creator_wizard_mode? || dataset_wizard_mode? || deployment_wizard_mode? || prompt_creation_wizard_mode?
               function_call =
-                if test_wizard_mode?
+                if test_runner_wizard_mode?
                   extract_run_tests_function_call_from_text(normalized.text)
+                elsif test_creator_wizard_mode?
+                  extract_generate_tests_function_call_from_text(normalized.text)
                 elsif dataset_wizard_mode?
                   extract_create_dataset_function_call_from_text(normalized.text)
                 elsif deployment_wizard_mode?
@@ -855,9 +861,9 @@ module PromptTracker
       ]
     end
 
-        def build_test_wizard_tool_definitions
+        def build_test_runner_wizard_tool_definitions
           # Reuse the full tool definitions but restrict to read-only helpers
-          # that are useful during the test wizard. The run_tests action
+          # that are useful during the test runner wizard. The run_tests action
           # itself is triggered via a JSON plan, not exposed as a direct
           # tool to the LLM.
           allowed = %w[
@@ -865,6 +871,19 @@ module PromptTracker
             get_tests_summary
             available_tests_for_prompt_version
             available_datasets_for_prompt_version
+          ]
+
+          build_tool_definitions.select do |tool|
+            allowed.include?(tool[:name])
+          end
+        end
+
+        def build_test_creator_wizard_tool_definitions
+          # Test creator wizard needs to understand the prompt to generate
+          # appropriate tests. The generate_tests action is triggered via
+          # a JSON plan, not exposed as a direct tool to the LLM.
+          allowed = %w[
+            get_prompt_version_info
           ]
 
           build_tool_definitions.select do |tool|
@@ -922,33 +941,46 @@ module PromptTracker
       requires
     end
 
-        def suggested_models_for_prompt_creation
-          providers = PromptTracker.configuration.enabled_providers
+          PREFERRED_CHAT_MODELS_FOR_PROMPT_CREATION = {
+            openai: %w[gpt-4.1 gpt-4o gpt-4o-mini gpt-4.1-mini]
+          }.freeze
 
-          suggestions = []
+          def suggested_models_for_prompt_creation
+            providers = PromptTracker.configuration.enabled_providers
 
-          providers.each do |provider|
-            api = PromptTracker.configuration.default_api_for_provider(provider)
-            next unless api
+            suggestions = providers.each_with_object([]) do |provider, acc|
+              api = PromptTracker.configuration.default_api_for_provider(provider)
+              next unless api
 
-            models = PromptTracker.configuration.models_for_api(provider, api)
-            next if models.empty?
+              models = PromptTracker.configuration.models_for_api(provider, api)
+              next if models.empty?
 
-            provider_label = PromptTracker.configuration.provider_name(provider)
-            latest_model = models.last
-            suggestions << "#{provider_label}: #{latest_model[:id]}"
-          end
+              provider_label = PromptTracker.configuration.provider_name(provider)
+              chosen_model = default_model_for_prompt_creation(provider, models)
+              next unless chosen_model
 
-          if suggestions.empty?
-            # Fallback suggestions when configuration does not expose any enabled providers
-            suggestions = [
+              acc << "#{provider_label}: #{chosen_model[:id]}"
+            end
+
+            return suggestions if suggestions.any?
+
+            [
               "OpenAI: gpt-4.1 (latest balanced quality & cost)",
               "Anthropic: claude-3.5-sonnet (latest for long, complex tasks)"
             ]
           end
 
-          suggestions
-        end
+          def default_model_for_prompt_creation(provider, models)
+            preferred_ids = PREFERRED_CHAT_MODELS_FOR_PROMPT_CREATION[provider.to_sym] || []
+
+            preferred_ids.each do |model_id|
+              model = models.find { |m| m[:id] == model_id }
+              return model if model
+            end
+
+            # Fallback: keep existing behavior of choosing the last model
+            models.last
+          end
 
       def build_confirmation_message(function_name, arguments)
       Rails.logger.debug "[AssistantChatbot] Building confirmation message for: #{function_name}"
@@ -962,8 +994,12 @@ module PromptTracker
             @assistant_mode || :default
           end
 
-          def test_wizard_mode?
-            assistant_mode == :test_wizard
+          def test_runner_wizard_mode?
+            assistant_mode == :test_runner_wizard
+          end
+
+          def test_creator_wizard_mode?
+            assistant_mode == :test_creator_wizard
           end
 
           def dataset_wizard_mode?
@@ -978,8 +1014,12 @@ module PromptTracker
             assistant_mode == :prompt_creation_wizard
           end
 
-          def test_wizard_assistant
-            @test_wizard_assistant ||= AssistantChatbot::Assistants::TestWizardAssistant.new(context: @context)
+          def test_runner_wizard_assistant
+            @test_runner_wizard_assistant ||= AssistantChatbot::Assistants::TestRunnerWizardAssistant.new(context: @context)
+          end
+
+          def test_creator_wizard_assistant
+            @test_creator_wizard_assistant ||= AssistantChatbot::Assistants::TestCreatorWizardAssistant.new(context: @context)
           end
 
           def dataset_wizard_assistant
@@ -1028,6 +1068,40 @@ module PromptTracker
             }
           }
         end
+
+          def extract_generate_tests_function_call_from_text(text)
+            return nil if text.blank?
+
+            stripped = text.strip
+
+            begin
+              data = JSON.parse(stripped)
+            rescue JSON::ParserError
+              Rails.logger.debug "[AssistantChatbot] Test creator wizard response not valid JSON plan"
+              return nil
+            end
+
+            unless data.is_a?(Hash)
+              Rails.logger.debug "[AssistantChatbot] Test creator JSON plan is not an object"
+              return nil
+            end
+
+            unless data.key?("prompt_version_id")
+              Rails.logger.debug "[AssistantChatbot] Test creator JSON plan missing prompt_version_id"
+              return nil
+            end
+
+            args = data.deep_symbolize_keys.with_indifferent_access
+
+            Rails.logger.info "[AssistantChatbot] Parsed generate_tests JSON plan: #{args.inspect}"
+
+            {
+              function_call: {
+                name: "generate_tests",
+                arguments: args
+              }
+            }
+          end
 
           def extract_create_dataset_function_call_from_text(text)
             return nil if text.blank?

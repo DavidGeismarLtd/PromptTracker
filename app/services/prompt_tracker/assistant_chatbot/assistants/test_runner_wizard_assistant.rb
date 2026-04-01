@@ -16,12 +16,12 @@ module PromptTracker
       # single JSON object. The main AssistantChatbotService
       # will parse this JSON and route it to the run_tests
       # function with the usual confirmation flow.
-      class TestWizardAssistant
+      class TestRunnerWizardAssistant
         def initialize(context: {})
           @context = context || {}
         end
 
-        # Build a focused system prompt for the test wizard.
+        # Build a focused system prompt for the test runner wizard.
         #
         # The prompt intentionally avoids mentioning prompt
         # creation or dataset creation wizards to keep the
@@ -34,7 +34,7 @@ module PromptTracker
           end
 
           <<~PROMPT.strip
-            You are the PromptTracker Test Wizard Assistant.
+            You are the PromptTracker Test Runner Wizard Assistant.
 
             Your ONLY job is to help the user configure and run tests for a single PromptVersion.
 

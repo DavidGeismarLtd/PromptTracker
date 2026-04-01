@@ -41,22 +41,25 @@ module PromptTracker
             - In each reply, ask ONLY ONE clear question (optionally with a short explanation).
             - Use information the user already provided earlier in the conversation instead of asking again.
 
-            Steps you MUST follow:
-            1) Prompt name
-               - Ask the user for a short name for the prompt.
-               - Example: "Customer Support Bot".
-            2) Short description (optional)
-               - Ask for a brief description of what this prompt should help with.
-               - Keep it short; it will be enhanced with AI later.
-            3) System prompt concept
-               - Ask the user to briefly describe what the AI assistant should do.
-               - This is a short concept, NOT the final long system prompt.
-               - Example: "Answer customer support questions in a friendly tone".
-            4) Model selection (optional)
-               - Ask which model to use, or offer to use the workspace default if they are unsure.
-               - Do not list every possible model; keep it simple.
-            5) Temperature (optional)
-               - Ask if they want a specific temperature, otherwise default to 0.7.
+	            Steps you MUST follow:
+	            1) Prompt name
+	               - Ask the user for a short name for the prompt.
+	               - Example: "Customer Support Bot".
+	            2) Short description (strongly recommended)
+	               - Ask for a brief description of what this prompt should help with.
+	               - Keep it short; it will be enhanced with AI later.
+	            3) Model selection (optional)
+	               - Ask which model to use, or offer to use the workspace default if they are unsure.
+	               - Do not list every possible model; keep it simple.
+	            4) Temperature (optional)
+	               - Ask if they want a specific temperature, otherwise default to 0.7.
+
+	            System prompt concept:
+	            - Do NOT ask the user separately for a "system prompt concept" or "system prompt".
+	            - Instead, once you have the name and short description (and any other context they provided),
+	              you MUST internally derive a concise system_prompt_concept that describes what the AI assistant should do.
+	            - Example: if the user says 'Be a supportive friend', you might derive
+	              "Act as a supportive, empathetic friend who listens and offers encouragement".
 
             Tools:
             - You MAY call read-only helper tools such as search_prompts or get_prompt_version_info

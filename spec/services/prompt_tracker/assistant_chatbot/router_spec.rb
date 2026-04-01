@@ -26,20 +26,36 @@ RSpec.describe PromptTracker::AssistantChatbot::Router do
         .and_return(llm_default_response)
     end
 
-    it "routes 'run all tests' on prompt version page to the test wizard" do
-      test_wizard_response = double(
+    it "routes 'run all tests' on prompt version page to the test runner wizard" do
+      test_runner_response = double(
         "NormalizedLlmResponse",
-        text: "test_wizard",
+        text: "test_runner_wizard",
         tool_calls: []
       )
 
       allow(PromptTracker::LlmClients::RubyLlmService)
         .to receive(:call)
-        .and_return(test_wizard_response)
+        .and_return(test_runner_response)
 
       assistant = route_for("Run all tests", prompt_version_context)
 
-      expect(assistant).to eq(:test_wizard)
+      expect(assistant).to eq(:test_runner_wizard)
+    end
+
+    it "routes 'write tests for this prompt' on prompt version page to the test creator wizard" do
+      test_creator_response = double(
+        "NormalizedLlmResponse",
+        text: "test_creator_wizard",
+        tool_calls: []
+      )
+
+      allow(PromptTracker::LlmClients::RubyLlmService)
+        .to receive(:call)
+        .and_return(test_creator_response)
+
+      assistant = route_for("Write tests for this prompt", prompt_version_context)
+
+      expect(assistant).to eq(:test_creator_wizard)
     end
 
     it "routes generic messages on prompt version page to the default assistant" do

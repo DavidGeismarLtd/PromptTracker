@@ -19,7 +19,7 @@ gem "ruby_llm"
 gem "ruby-openai", "~> 8.0"
 
 # Background job processing
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.1"
 gem "redis", "~> 5.0"
 
 # Cron expression parsing for task scheduling

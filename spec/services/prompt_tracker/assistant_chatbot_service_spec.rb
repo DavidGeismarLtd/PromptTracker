@@ -66,7 +66,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
         )
       end
 
-        it "includes previous conversation in LLM call" do
+        it "includes previous conversation in the main LLM call" do
           described_class.call(
             message: "Create a prompt",
             session_id: session_id,
@@ -75,7 +75,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
 
           expect(PromptTracker::LlmClients::RubyLlmService).to have_received(:call).with(
             hash_including(
-              prompt: a_string_including("Hello", "Hi! How can I help?")
+              prompt: a_string_including("Hello", "Hi! How can I help?", "Now the user says")
             )
           )
         end
@@ -213,7 +213,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           end
         end
 
-        context "in prompt creation wizard mode with a final JSON plan" do
+        context "in agent creation wizard mode with a final JSON plan" do
           let(:context) do
             { page_type: :prompts_list }
           end
@@ -239,7 +239,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           before do
             allow(PromptTracker::AssistantChatbot::Router)
               .to receive(:assistant_for)
-              .and_return(:prompt_creation_wizard)
+              .and_return(:agent_creation_wizard)
 
             allow(PromptTracker::LlmClients::RubyLlmService)
               .to receive(:call)
@@ -541,6 +541,48 @@ RSpec.describe PromptTracker::AssistantChatbotService do
 
       expect(suggestions).to be_an(Array)
       # Actual suggestions depend on ContextDetector implementation
+    end
+  end
+
+  describe "history-aware routing" do
+    it "passes conversation history to the router" do
+      # Pre-populate conversation history
+      Rails.cache.write(
+        "assistant_chatbot_conversation:#{session_id}",
+        [
+          { role: "user", content: "Create a new agent" },
+          { role: "assistant", content: "What should we call it?" }
+        ]
+      )
+
+      allow(PromptTracker::AssistantChatbot::Router)
+        .to receive(:assistant_for)
+        .and_return(:agent_creation_wizard)
+
+      described_class.call(message: "Marty the Ping Pong Advisor", session_id: session_id, context: context)
+
+      expect(PromptTracker::AssistantChatbot::Router).to have_received(:assistant_for).with(
+        message: "Marty the Ping Pong Advisor",
+        context: context,
+        conversation_history: a_collection_including(
+          hash_including(role: "user", content: "Create a new agent"),
+          hash_including(role: "assistant", content: "What should we call it?")
+        )
+      )
+    end
+
+    it "sends empty history on first message" do
+      allow(PromptTracker::AssistantChatbot::Router)
+        .to receive(:assistant_for)
+        .and_return(:default)
+
+      described_class.call(message: "Hello", session_id: session_id, context: context)
+
+      expect(PromptTracker::AssistantChatbot::Router).to have_received(:assistant_for).with(
+        message: "Hello",
+        context: context,
+        conversation_history: []
+      )
     end
   end
 end

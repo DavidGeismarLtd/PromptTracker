@@ -15,6 +15,20 @@ module PromptTracker
       # IDs and names so the model can ask the user to pick specific tests
       # or run them all.
       class AvailableTestsForPromptVersion < Base
+        def self.tool_definition
+          {
+            name: "available_tests_for_prompt_version",
+            description: "List enabled tests for a PromptVersion to help choose which tests to run.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version" }
+              },
+              required: %w[prompt_version_id]
+            }
+          }
+        end
+
         protected
 
         def execute

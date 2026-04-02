@@ -20,6 +20,21 @@ module PromptTracker
       #   result = function.call
       #
       class SearchPrompts < Base
+        def self.tool_definition
+          {
+            name: "search_prompts",
+            description: "Search for prompts by name or description",
+            parameters: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "Search query string" },
+                limit: { type: "integer", description: "Maximum number of results (default: 5, max: 20)" }
+              },
+              required: %w[query]
+            }
+          }
+        end
+
         protected
 
         def execute

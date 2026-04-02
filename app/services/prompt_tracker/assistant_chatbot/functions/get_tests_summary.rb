@@ -20,6 +20,20 @@ module PromptTracker
       #   result = function.call
       #
       class GetTestsSummary < Base
+        def self.tool_definition
+          {
+            name: "get_tests_summary",
+            description: "Get a summary of all tests for a PromptVersion, including pass/fail statistics and recent runs",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version" }
+              },
+              required: %w[prompt_version_id]
+            }
+          }
+        end
+
         protected
 
         def execute

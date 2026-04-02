@@ -16,9 +16,17 @@ module PromptTracker
       # single JSON object. The main AssistantChatbotService
       # will parse this JSON and route it to the generate_tests
       # function with the usual confirmation flow.
-      class TestCreatorWizardAssistant
-        def initialize(context: {})
-          @context = context || {}
+      class TestCreatorWizardAssistant < BaseWizardAssistant
+        def function_name
+          "generate_tests"
+        end
+
+        def required_plan_keys
+          %w[prompt_version_id]
+        end
+
+        def allowed_tool_names
+          %w[get_prompt_version_info]
         end
 
         # Build a focused system prompt for the test creator wizard.
@@ -85,10 +93,6 @@ module PromptTracker
             with confirmation through the usual UI flow.
           PROMPT
         end
-
-        private
-
-        attr_reader :context
       end
     end
   end

@@ -14,9 +14,17 @@ module PromptTracker
       # It does NOT call deploy_agent directly. The main
       # AssistantChatbotService will parse the JSON and route it
       # to the function with the usual confirmation flow.
-      class DeploymentWizardAssistant
-        def initialize(context: {})
-          @context = context || {}
+      class DeploymentWizardAssistant < BaseWizardAssistant
+        def function_name
+          "deploy_agent"
+        end
+
+        def required_plan_keys
+          %w[prompt_version_id agent_type]
+        end
+
+        def allowed_tool_names
+          %w[get_prompt_version_info get_tests_summary available_tests_for_prompt_version available_datasets_for_prompt_version]
         end
 
         def system_prompt
@@ -117,10 +125,6 @@ module PromptTracker
             with the usual confirmation flow.
           PROMPT
         end
-
-        private
-
-        attr_reader :context
       end
     end
   end

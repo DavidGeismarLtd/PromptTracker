@@ -68,8 +68,7 @@ module PromptTracker
     # POST /assistant/reset
     # Clear conversation history
     def reset
-        cache_key = AssistantChatbotService.conversation_cache_key_for(session.id)
-        Rails.cache.delete(cache_key)
+        Rails.cache.delete(AssistantChatbotService.conversation_cache_key_for(session.id))
 
       render json: {
         success: true,

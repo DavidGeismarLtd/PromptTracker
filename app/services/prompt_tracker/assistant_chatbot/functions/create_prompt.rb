@@ -23,6 +23,24 @@ module PromptTracker
       #   result = function.call
       #
       class CreatePrompt < Base
+        def self.tool_definition
+          {
+            name: "create_prompt",
+            description: "Create a new prompt from raw user inputs. The backend will enhance the description and system prompt concept with AI.",
+            parameters: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Name of the prompt (e.g., 'Customer Support Agent')" },
+                description: { type: "string", description: "Short description of the prompt's purpose (optional - will be enhanced with AI)." },
+                system_prompt_concept: { type: "string", description: "Brief concept of what the AI assistant should do. This is a short description, not the full system prompt. The backend will expand it into a detailed, professional system prompt." },
+                model: { type: "string", description: "Model to use (optional, default: gpt-4o)", enum: %w[gpt-4o gpt-4o-mini gpt-4-turbo claude-3-5-sonnet-20241022 claude-3-5-haiku-20241022] },
+                temperature: { type: "number", description: "Temperature (optional, 0.0 to 2.0, default: 0.7)" }
+              },
+              required: %w[name system_prompt_concept]
+            }
+          }
+        end
+
         protected
 
         def execute

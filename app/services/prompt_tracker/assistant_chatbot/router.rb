@@ -10,42 +10,42 @@ module PromptTracker
     # brittle string matching while making it easy to extend to
     # more assistants (dataset wizard, deployment wizard, etc.).
     class Router
-      def self.assistant_for(message:, context: {})
-        new(message: message, context: context).assistant
+      def self.assistant_for(message:, context: {}, conversation_history: [])
+        new(message: message, context: context, conversation_history: conversation_history).assistant
       end
 
-      def initialize(message:, context: {})
+      def initialize(message:, context: {}, conversation_history: [])
         @message = message.to_s
         @context = context || {}
+        @conversation_history = conversation_history || []
       end
 
       def assistant
-          # Only call the LLM router when there is an actual user message.
-          # This avoids unnecessary LLM calls for things like suggestions,
-          # where we don't have a message and just want context-based hints.
-          return :default if message.strip.empty?
-          return :default unless route_with_llm?
+        # Only call the LLM router when there is an actual user message.
+        # This avoids unnecessary LLM calls for things like suggestions,
+        # where we don't have a message and just want context-based hints.
+        if message.strip.empty?
+          Rails.logger.info "[AssistantChatbot::Router] Blank message – falling back to :default assistant"
+          return :default
+        end
 
-          classify_with_llm
+        unless route_with_llm?
+          Rails.logger.info "[AssistantChatbot::Router] Routing disabled for context=#{context.inspect} – using :default assistant"
+          return :default
+        end
+
+        Rails.logger.info "[AssistantChatbot::Router] Routing message=#{message.inspect} context=#{context.inspect} using model=#{router_model}"
+        assistant = classify_with_llm
+        Rails.logger.info "[AssistantChatbot::Router] Routed to assistant=#{assistant.inspect} for message=#{message.inspect}"
+        assistant
       end
 
       private
 
-      attr_reader :message, :context
+      attr_reader :message, :context, :conversation_history
 
       def route_with_llm?
-        # Only enable routing on pages where specialized wizards are
-        # relevant. This keeps latency low on purely informational
-        # pages.
-        case context[:page_type]
-        when :prompt_version_detail, # tests / datasets / deployment
-             :prompts_list,          # prompt creation
-             :playground,            # save-as-prompt
-             :agents                 # deployment from agents index
-          true
-        else
-          false
-        end
+        true
       end
 
       def classify_with_llm
@@ -61,7 +61,7 @@ module PromptTracker
           - "test_runner_wizard"
           - "test_creator_wizard"
           - "dataset_wizard"
-          - "prompt_creation_wizard"
+          - "agent_creation_wizard"
           - "deployment_wizard"
 
           Use these guidelines:
@@ -77,23 +77,45 @@ module PromptTracker
           - Use "dataset_wizard" when the user wants to create or set
             up a dataset for a prompt version (e.g. "create a dataset",
             "generate a dataset for this version").
-          - Use "prompt_creation_wizard" when the user wants to create
-            a brand new prompt (e.g. "create a new prompt",
-            "save this playground as a prompt"). This is most relevant
-            on prompts list or playground pages.
+          - Use "agent_creation_wizard" when the user wants to create
+            a brand new agent or prompt from scratch (e.g. "create a new prompt",
+            "create a new agent", "save this playground as a prompt").
+            This is most relevant on prompts list or playground pages.
           - Use "deployment_wizard" when the user wants to deploy a
-            prompt version as a live agent or create a new agent
-            (e.g. "deploy this as an agent", "create a task agent").
+            prompt version as a live agent
+            (e.g. "deploy this as an agent", "deploy this prompt version").
           - Use "default" for all other cases or when you are unsure.
+
+          IMPORTANT: You will receive recent conversation history when
+          available. If the conversation shows an ongoing wizard flow
+          (e.g. the assistant asked for a name and the user is answering),
+          continue routing to the SAME wizard. Only switch to a different
+          assistant if the user clearly changes topic.
 
           Do not add any explanation.
         PROMPT
+
+        history_section = if conversation_history.any?
+          lines = conversation_history.filter_map do |msg|
+            content = msg[:content].to_s.strip
+            next if content.empty?
+
+            case msg[:role]
+            when "user" then "User: #{content}"
+            when "assistant" then "Assistant: #{content}"
+            end
+          end
+
+          "Recent conversation:\n#{lines.join("\n")}\n\n"
+        else
+          ""
+        end
 
         routing_prompt = <<~PROMPT.strip
           Page type: #{context[:page_type] || "none"}
           Prompt version id: #{context[:prompt_version_id] || "none"}
 
-          User message:
+          #{history_section}User message:
           #{message}
         PROMPT
 
@@ -107,6 +129,7 @@ module PromptTracker
         )
 
         label = normalized.text.to_s.strip.downcase
+        Rails.logger.info "[AssistantChatbot::Router] LLM routing label=#{label.inspect} for message=#{message.inspect} context=#{context.inspect}"
 
         case label
         when "test_runner_wizard"
@@ -115,8 +138,8 @@ module PromptTracker
           :test_creator_wizard
         when "dataset_wizard"
           :dataset_wizard
-        when "prompt_creation_wizard"
-          :prompt_creation_wizard
+        when "agent_creation_wizard"
+          :agent_creation_wizard
         when "deployment_wizard"
           :deployment_wizard
         else

@@ -3,12 +3,12 @@
 require "rails_helper"
 
 RSpec.describe "Playground Tools Selection", type: :system, js: true do
-  let(:prompt) { create(:prompt) }
+  let(:prompt) { create(:agent) }
 
   # Version with tools configured (normalized string array format)
   let(:version_with_tools) do
-    create(:prompt_version,
-      prompt: prompt,
+    create(:agent_version,
+      agent: prompt,
       status: "active",
       model_config: {
         "provider" => "openai",
@@ -23,8 +23,8 @@ RSpec.describe "Playground Tools Selection", type: :system, js: true do
 
   # Version with no tools
   let(:version_without_tools) do
-    create(:prompt_version,
-      prompt: prompt,
+    create(:agent_version,
+      agent: prompt,
       status: "active",
       model_config: {
         "provider" => "openai",
@@ -37,7 +37,7 @@ RSpec.describe "Playground Tools Selection", type: :system, js: true do
   describe "tools pre-selection on page load" do
     context "with tools configured" do
       it "pre-selects tools correctly" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, version_with_tools)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, version_with_tools)
 
         # Wait for page to load
         expect(page).to have_css(".tools-panel")
@@ -56,7 +56,7 @@ RSpec.describe "Playground Tools Selection", type: :system, js: true do
       end
 
       it "applies active class to selected tool cards" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, version_with_tools)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, version_with_tools)
 
         # file_search card should have active class
         file_search_card = find('label[for="tool_file_search"]')
@@ -72,7 +72,7 @@ RSpec.describe "Playground Tools Selection", type: :system, js: true do
 
     context "with no tools configured" do
       it "has no tools pre-selected" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, version_without_tools)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, version_without_tools)
 
         # Skip if tools panel is not visible (API doesn't support tools)
         if page.has_css?(".tools-panel", visible: :all)
@@ -87,7 +87,7 @@ RSpec.describe "Playground Tools Selection", type: :system, js: true do
   describe "tool toggling via UI" do
     before do
       # Use a version with assistants API so we have file_search and code_interpreter tools available
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, version_with_tools)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, version_with_tools)
     end
 
     it "unchecks a tool when clicking its card" do
@@ -144,7 +144,7 @@ RSpec.describe "Playground Tools Selection", type: :system, js: true do
 
   describe "tool configuration panels visibility" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, version_without_tools)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, version_without_tools)
     end
 
     it "shows configuration panel when enabling a configurable tool" do
@@ -190,7 +190,7 @@ RSpec.describe "Playground Tools Selection", type: :system, js: true do
 
   describe "form submission with tool state" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, version_with_tools)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, version_with_tools)
     end
 
     it "includes selected tools in the tools config controller data" do

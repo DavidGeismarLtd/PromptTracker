@@ -4,10 +4,10 @@ require "rails_helper"
 require "ruby_llm/schema"
 
 RSpec.describe PromptTracker::DatasetRowGeneratorService do
-  let(:prompt) { create(:prompt) }
+  let(:prompt) { create(:agent) }
   let(:version) do
-    create(:prompt_version,
-           prompt: prompt,
+    create(:agent_version,
+           agent: prompt,
            user_prompt: "Hello {{customer_name}}, we received your {{issue_type}} issue with priority {{priority}}",
            variables_schema: [
              { "name" => "customer_name", "type" => "string", "required" => true, "description" => "Customer's full name" },
@@ -237,8 +237,8 @@ RSpec.describe PromptTracker::DatasetRowGeneratorService do
 
     context "when testable has function calling configured" do
       let(:version_with_functions) do
-        create(:prompt_version,
-               prompt: prompt,
+        create(:agent_version,
+               agent: prompt,
                user_prompt: "Answer this question: {{user_query}}",
                variables_schema: [
                  { "name" => "user_query", "type" => "string", "required" => true, "description" => "User's question" }

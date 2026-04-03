@@ -58,9 +58,9 @@ module PromptTracker
       end
 
       describe "#evaluate" do
-        let(:prompt) { create(:prompt, :with_active_version) }
+        let(:prompt) { create(:agent, :with_active_version) }
         let(:version) { prompt.active_version }
-        let(:llm_response) { create(:llm_response, prompt_version: version) }
+        let(:llm_response) { create(:llm_response, agent_version: version) }
         let(:evaluator_with_response) do
           described_class.new(
             llm_response.response_text,

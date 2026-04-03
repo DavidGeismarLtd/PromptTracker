@@ -16,7 +16,7 @@
 #  id                   :bigint           not null, primary key
 #  model                :string           not null
 #  previous_response_id :string           # References the response_id of the previous turn
-#  prompt_version_id    :bigint           not null
+#  agent_version_id    :bigint           not null
 #  provider             :string           not null
 #  rendered_prompt      :text             not null
 #  response_id          :string           # OpenAI Response API response ID (e.g., resp_abc123)
@@ -52,7 +52,7 @@ module PromptTracker
   #
   # @example Creating a successful response
   #   response = LlmResponse.create!(
-  #     prompt_version: version,
+  #     agent_version: version,
   #     rendered_prompt: "Hello John",
   #     variables_used: { name: "John" },
   #     provider: "openai",
@@ -77,8 +77,8 @@ module PromptTracker
     STATUSES = %w[pending success error timeout].freeze
 
     # Associations
-    belongs_to :prompt_version,
-               class_name: "PromptTracker::PromptVersion",
+    belongs_to :agent_version,
+               class_name: "PromptTracker::AgentVersion",
                inverse_of: :llm_responses
 
     belongs_to :ab_test,
@@ -86,9 +86,9 @@ module PromptTracker
                optional: true,
                inverse_of: :llm_responses
 
-    has_one :prompt,
-            through: :prompt_version,
-            class_name: "PromptTracker::Prompt"
+    has_one :agent,
+            through: :agent_version,
+            class_name: "PromptTracker::Agent"
 
     has_many :evaluations,
              class_name: "PromptTracker::Evaluation",

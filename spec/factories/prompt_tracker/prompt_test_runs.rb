@@ -19,7 +19,7 @@
 #  passed                   :boolean
 #  passed_evaluators        :integer          default(0), not null
 #  test_id                  :bigint           not null
-#  prompt_version_id        :bigint
+#  agent_version_id        :bigint
 #  status                   :string           default("pending"), not null
 #  total_evaluators         :integer          default(0), not null
 #  updated_at               :datetime         not null
@@ -64,8 +64,8 @@ FactoryBot.define do
     end
 
     # Trait for prompt version test runs
-    trait :for_prompt_version do
-      association :test, factory: :test, trait: :for_prompt_version
+    trait :for_agent_version do
+      association :test, factory: :test, trait: :for_agent_version
     end
 
     # Trait for assistant test runs

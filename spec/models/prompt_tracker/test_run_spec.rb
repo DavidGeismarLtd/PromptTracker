@@ -6,7 +6,7 @@ module PromptTracker
   RSpec.describe TestRun, type: :model do
     # Setup
     let(:prompt) do
-      Prompt.create!(
+      Agent.create!(
         name: "test_prompt",
         description: "Test prompt for test runs",
         category: "testing"
@@ -14,7 +14,7 @@ module PromptTracker
     end
 
     let(:version) do
-      prompt.prompt_versions.create!(
+      prompt.agent_versions.create!(
         user_prompt: "Hello {{name}}",
           system_prompt: "You are a helpful assistant.",
           version_number: 1,
@@ -92,9 +92,9 @@ module PromptTracker
         expect(test_run.test).to eq(prompt_test)
       end
 
-      it "belongs to prompt_version (through test)" do
+      it "belongs to agent_version (through test)" do
         test_run = TestRun.create!(valid_attributes)
-        expect(test_run.prompt_version).to eq(version)
+        expect(test_run.agent_version).to eq(version)
       end
 
       it "has many evaluations" do

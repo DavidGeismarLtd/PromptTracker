@@ -7,8 +7,8 @@ module PromptTracker
     # GET /docs/tracking
     # Shows documentation on how to track LLM calls in production code
     def tracking
-      @prompt = Prompt.find_by(id: params[:prompt_id]) if params[:prompt_id]
-      @version = PromptVersion.find_by(id: params[:version_id]) if params[:version_id]
+      @prompt = Agent.find_by(id: params[:agent_id]) if params[:agent_id]
+      @version = AgentVersion.find_by(id: params[:version_id]) if params[:version_id]
     end
 
     # GET /docs/playground_guide

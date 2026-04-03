@@ -3,16 +3,16 @@
 module PromptTracker
   module AssistantChatbot
     module Functions
-      # Generates tests for a PromptVersion using AI.
+      # Generates tests for a AgentVersion using AI.
       #
       # Arguments:
-      # - prompt_version_id: (required) ID of the prompt version
+      # - agent_version_id: (required) ID of the prompt version
       # - count: (optional) Number of tests to generate (default: 5)
       # - instructions: (optional) Custom instructions for test generation
       #
       # @example
       #   function = GenerateTests.new(
-      #     { prompt_version_id: 123, count: 5, instructions: "Focus on edge cases" },
+      #     { agent_version_id: 123, count: 5, instructions: "Focus on edge cases" },
       #     {}
       #   )
       #   result = function.call
@@ -21,13 +21,13 @@ module PromptTracker
         protected
 
         def execute
-          version = find_prompt_version
+          version = find_agent_version
           count = arg(:count) || 5
           instructions = arg(:instructions)
 
           # Call TestGeneratorService
           result = TestGeneratorService.generate(
-            prompt_version: version,
+            agent_version: version,
             instructions: instructions,
             count: count.to_i.clamp(1, 10)
           )
@@ -40,15 +40,15 @@ module PromptTracker
         end
 
         def validate_arguments!
-          raise ArgumentError, "prompt_version_id is required" if arg(:prompt_version_id).blank?
+          raise ArgumentError, "agent_version_id is required" if arg(:agent_version_id).blank?
         end
 
         private
 
-        def find_prompt_version
-          version_id = arg(:prompt_version_id)
-          version = PromptVersion.find_by(id: version_id)
-          raise ArgumentError, "PromptVersion #{version_id} not found" unless version
+        def find_agent_version
+          version_id = arg(:agent_version_id)
+          version = AgentVersion.find_by(id: version_id)
+          raise ArgumentError, "AgentVersion #{version_id} not found" unless version
           version
         end
 
@@ -72,7 +72,7 @@ module PromptTracker
         end
 
         def build_links(version, tests)
-          base_path = "/prompt_tracker/testing/prompts/#{version.prompt_id}/versions/#{version.id}"
+          base_path = "/prompt_tracker/testing/prompts/#{version.agent_id}/versions/#{version.id}"
 
           links = [
             link("View all tests", "#{base_path}#tests", icon: "list-check"),

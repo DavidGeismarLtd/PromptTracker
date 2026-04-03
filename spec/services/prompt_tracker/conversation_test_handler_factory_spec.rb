@@ -160,7 +160,7 @@ module PromptTracker
           }
         end
 
-        let(:testable) { double("PromptVersion") }
+        let(:testable) { double("AgentVersion") }
 
         it "passes testable to handler" do
           handler = described_class.build(

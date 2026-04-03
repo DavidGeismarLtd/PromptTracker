@@ -3,12 +3,12 @@
 require "rails_helper"
 
 RSpec.describe PromptTracker::AbTestAnalyzer do
-  let(:prompt) { create(:prompt) }
-  let(:version_a) { create(:prompt_version, prompt: prompt, version_number: 1) }
-  let(:version_b) { create(:prompt_version, prompt: prompt, version_number: 2) }
+  let(:prompt) { create(:agent) }
+  let(:version_a) { create(:agent_version, agent: prompt, version_number: 1) }
+  let(:version_b) { create(:agent_version, agent: prompt, version_number: 2) }
   let(:ab_test) do
     create(:ab_test, :running,
-           prompt: prompt,
+           agent: prompt,
            version_a: version_a,
            version_b: version_b,
            metric_to_optimize: "response_time",
@@ -28,7 +28,7 @@ RSpec.describe PromptTracker::AbTestAnalyzer do
 
     context "when test has fewer than 10 responses" do
       it "returns false" do
-        create_list(:llm_response, 5, prompt_version: version_a, ab_test: ab_test, ab_variant: "A")
+        create_list(:llm_response, 5, agent_version: version_a, ab_test: ab_test, ab_variant: "A")
         analyzer = described_class.new(ab_test)
 
         expect(analyzer.ready_for_analysis?).to be false
@@ -37,8 +37,8 @@ RSpec.describe PromptTracker::AbTestAnalyzer do
 
     context "when test is running and has 10+ responses" do
       it "returns true" do
-        create_list(:llm_response, 6, prompt_version: version_a, ab_test: ab_test, ab_variant: "A")
-        create_list(:llm_response, 5, prompt_version: version_b, ab_test: ab_test, ab_variant: "B")
+        create_list(:llm_response, 6, agent_version: version_a, ab_test: ab_test, ab_variant: "A")
+        create_list(:llm_response, 5, agent_version: version_b, ab_test: ab_test, ab_variant: "B")
         analyzer = described_class.new(ab_test)
 
         expect(analyzer.ready_for_analysis?).to be true
@@ -58,7 +58,7 @@ RSpec.describe PromptTracker::AbTestAnalyzer do
 
     context "when total responses is less than minimum" do
       it "returns false" do
-        create_list(:llm_response, 10, prompt_version: version_a, ab_test: ab_test, ab_variant: "A")
+        create_list(:llm_response, 10, agent_version: version_a, ab_test: ab_test, ab_variant: "A")
         analyzer = described_class.new(ab_test)
 
         expect(analyzer.sample_size_met?).to be false
@@ -67,8 +67,8 @@ RSpec.describe PromptTracker::AbTestAnalyzer do
 
     context "when total responses meets minimum" do
       it "returns true" do
-        create_list(:llm_response, 12, prompt_version: version_a, ab_test: ab_test, ab_variant: "A")
-        create_list(:llm_response, 10, prompt_version: version_b, ab_test: ab_test, ab_variant: "B")
+        create_list(:llm_response, 12, agent_version: version_a, ab_test: ab_test, ab_variant: "A")
+        create_list(:llm_response, 10, agent_version: version_b, ab_test: ab_test, ab_variant: "B")
         analyzer = described_class.new(ab_test)
 
         expect(analyzer.sample_size_met?).to be true
@@ -88,14 +88,14 @@ RSpec.describe PromptTracker::AbTestAnalyzer do
       before do
         # Create responses for variant A (slower)
         create_list(:llm_response, 10,
-                    prompt_version: version_a,
+                    agent_version: version_a,
                     ab_test: ab_test,
                     ab_variant: "A",
                     response_time_ms: 1500)
 
         # Create responses for variant B (faster)
         create_list(:llm_response, 10,
-                    prompt_version: version_b,
+                    agent_version: version_b,
                     ab_test: ab_test,
                     ab_variant: "B",
                     response_time_ms: 1000)
@@ -149,13 +149,13 @@ RSpec.describe PromptTracker::AbTestAnalyzer do
 
         # Create responses with evaluations for variant A (lower quality)
         10.times do
-          response = create(:llm_response, prompt_version: version_a, ab_test: ab_test, ab_variant: "A")
+          response = create(:llm_response, agent_version: version_a, ab_test: ab_test, ab_variant: "A")
           create(:evaluation, llm_response: response, score: 3.0, score_max: 5)
         end
 
         # Create responses with evaluations for variant B (higher quality)
         10.times do
-          response = create(:llm_response, prompt_version: version_b, ab_test: ab_test, ab_variant: "B")
+          response = create(:llm_response, agent_version: version_b, ab_test: ab_test, ab_variant: "B")
           create(:evaluation, llm_response: response, score: 4.5, score_max: 5)
         end
       end
@@ -181,12 +181,12 @@ RSpec.describe PromptTracker::AbTestAnalyzer do
     context "when responses exist" do
       before do
         create_list(:llm_response, 5,
-                    prompt_version: version_a,
+                    agent_version: version_a,
                     ab_test: ab_test,
                     ab_variant: "A",
                     response_time_ms: 1500)
         create_list(:llm_response, 5,
-                    prompt_version: version_b,
+                    agent_version: version_b,
                     ab_test: ab_test,
                     ab_variant: "B",
                     response_time_ms: 1000)

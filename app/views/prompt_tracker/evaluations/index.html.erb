@@ -1,7 +1,7 @@
 <% content_for :breadcrumbs do %>
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><%= link_to "Prompts", testing_prompts_path %></li>
+      <li class="breadcrumb-item"><%= link_to "Prompts", testing_agents_path %></li>
       <li class="breadcrumb-item active" aria-current="page">Evaluations</li>
     </ol>
   </nav>
@@ -136,7 +136,7 @@
           <tbody>
             <% @evaluations.each do |evaluation| %>
               <% response = evaluation.llm_response %>
-              <% prompt = response.prompt_version.prompt %>
+              <% prompt = response.agent_version.agent %>
               <% normalized_score = PromptTracker::EvaluationHelpers.normalize_score(
                    evaluation.score,
                    min: evaluation.score_min,
@@ -148,9 +148,9 @@
                   <code>#<%= response.id %></code>
                 </td>
                 <td>
-                  <%= link_to prompt.name, testing_prompt_path(prompt) %>
+                  <%= link_to prompt.name, testing_agent_path(prompt) %>
                   <br>
-                  <small class="text-muted">v<%= response.prompt_version.version_number %></small>
+                  <small class="text-muted">v<%= response.agent_version.version_number %></small>
                 </td>
                 <td>
                   <span class="badge bg-secondary"><%= evaluation.evaluator_name %></span>

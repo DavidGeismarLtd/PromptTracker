@@ -49,7 +49,7 @@ module PromptTracker
 
       describe "#variables (private)" do
         context "when test_run has dataset_row" do
-          # testable (PromptVersion) has variables_schema with "name" field by default
+          # testable (AgentVersion) has variables_schema with "name" field by default
           let(:dataset) { create(:dataset, testable: testable) }
           let(:dataset_row) { create(:dataset_row, dataset: dataset, row_data: { "name" => "John" }) }
           let(:test_run) { create(:test_run, test: test, dataset_row: dataset_row, status: "running") }

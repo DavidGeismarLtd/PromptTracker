@@ -256,14 +256,14 @@ module PromptTracker
               Rails.logger.debug("[AssistantChatbot] Using DeploymentWizardAssistant system prompt")
               return deployment_wizard_assistant.system_prompt
             when :prompt_creation_wizard
-              Rails.logger.debug("[AssistantChatbot] Using PromptCreationWizardAssistant system prompt")
+              Rails.logger.debug("[AssistantChatbot] Using AgentCreationWizardAssistant system prompt")
               return prompt_creation_wizard_assistant.system_prompt
             end
 
           context_info = if @context[:page_type]
             case @context[:page_type]
-            when :prompt_version_detail
-              "\n\nCurrent context: Viewing PromptVersion ##{@context[:prompt_version_id]}"
+            when :agent_version_detail
+              "\n\nCurrent context: Viewing AgentVersion ##{@context[:agent_version_id]}"
             when :prompts_list
               "\n\nCurrent context: Browsing prompts list"
             else
@@ -273,7 +273,7 @@ module PromptTracker
             ""
           end
 
-          Rails.logger.debug("[AssistantChatbot] build_system_prompt page_type=#{@context[:page_type]} prompt_version_id=#{@context[:prompt_version_id].inspect}")
+          Rails.logger.debug("[AssistantChatbot] build_system_prompt page_type=#{@context[:page_type]} agent_version_id=#{@context[:agent_version_id].inspect}")
 
           system_prompt = <<~PROMPT.strip
 		        You are the PromptTracker Assistant, an expert AI helper for testing and deploying LLM prompts.
@@ -475,7 +475,7 @@ module PromptTracker
             parameters: {
               type: "object",
               properties: {
-                prompt_version_id: {
+                agent_version_id: {
                   type: "integer",
                   description: "ID of the prompt version this dataset belongs to"
                 },
@@ -505,16 +505,16 @@ module PromptTracker
                   description: "Optional model override for dataset row generation."
                 }
               },
-              required: [ "prompt_version_id" ]
+              required: [ "agent_version_id" ]
             }
           },
         {
           name: "generate_tests",
-          description: "Generate AI-powered tests for a PromptVersion",
+          description: "Generate AI-powered tests for a AgentVersion",
           parameters: {
             type: "object",
             properties: {
-              prompt_version_id: {
+              agent_version_id: {
                 type: "integer",
                 description: "ID of the prompt version to generate tests for"
               },
@@ -527,16 +527,16 @@ module PromptTracker
                 description: "Custom instructions for test generation (optional)"
               }
             },
-            required: [ "prompt_version_id" ]
+            required: [ "agent_version_id" ]
           }
         },
         {
           name: "run_tests",
-              description: "Run tests for a PromptVersion using either datasets or custom variables.",
+              description: "Run tests for a AgentVersion using either datasets or custom variables.",
           parameters: {
             type: "object",
             properties: {
-              prompt_version_id: {
+              agent_version_id: {
                 type: "integer",
                 description: "ID of the prompt version"
               },
@@ -564,16 +564,16 @@ module PromptTracker
                     description: "Custom variables to use for a single run when not using a dataset. Keys should match variable names from the prompt version's variables_schema. For conversational runs, MUST include interlocutor_simulation_prompt and MAY include max_turns."
                 }
               },
-              required: [ "prompt_version_id", "run_mode" ]
+              required: [ "agent_version_id", "run_mode" ]
             }
           },
           {
             name: "deploy_agent",
-            description: "Deploy a PromptVersion as a conversational or task agent.",
+            description: "Deploy a AgentVersion as a conversational or task agent.",
             parameters: {
               type: "object",
               properties: {
-                prompt_version_id: {
+                agent_version_id: {
                   type: "integer",
                   description: "ID of the prompt version to deploy"
                 },
@@ -696,63 +696,63 @@ module PromptTracker
                   }
                 }
               },
-              required: [ "prompt_version_id" ]
+              required: [ "agent_version_id" ]
             }
           },
           {
-            name: "get_prompt_version_info",
-          description: "Get detailed information about a PromptVersion including model config, status, and test statistics",
+            name: "get_agent_version_info",
+          description: "Get detailed information about a AgentVersion including model config, status, and test statistics",
           parameters: {
             type: "object",
             properties: {
-              prompt_version_id: {
+              agent_version_id: {
                 type: "integer",
                 description: "ID of the prompt version"
               }
             },
-            required: [ "prompt_version_id" ]
+            required: [ "agent_version_id" ]
           }
         },
         {
           name: "get_tests_summary",
-          description: "Get a summary of all tests for a PromptVersion, including pass/fail statistics and recent runs",
+          description: "Get a summary of all tests for a AgentVersion, including pass/fail statistics and recent runs",
           parameters: {
             type: "object",
             properties: {
-              prompt_version_id: {
+              agent_version_id: {
                 type: "integer",
                 description: "ID of the prompt version"
               }
             },
-            required: [ "prompt_version_id" ]
+            required: [ "agent_version_id" ]
           }
         },
           {
-            name: "available_tests_for_prompt_version",
-            description: "List enabled tests for a PromptVersion to help choose which tests to run.",
+            name: "available_tests_for_agent_version",
+            description: "List enabled tests for a AgentVersion to help choose which tests to run.",
             parameters: {
               type: "object",
               properties: {
-                prompt_version_id: {
+                agent_version_id: {
                   type: "integer",
                   description: "ID of the prompt version"
                 }
               },
-              required: [ "prompt_version_id" ]
+              required: [ "agent_version_id" ]
             }
           },
           {
-            name: "available_datasets_for_prompt_version",
-            description: "List datasets for a PromptVersion to help choose between dataset runs and custom variables.",
+            name: "available_datasets_for_agent_version",
+            description: "List datasets for a AgentVersion to help choose between dataset runs and custom variables.",
             parameters: {
               type: "object",
               properties: {
-                prompt_version_id: {
+                agent_version_id: {
                   type: "integer",
                   description: "ID of the prompt version"
                 }
               },
-              required: [ "prompt_version_id" ]
+              required: [ "agent_version_id" ]
             }
           },
         {
@@ -782,10 +782,10 @@ module PromptTracker
           # itself is triggered via a JSON plan, not exposed as a direct
           # tool to the LLM.
           allowed = %w[
-            get_prompt_version_info
+            get_agent_version_info
             get_tests_summary
-            available_tests_for_prompt_version
-            available_datasets_for_prompt_version
+            available_tests_for_agent_version
+            available_datasets_for_agent_version
           ]
 
           build_tool_definitions.select do |tool|
@@ -798,7 +798,7 @@ module PromptTracker
           # appropriate tests. The generate_tests action is triggered via
           # a JSON plan, not exposed as a direct tool to the LLM.
           allowed = %w[
-            get_prompt_version_info
+            get_agent_version_info
           ]
 
           build_tool_definitions.select do |tool|
@@ -809,8 +809,8 @@ module PromptTracker
         def build_dataset_wizard_tool_definitions
           # Dataset wizard may call read-only helpers for context, but not create_dataset directly.
           allowed = %w[
-            get_prompt_version_info
-            available_datasets_for_prompt_version
+            get_agent_version_info
+            available_datasets_for_agent_version
           ]
 
           build_tool_definitions.select do |tool|
@@ -821,10 +821,10 @@ module PromptTracker
         def build_deployment_wizard_tool_definitions
           # Deployment wizard can inspect prompt and test context but must NOT call deploy_agent directly.
           allowed = %w[
-            get_prompt_version_info
+            get_agent_version_info
             get_tests_summary
-            available_tests_for_prompt_version
-            available_datasets_for_prompt_version
+            available_tests_for_agent_version
+            available_datasets_for_agent_version
           ]
 
           build_tool_definitions.select do |tool|
@@ -836,7 +836,7 @@ module PromptTracker
           # Prompt creation wizard can inspect existing prompts or prompt versions
           # but must NOT call create_prompt directly.
           allowed = %w[
-            get_prompt_version_info
+            get_agent_version_info
             get_tests_summary
             search_prompts
           ]
@@ -905,7 +905,7 @@ module PromptTracker
           end
 
           def prompt_creation_wizard_assistant
-            @prompt_creation_wizard_assistant ||= AssistantChatbot::Assistants::PromptCreationWizardAssistant.new(context: @context)
+            @prompt_creation_wizard_assistant ||= AssistantChatbot::Assistants::AgentCreationWizardAssistant.new(context: @context)
           end
 
           def extract_run_tests_function_call_from_text(text)
@@ -926,7 +926,7 @@ module PromptTracker
           end
 
           # Require at least the core run_tests arguments
-          unless data.key?("prompt_version_id") && data.key?("run_mode")
+          unless data.key?("agent_version_id") && data.key?("run_mode")
             Rails.logger.debug "[AssistantChatbot] JSON plan missing required keys"
             return nil
           end
@@ -960,8 +960,8 @@ module PromptTracker
               return nil
             end
 
-            unless data.key?("prompt_version_id")
-              Rails.logger.debug "[AssistantChatbot] Test creator JSON plan missing prompt_version_id"
+            unless data.key?("agent_version_id")
+              Rails.logger.debug "[AssistantChatbot] Test creator JSON plan missing agent_version_id"
               return nil
             end
 
@@ -994,8 +994,8 @@ module PromptTracker
               return nil
             end
 
-            unless data.key?("prompt_version_id")
-              Rails.logger.debug "[AssistantChatbot] Dataset JSON plan missing prompt_version_id"
+            unless data.key?("agent_version_id")
+              Rails.logger.debug "[AssistantChatbot] Dataset JSON plan missing agent_version_id"
               return nil
             end
 
@@ -1028,7 +1028,7 @@ module PromptTracker
               return nil
             end
 
-            unless data.key?("prompt_version_id") && data.key?("agent_type")
+            unless data.key?("agent_version_id") && data.key?("agent_type")
               Rails.logger.debug "[AssistantChatbot] Deployment JSON plan missing required keys"
               return nil
             end

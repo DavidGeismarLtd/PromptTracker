@@ -5,7 +5,7 @@
   <div id="assistant-chatbot-container"
        data-controller="assistant-chatbot"
        data-assistant-chatbot-session-id-value="<%= session.id %>"
-       data-assistant-chatbot-context-value="<%= { page_type: @assistant_context&.dig(:page_type), prompt_version_id: @assistant_context&.dig(:prompt_version_id) }.to_json %>"
+       data-assistant-chatbot-context-value="<%= { page_type: @assistant_context&.dig(:page_type), agent_version_id: @assistant_context&.dig(:agent_version_id) }.to_json %>"
        class="assistant-chatbot">
 
     <%# Floating Action Button (FAB) to open chatbot %>

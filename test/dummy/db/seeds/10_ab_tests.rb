@@ -7,14 +7,14 @@
 puts "  Creating sample A/B tests..."
 
 # Get prompts and versions
-support_greeting = PromptTracker::Prompt.find_by!(name: "customer_support_greeting")
-support_greeting_v3 = support_greeting.prompt_versions.find_by!(status: "active")
-support_greeting_v4 = support_greeting.prompt_versions.where(status: "draft").first!
-support_greeting_v5 = support_greeting.prompt_versions.where(status: "draft").last!
+support_greeting = PromptTracker::Agent.find_by!(name: "customer_support_greeting")
+support_greeting_v3 = support_greeting.agent_versions.find_by!(status: "active")
+support_greeting_v4 = support_greeting.agent_versions.where(status: "draft").first!
+support_greeting_v5 = support_greeting.agent_versions.where(status: "draft").last!
 
-email_summary = PromptTracker::Prompt.find_by!(name: "email_summary_generator")
-email_summary_v1 = email_summary.prompt_versions.find_by!(status: "active")
-email_summary_v2 = email_summary.prompt_versions.find_by!(status: "draft")
+email_summary = PromptTracker::Agent.find_by!(name: "email_summary_generator")
+email_summary_v1 = email_summary.agent_versions.find_by!(status: "active")
+email_summary_v2 = email_summary.agent_versions.find_by!(status: "draft")
 
 # A/B Test 1: Draft - Testing casual vs empathetic greeting
 ab_test_greeting_draft = support_greeting.ab_tests.create!(

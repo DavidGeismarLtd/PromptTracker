@@ -9,7 +9,7 @@ module PromptTracker
     # GET /ab_tests
     # List all A/B tests with filtering
     def index
-      @ab_tests = AbTest.includes(:prompt).order(created_at: :desc)
+      @ab_tests = AbTest.includes(:agent).order(created_at: :desc)
 
       # Filter by status
       if params[:status].present?
@@ -17,8 +17,8 @@ module PromptTracker
       end
 
       # Filter by prompt
-      if params[:prompt_id].present?
-        @ab_tests = @ab_tests.where(prompt_id: params[:prompt_id])
+      if params[:agent_id].present?
+        @ab_tests = @ab_tests.where(agent_id: params[:agent_id])
       end
 
       # Search by name
@@ -31,7 +31,7 @@ module PromptTracker
       @ab_tests = @ab_tests.page(params[:page]).per(20)
 
       # Get prompts for filter dropdown
-      @prompts = Prompt.order(:name)
+      @prompts = Agent.order(:name)
     end
 
     # GET /ab_tests/:id
@@ -50,7 +50,7 @@ module PromptTracker
         confidence_level: 0.95,
         minimum_sample_size: 100
       )
-      @available_versions = @prompt.prompt_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
+      @available_versions = @prompt.agent_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
     end
 
     # POST /ab_tests
@@ -62,7 +62,7 @@ module PromptTracker
       if @ab_test.save
         redirect_to ab_test_path(@ab_test), notice: "A/B test created successfully."
       else
-        @available_versions = @prompt.prompt_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
+        @available_versions = @prompt.agent_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
         render :new, status: :unprocessable_entity
       end
     end
@@ -75,7 +75,7 @@ module PromptTracker
         return
       end
 
-      @available_versions = @ab_test.prompt.prompt_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
+      @available_versions = @ab_test.agent.agent_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
     end
 
     # PATCH /ab_tests/:id
@@ -92,7 +92,7 @@ module PromptTracker
       if @ab_test.save
         redirect_to ab_test_path(@ab_test), notice: "A/B test updated successfully."
       else
-        @available_versions = @ab_test.prompt.prompt_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
+        @available_versions = @ab_test.agent.agent_versions.where(status: [ "active", "draft" ]).order(version_number: :desc)
         render :edit, status: :unprocessable_entity
       end
     end
@@ -197,11 +197,11 @@ module PromptTracker
     private
 
     def set_ab_test
-      @ab_test = AbTest.includes(:prompt).find(params[:id])
+      @ab_test = AbTest.includes(:agent).find(params[:id])
     end
 
     def set_prompt
-      @prompt = Prompt.find(params[:prompt_id])
+      @prompt = Agent.find(params[:agent_id])
     end
 
     def ab_test_params

@@ -6,7 +6,7 @@ module PromptTracker
     # GET /evaluations
     # List all evaluations with filtering
     def index
-      @evaluations = Evaluation.includes(llm_response: { prompt_version: :prompt })
+      @evaluations = Evaluation.includes(llm_response: { agent_version: :agent })
 
       # Filter by evaluator_type
       @evaluations = @evaluations.where(evaluator_type: params[:evaluator_type]) if params[:evaluator_type].present?
@@ -56,10 +56,10 @@ module PromptTracker
     # GET /evaluations/:id
     # Show evaluation details
     def show
-      @evaluation = Evaluation.includes(:human_evaluations, llm_response: { prompt_version: :prompt }).find(params[:id])
+      @evaluation = Evaluation.includes(:human_evaluations, llm_response: { agent_version: :agent }).find(params[:id])
       @response = @evaluation.llm_response
-      @version = @response.prompt_version
-      @prompt = @version.prompt
+      @version = @response.agent_version
+      @prompt = @version.agent
     end
   end
 end

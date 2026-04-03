@@ -4,8 +4,8 @@ require "rails_helper"
 
 RSpec.describe PromptTracker::GenerateDatasetRowsJob, type: :job do
   describe "#perform" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
     let(:dataset) { create(:dataset, testable: version) }
 
     before do

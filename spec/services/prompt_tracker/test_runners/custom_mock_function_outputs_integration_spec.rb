@@ -7,10 +7,10 @@ module PromptTracker
     # Integration spec for custom mock_function_outputs feature
     # Tests the full flow from dataset row → test execution → evaluation
     RSpec.describe "Custom Mock Function Outputs Integration", type: :service do
-      let(:prompt) { create(:prompt) }
+      let(:prompt) { create(:agent) }
       let(:version_with_functions) do
-        create(:prompt_version,
-               prompt: prompt,
+        create(:agent_version,
+               agent: prompt,
                user_prompt: "{{user_query}}",
                system_prompt: "You are a helpful assistant. Use functions when needed.",
                variables_schema: [
@@ -68,7 +68,7 @@ module PromptTracker
         end
 
         it "uses custom mock when function is called during test execution" do
-          runner = PromptVersionRunner.new(
+          runner = AgentVersionRunner.new(
             test_run: test_run,
             test: test,
             testable: version_with_functions,
@@ -136,7 +136,7 @@ module PromptTracker
         end
 
         it "uses custom mock from custom_variables" do
-          runner = PromptVersionRunner.new(
+          runner = AgentVersionRunner.new(
             test_run: test_run_with_custom_vars,
             test: test,
             testable: version_with_functions,
@@ -211,7 +211,7 @@ module PromptTracker
               }
             )
 
-          runner = PromptVersionRunner.new(
+          runner = AgentVersionRunner.new(
             test_run: test_run_without_mocks,
             test: test,
             testable: version_with_functions,
@@ -277,7 +277,7 @@ module PromptTracker
           # Create the evaluator config
           function_call_evaluator
 
-          runner = PromptVersionRunner.new(
+          runner = AgentVersionRunner.new(
             test_run: test_run_with_evaluator,
             test: test,
             testable: version_with_functions,

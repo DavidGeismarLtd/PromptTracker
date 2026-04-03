@@ -214,7 +214,7 @@
           <tbody>
             <tr>
               <th style="width: 40%;">Prompt</th>
-              <td><%= link_to prompt.name, testing_prompt_prompt_version_path(prompt, version) %></td>
+              <td><%= link_to prompt.name, testing_agent_agent_version_path(prompt, version) %></td>
             </tr>
             <tr>
               <th>Version</th>
@@ -236,7 +236,7 @@
             </tr>
           </tbody>
         </table>
-        <%= link_to testing_prompt_prompt_version_path(prompt, version), class: "btn btn-sm btn-outline-primary" do %>
+        <%= link_to testing_agent_agent_version_path(prompt, version), class: "btn btn-sm btn-outline-primary" do %>
           <i class="bi bi-arrow-right"></i> View Full Version
         <% end %>
       </div>

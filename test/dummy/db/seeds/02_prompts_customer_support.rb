@@ -6,7 +6,7 @@
 
 puts "  Creating customer support prompts..."
 
-support_greeting = PromptTracker::Prompt.create!(
+support_greeting = PromptTracker::Agent.create!(
   name: "customer_support_greeting",
   description: "Initial greeting for customer support interactions",
   category: "support",
@@ -15,7 +15,7 @@ support_greeting = PromptTracker::Prompt.create!(
 )
 
 # Version 1 - Original (using Chat Completion API)
-support_greeting_v1 = support_greeting.prompt_versions.create!(
+support_greeting_v1 = support_greeting.agent_versions.create!(
     system_prompt: "You are a customer support agent greeting customers at the start of a conversation.",
     user_prompt: "Hello {{customer_name}}! Thank you for contacting support. How can I help you with {{issue_category}} today?",
     status: "deprecated",
@@ -35,7 +35,7 @@ support_greeting_v1 = support_greeting.prompt_versions.create!(
 )
 
 # Version 2 - More casual
-support_greeting_v2 = support_greeting.prompt_versions.create!(
+support_greeting_v2 = support_greeting.agent_versions.create!(
     system_prompt: "You are a customer support agent greeting customers at the start of a conversation.",
     user_prompt: "Hi {{customer_name}}! 👋 Thanks for reaching out. What can I help you with today?",
     status: "deprecated",
@@ -54,7 +54,7 @@ support_greeting_v2 = support_greeting.prompt_versions.create!(
 )
 
 # Version 3 - Current active version (using GPT-4o for better quality)
-support_greeting_v3 = support_greeting.prompt_versions.create!(
+support_greeting_v3 = support_greeting.agent_versions.create!(
     system_prompt: "You are a customer support agent greeting customers at the start of a conversation.",
     user_prompt: "Hi {{customer_name}}! Thanks for contacting us. I'm here to help with your {{issue_category}} question. What's going on?",
     status: "active",
@@ -74,7 +74,7 @@ support_greeting_v3 = support_greeting.prompt_versions.create!(
 )
 
 # Version 4 - Draft: Testing with Responses API
-support_greeting_v4 = support_greeting.prompt_versions.create!(
+support_greeting_v4 = support_greeting.agent_versions.create!(
     system_prompt: "You are a customer support agent greeting customers at the start of a conversation.",
     user_prompt: "Hey {{customer_name}}! What's up with {{issue_category}}?",
     status: "draft",
@@ -94,7 +94,7 @@ support_greeting_v4 = support_greeting.prompt_versions.create!(
 )
 
 # Version 5 - Draft: Using Anthropic Claude
-support_greeting_v5 = support_greeting.prompt_versions.create!(
+support_greeting_v5 = support_greeting.agent_versions.create!(
     system_prompt: "You are a customer support agent greeting customers at the start of a conversation.",
     user_prompt: "Hi {{customer_name}}, I understand you're having an issue with {{issue_category}}. I'm here to help you resolve this. Can you tell me more about what's happening?",
     status: "draft",

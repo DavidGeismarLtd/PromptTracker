@@ -5,7 +5,7 @@ module PromptTracker
     # Dashboard for the Testing section - pre-deployment validation
     #
     # Shows unified index of all testables:
-    # - PromptVersions (with their prompts)
+    # - AgentVersions (with their prompts)
     # - OpenAI Assistants
     #
     # Supports filtering by testable type, provider, and model
@@ -27,7 +27,7 @@ module PromptTracker
         # Build filter options from all prompt versions
         build_filter_options
 
-        # Assistants are now PromptVersions with api: "assistants"
+        # Assistants are now AgentVersions with api: "assistants"
         # No separate assistant list needed
         @assistants = []
 
@@ -38,7 +38,7 @@ module PromptTracker
       # POST /testing/sync_openai_assistants
       # Sync all assistants from OpenAI API
       def sync_openai_assistants
-        result = SyncOpenaiAssistantsToPromptVersionsService.new.call
+        result = SyncOpenaiAssistantsToAgentVersionsService.new.call
 
         if result[:success]
           redirect_to testing_root_path,
@@ -47,7 +47,7 @@ module PromptTracker
           redirect_to testing_root_path,
                       alert: "Failed to sync assistants: #{result[:errors].join(', ')}"
         end
-      rescue SyncOpenaiAssistantsToPromptVersionsService::SyncError => e
+      rescue SyncOpenaiAssistantsToAgentVersionsService::SyncError => e
         redirect_to testing_root_path,
                     alert: "Failed to sync assistants: #{e.message}"
       end
@@ -56,8 +56,8 @@ module PromptTracker
 
       def load_filtered_prompts
         # Start with base query
-        prompts_scope = Prompt.includes(
-          prompt_versions: [
+        prompts_scope = Agent.includes(
+          agent_versions: [
             :tests,
             { tests: :test_runs }
           ]
@@ -66,7 +66,7 @@ module PromptTracker
         # Apply provider/model filters via prompt versions
         if @provider_filter.present? || @model_filter.present?
           # Get prompt IDs that have matching versions
-          version_scope = PromptVersion.all
+          version_scope = AgentVersion.all
 
           if @provider_filter.present?
             version_scope = version_scope.where("model_config->>'provider' = ?", @provider_filter)
@@ -76,8 +76,8 @@ module PromptTracker
             version_scope = version_scope.where("model_config->>'model' = ?", @model_filter)
           end
 
-          prompt_ids = version_scope.select(:prompt_id).distinct
-          prompts_scope = prompts_scope.where(id: prompt_ids)
+          agent_ids = version_scope.select(:agent_id).distinct
+          prompts_scope = prompts_scope.where(id: agent_ids)
         end
 
         prompts_scope.order(created_at: :desc)
@@ -85,7 +85,7 @@ module PromptTracker
 
       def build_filter_options
         # Get unique providers and models from all prompt versions
-        all_versions = PromptVersion.where.not(model_config: nil)
+        all_versions = AgentVersion.where.not(model_config: nil)
 
         @available_providers = all_versions
           .select("DISTINCT model_config->>'provider' as provider")
@@ -130,8 +130,8 @@ module PromptTracker
         end
 
         # Count by testable type
-        @prompt_count = Prompt.count
-        @assistant_count = 0 # Assistants are now PromptVersions
+        @prompt_count = Agent.count
+        @assistant_count = 0 # Assistants are now AgentVersions
       end
     end
   end

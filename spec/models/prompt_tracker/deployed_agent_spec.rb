@@ -5,7 +5,7 @@ require "rails_helper"
 module PromptTracker
   RSpec.describe DeployedAgent, type: :model do
     describe "associations" do
-      it { is_expected.to belong_to(:prompt_version).class_name("PromptTracker::PromptVersion") }
+      it { is_expected.to belong_to(:agent_version).class_name("PromptTracker::AgentVersion") }
       it { is_expected.to have_many(:deployed_agent_functions).dependent(:destroy) }
       it { is_expected.to have_many(:function_definitions).through(:deployed_agent_functions) }
       it { is_expected.to have_many(:agent_conversations).dependent(:destroy) }
@@ -73,11 +73,11 @@ module PromptTracker
       end
 
       describe "extract_functions_from_version" do
-        it "links functions from prompt_version model_config" do
+        it "links functions from agent_version model_config" do
           func1 = create(:function_definition, name: "get_weather")
           func2 = create(:function_definition, name: "send_email")
 
-          version = create(:prompt_version, model_config: {
+          version = create(:agent_version, model_config: {
             tool_config: {
               functions: [
                 { name: "get_weather" },
@@ -86,13 +86,13 @@ module PromptTracker
             }
           })
 
-          agent = create(:deployed_agent, prompt_version: version)
+          agent = create(:deployed_agent, agent_version: version)
 
           expect(agent.function_definitions).to include(func1, func2)
         end
 
         it "handles missing functions gracefully" do
-          version = create(:prompt_version, model_config: {
+          version = create(:agent_version, model_config: {
             tool_config: {
               functions: [
                 { name: "nonexistent_function" }
@@ -101,7 +101,7 @@ module PromptTracker
           })
 
           expect {
-            create(:deployed_agent, prompt_version: version)
+            create(:deployed_agent, agent_version: version)
           }.not_to raise_error
         end
       end

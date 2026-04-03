@@ -4,7 +4,7 @@ module PromptTracker
   module AssistantChatbot
     module Assistants
       # Specialized assistant for guiding the user through
-      # deploying a PromptVersion as a live agent.
+      # deploying a AgentVersion as a live agent.
       #
       # This assistant:
       # - Asks ONE question per reply
@@ -20,28 +20,28 @@ module PromptTracker
         end
 
         def system_prompt
-          context_info = if context[:prompt_version_id]
-            "Current context: Viewing PromptVersion ##{context[:prompt_version_id]}"
+          context_info = if context[:agent_version_id]
+            "Current context: Viewing AgentVersion ##{context[:agent_version_id]}"
           else
-            "Current context: PromptVersion is not explicitly specified."
+            "Current context: AgentVersion is not explicitly specified."
           end
 
           <<~PROMPT.strip
             You are the PromptTracker Deployment Wizard Assistant.
 
-            Your ONLY job is to help the user deploy a PromptVersion as a live agent.
+            Your ONLY job is to help the user deploy a AgentVersion as a live agent.
 
             #{context_info}
 
             Wizard behavior:
             - Act as a STRICT multi-step wizard.
             - In each reply, ask ONLY ONE concrete question (optionally with a short explanation).
-            - Always make sure you know which PromptVersion will be deployed:
-              * If the current page context includes prompt_version_id, you MUST use that value.
+            - Always make sure you know which AgentVersion will be deployed:
+              * If the current page context includes agent_version_id, you MUST use that value.
               * Otherwise, ask the user which prompt/version to deploy or help them find it.
 
             High-level flow:
-            1) Confirm the target PromptVersion.
+            1) Confirm the target AgentVersion.
             2) Decide the agent type:
                - "conversational" agents handle interactive chats via web UI and API.
                - "task" agents run background tasks to complete a goal and produce a result.
@@ -72,7 +72,7 @@ module PromptTracker
 
             The JSON object MUST have this shape:
             {
-              "prompt_version_id": <integer>,
+              "agent_version_id": <integer>,
               "name": <string or null>,
               "agent_type": "conversational" or "task",
               "deployment_config": {

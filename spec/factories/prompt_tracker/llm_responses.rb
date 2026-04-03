@@ -17,7 +17,7 @@
 #  is_test_run          :boolean          default(FALSE), not null
 #  model                :string           not null
 #  previous_response_id :string           # References the response_id of the previous turn
-#  prompt_version_id    :bigint           not null
+#  agent_version_id    :bigint           not null
 #  provider             :string           not null
 #  rendered_prompt      :text             not null
 #  response_id          :string           # OpenAI Response API response ID (e.g., resp_abc123)
@@ -38,7 +38,7 @@
 #
 FactoryBot.define do
   factory :llm_response, class: "PromptTracker::LlmResponse" do
-    association :prompt_version, factory: :prompt_version
+    association :agent_version, factory: :agent_version
     rendered_prompt { "Hello John, how can I help you today?" }
     variables_used { { "name" => "John" } }
     provider { "openai" }

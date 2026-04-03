@@ -5,9 +5,9 @@ require "rails_helper"
 RSpec.describe PromptTracker::EvaluationJob, type: :job do
   include ActiveJob::TestHelper
 
-  let(:prompt) { create(:prompt, :with_active_version) }
+  let(:prompt) { create(:agent, :with_active_version) }
   let(:version) { prompt.active_version }
-  let(:llm_response) { create(:llm_response, prompt_version: version, response_text: "This is a test response with enough length.") }
+  let(:llm_response) { create(:llm_response, agent_version: version, response_text: "This is a test response with enough length.") }
   let(:evaluator_config) do
     create(:evaluator_config,
            :disabled,

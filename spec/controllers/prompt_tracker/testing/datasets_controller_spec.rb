@@ -7,10 +7,10 @@ module PromptTracker
     RSpec.describe DatasetsController, type: :controller do
       routes { PromptTracker::Engine.routes }
 
-      let(:prompt) { create(:prompt) }
+      let(:prompt) { create(:agent) }
       let(:version) do
-        create(:prompt_version,
-               prompt: prompt,
+        create(:agent_version,
+               agent: prompt,
                variables_schema: [
                  { "name" => "customer_name", "type" => "string", "required" => true },
                  { "name" => "issue", "type" => "string", "required" => false }
@@ -20,37 +20,37 @@ module PromptTracker
 
       describe "GET #index" do
         it "returns success" do
-          get :index, params: { prompt_id: prompt.id, prompt_version_id: version.id }
+          get :index, params: { agent_id: prompt.id, agent_version_id: version.id }
           expect(response).to be_successful
         end
 
         it "assigns @datasets" do
           dataset # create dataset
-          get :index, params: { prompt_id: prompt.id, prompt_version_id: version.id }
+          get :index, params: { agent_id: prompt.id, agent_version_id: version.id }
           expect(assigns(:datasets)).to include(dataset)
         end
       end
 
       describe "GET #show" do
         it "returns success" do
-          get :show, params: { prompt_id: prompt.id, prompt_version_id: version.id, id: dataset.id }
+          get :show, params: { agent_id: prompt.id, agent_version_id: version.id, id: dataset.id }
           expect(response).to be_successful
         end
 
         it "assigns @dataset" do
-          get :show, params: { prompt_id: prompt.id, prompt_version_id: version.id, id: dataset.id }
+          get :show, params: { agent_id: prompt.id, agent_version_id: version.id, id: dataset.id }
           expect(assigns(:dataset)).to eq(dataset)
         end
       end
 
       describe "GET #new" do
         it "returns success" do
-          get :new, params: { prompt_id: prompt.id, prompt_version_id: version.id }
+          get :new, params: { agent_id: prompt.id, agent_version_id: version.id }
           expect(response).to be_successful
         end
 
         it "assigns new @dataset" do
-          get :new, params: { prompt_id: prompt.id, prompt_version_id: version.id }
+          get :new, params: { agent_id: prompt.id, agent_version_id: version.id }
           expect(assigns(:dataset)).to be_a_new(Dataset)
         end
       end
@@ -58,8 +58,8 @@ module PromptTracker
       describe "POST #create" do
         let(:valid_params) do
           {
-            prompt_id: prompt.id,
-            prompt_version_id: version.id,
+            agent_id: prompt.id,
+            agent_version_id: version.id,
             dataset: {
               name: "Test Dataset",
               description: "A test dataset"
@@ -75,14 +75,14 @@ module PromptTracker
 
         it "redirects to dataset show page" do
           post :create, params: valid_params
-          expect(response).to redirect_to(testing_prompt_prompt_version_dataset_path(prompt, version, Dataset.last))
+          expect(response).to redirect_to(testing_agent_agent_version_dataset_path(prompt, version, Dataset.last))
         end
 
         context "with invalid params" do
           it "renders new template" do
             post :create, params: {
-              prompt_id: prompt.id,
-              prompt_version_id: version.id,
+              agent_id: prompt.id,
+              agent_version_id: version.id,
               dataset: { name: "" }
             }
             expect(response).to have_http_status(:unprocessable_entity)
@@ -92,7 +92,7 @@ module PromptTracker
 
       describe "GET #edit" do
         it "returns success" do
-          get :edit, params: { prompt_id: prompt.id, prompt_version_id: version.id, id: dataset.id }
+          get :edit, params: { agent_id: prompt.id, agent_version_id: version.id, id: dataset.id }
           expect(response).to be_successful
         end
       end
@@ -100,8 +100,8 @@ module PromptTracker
       describe "PATCH #update" do
         it "updates the dataset" do
           patch :update, params: {
-            prompt_id: prompt.id,
-            prompt_version_id: version.id,
+            agent_id: prompt.id,
+            agent_version_id: version.id,
             id: dataset.id,
             dataset: { name: "Updated Name" }
           }
@@ -110,12 +110,12 @@ module PromptTracker
 
         it "redirects to dataset show page" do
           patch :update, params: {
-            prompt_id: prompt.id,
-            prompt_version_id: version.id,
+            agent_id: prompt.id,
+            agent_version_id: version.id,
             id: dataset.id,
             dataset: { name: "Updated Name" }
           }
-          expect(response).to redirect_to(testing_prompt_prompt_version_dataset_path(prompt, version, dataset))
+          expect(response).to redirect_to(testing_agent_agent_version_dataset_path(prompt, version, dataset))
         end
       end
 
@@ -123,13 +123,13 @@ module PromptTracker
         it "destroys the dataset" do
           dataset # create dataset
           expect {
-            delete :destroy, params: { prompt_id: prompt.id, prompt_version_id: version.id, id: dataset.id }
+            delete :destroy, params: { agent_id: prompt.id, agent_version_id: version.id, id: dataset.id }
           }.to change(Dataset, :count).by(-1)
         end
 
         it "redirects to datasets index" do
-          delete :destroy, params: { prompt_id: prompt.id, prompt_version_id: version.id, id: dataset.id }
-          expect(response).to redirect_to(testing_prompt_prompt_version_datasets_path(prompt, version))
+          delete :destroy, params: { agent_id: prompt.id, agent_version_id: version.id, id: dataset.id }
+          expect(response).to redirect_to(testing_agent_agent_version_datasets_path(prompt, version))
         end
       end
     end

@@ -7,7 +7,7 @@ module PromptTracker
         # Normalizer for bidirectional field mapping between PromptTracker and OpenAI Assistants API.
         #
         # This normalizer handles the conversion of field names and formats between:
-        # - PromptTracker's internal representation (PromptVersion model)
+        # - PromptTracker's internal representation (AgentVersion model)
         # - OpenAI Assistants API format (as documented in docs/llm_providers/openai/assistants_api.md)
         #
         # Field Mappings:
@@ -18,8 +18,8 @@ module PromptTracker
         # - model_config[:temperature] ↔ temperature
         # - model_config[:top_p] ↔ top_p
         #
-        # @example Convert PromptVersion to OpenAI format
-        #   params = FieldNormalizer.to_openai(prompt_version)
+        # @example Convert AgentVersion to OpenAI format
+        #   params = FieldNormalizer.to_openai(agent_version)
         #   # => { model: "gpt-4o", instructions: "You are...", tools: [{"type": "code_interpreter"}], ... }
         #
         # @example Convert OpenAI response to PromptTracker format
@@ -27,28 +27,28 @@ module PromptTracker
         #   # => { system_prompt: "You are...", notes: "Description", model_config: {...} }
         #
         class FieldNormalizer
-          # Convert PromptVersion to OpenAI Assistants API format.
+          # Convert AgentVersion to OpenAI Assistants API format.
           #
-          # @param prompt_version [PromptVersion] the prompt version to convert
+          # @param agent_version [AgentVersion] the prompt version to convert
           # @return [Hash] parameters for OpenAI Assistants API create/update
-          def self.to_openai(prompt_version)
-            model_config = prompt_version.model_config || {}
+          def self.to_openai(agent_version)
+            model_config = agent_version.model_config || {}
 
             {
               model: model_config[:model] || model_config["model"],
-              name: prompt_version.prompt.name,
-              instructions: prompt_version.system_prompt,
-              description: prompt_version.notes,
+              name: agent_version.agent.name,
+              instructions: agent_version.system_prompt,
+              description: agent_version.notes,
               tools: format_tools_for_openai(model_config[:tools] || model_config["tools"] || []),
               tool_resources: format_tool_resources_for_openai(model_config[:tool_config] || model_config["tool_config"]),
               temperature: model_config[:temperature] || model_config["temperature"] || 0.7,
               top_p: model_config[:top_p] || model_config["top_p"] || 1.0,
               # OpenAI requires all metadata values to be strings (max 512 chars each)
               metadata: {
-                prompt_id: prompt_version.prompt_id.to_s,
-                prompt_slug: prompt_version.prompt.slug,
-                version_id: prompt_version.id.to_s,
-                version_number: prompt_version.version_number.to_s,
+                agent_id: agent_version.agent_id.to_s,
+                prompt_slug: agent_version.agent.slug,
+                version_id: agent_version.id.to_s,
+                version_number: agent_version.version_number.to_s,
                 managed_by: "prompt_tracker",
                 last_synced_at: Time.current.iso8601
               }
@@ -60,7 +60,7 @@ module PromptTracker
           # @param assistant_data [Hash] the assistant data from OpenAI API
           # @param vector_store_names [Hash] optional mapping of vector store IDs to names
           #   e.g., {"vs_abc123" => "My Documents", "vs_def456" => "Knowledge Base"}
-          # @return [Hash] attributes for PromptVersion model
+          # @return [Hash] attributes for AgentVersion model
           def self.from_openai(assistant_data, vector_store_names: {})
             {
               system_prompt: assistant_data["instructions"] || "",

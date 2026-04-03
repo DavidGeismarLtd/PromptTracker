@@ -5,7 +5,7 @@ module PromptTracker
     # Base class for all test runners.
     #
     # Provides common functionality for running tests on any testable
-    # (PromptVersions, Assistants, etc.)
+    # (AgentVersions, Assistants, etc.)
     #
     # Subclasses must implement:
     # - #run - Execute the test
@@ -24,7 +24,7 @@ module PromptTracker
       #
       # @param test_run [TestRun] the test run to execute
       # @param test [Test] the test configuration
-      # @param testable [Object] the testable object (PromptVersion, Assistant, etc.)
+      # @param testable [Object] the testable object (AgentVersion, Assistant, etc.)
       # @param use_real_llm [Boolean] whether to use real LLM API (default: false)
       def initialize(test_run:, test:, testable:, use_real_llm: false)
         @test_run = test_run

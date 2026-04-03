@@ -5,7 +5,7 @@ module PromptTracker
   module ModelConfigHelper
     # Get model configuration presenter for a prompt version
     #
-    # @param version [PromptVersion] the prompt version
+    # @param version [AgentVersion] the prompt version
     # @return [ModelConfigPresenter] presenter object with all config data
     def model_config_presenter(version)
       ModelConfigPresenter.new(version)
@@ -15,7 +15,7 @@ module PromptTracker
     class ModelConfigPresenter
       attr_reader :version, :model_config
 
-      # @param version [PromptVersion] the prompt version
+      # @param version [AgentVersion] the prompt version
       def initialize(version)
         @version = version
         @model_config = version.model_config || {}

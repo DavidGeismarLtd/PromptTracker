@@ -94,15 +94,15 @@ module PromptTracker
       end
 
       def fallback_name
-        base = if testable_name.present?
-                 [testable_name, dataset_type.presence].compact.join(" ")
-               else
-                 raw_name.presence || "dataset"
-               end
+        base =
+          if testable_name.present?
+            [ testable_name, dataset_type.presence ].compact.join(" ")
+          else
+            raw_name.presence || "dataset"
+          end
 
         base.parameterize(separator: "_")
       end
     end
   end
 end
-

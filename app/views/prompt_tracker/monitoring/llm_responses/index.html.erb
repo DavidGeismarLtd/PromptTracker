@@ -36,8 +36,8 @@
         <!-- Prompt Filter -->
         <div>
           <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Prompt</label>
-          <%= f.select :prompt_id,
-              options_for_select([["All Prompts", ""]] + @prompts.map { |p| [p.name, p.id] }, params[:prompt_id]),
+          <%= f.select :agent_id,
+              options_for_select([["All Prompts", ""]] + @prompts.map { |p| [p.name, p.id] }, params[:agent_id]),
               {},
               style: "width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 0.875rem;" %>
         </div>

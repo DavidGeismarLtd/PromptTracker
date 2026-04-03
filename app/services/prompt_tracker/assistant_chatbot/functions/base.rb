@@ -50,7 +50,7 @@ module PromptTracker
         # Return a success result
         # @param message [String] success message to show user
         # @param links [Array<Hash>] array of link hashes with :text and :url
-        # @param entities [Hash] hash of created entity IDs (e.g., prompt_id: 123)
+        # @param entities [Hash] hash of created entity IDs (e.g., agent_id: 123)
         def success(message, links: [], entities: {})
           Result.new(
             success?: true,

@@ -12,7 +12,7 @@ export default class extends Controller {
     event.preventDefault()
 
     const configId = document.getElementById('edit_evaluator_id').value
-    const promptId = document.getElementById('edit_prompt_id').value
+    const promptId = document.getElementById('edit_agent_id').value
     const enabled = document.getElementById('edit_enabled').checked
 
     // Extract config from form fields (not JSON textarea)

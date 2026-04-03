@@ -11,19 +11,19 @@ module PromptTracker
     # Other actions (save, preview) work fine with the same pattern.
     skip_forgery_protection only: [ :run_conversation, :reset_conversation, :preview, :generate, :save, :check_version_impact ]
 
-    before_action :set_prompt, if: -> { params[:prompt_id].present? }
-    before_action :set_prompt_version, if: -> { params[:prompt_version_id].present? }
+    before_action :set_prompt, if: -> { params[:agent_id].present? }
+    before_action :set_agent_version, if: -> { params[:agent_version_id].present? }
     before_action :set_version, only: [ :show ]
 
     # GET /playground (standalone)
-    # GET /prompts/:prompt_id/playground (edit existing prompt - uses active/latest version)
-    # GET /prompts/:prompt_id/versions/:prompt_version_id/playground (edit specific version)
+    # GET /prompts/:agent_id/playground (edit existing prompt - uses active/latest version)
+    # GET /prompts/:agent_id/versions/:agent_version_id/playground (edit specific version)
     # Show the playground interface
     def show
-      if @prompt_version
+      if @agent_version
         # Version-specific playground
-        @prompt = @prompt_version.prompt
-        @version = @prompt_version
+        @prompt = @agent_version.agent
+        @version = @agent_version
         @variables = extract_variables_from_both_prompts(@version.system_prompt, @version.user_prompt)
       elsif @prompt
         # Prompt-level playground (shortcut to active/latest version)
@@ -50,7 +50,7 @@ module PromptTracker
       Rails.logger.debug "================================================"
     end
 
-    # POST /prompts/:prompt_id/playground/preview
+    # POST /prompts/:agent_id/playground/preview
     # POST /playground/preview
     # Preview both system_prompt and user_prompt with given variables
     def preview
@@ -95,8 +95,8 @@ module PromptTracker
     end
 
     # POST /playground/generate
-    # POST /prompts/:prompt_id/playground/generate
-    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/generate
+    # POST /prompts/:agent_id/playground/generate
+    # POST /prompts/:agent_id/versions/:agent_version_id/playground/generate
     # Generate prompts from scratch based on a description
     def generate
       description = params[:description]
@@ -118,14 +118,14 @@ module PromptTracker
     end
 
     # POST /playground/save (standalone - creates new prompt)
-    # POST /prompts/:prompt_id/playground/save (creates new version or updates existing)
-    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/save (updates specific version or creates new)
+    # POST /prompts/:agent_id/playground/save (creates new version or updates existing)
+    # POST /prompts/:agent_id/versions/:agent_version_id/playground/save (updates specific version or creates new)
     # Save the user_prompt as a new draft version, update existing version, or new prompt
     def save
       result = PlaygroundSaveService.call(
         params: save_params,
-        prompt: @prompt,
-        prompt_version: @prompt_version
+        agent: @prompt,
+        agent_version: @agent_version
       )
 
       if result.success?
@@ -136,8 +136,8 @@ module PromptTracker
     end
 
     # POST /playground/run_conversation
-    # POST /prompts/:prompt_id/playground/run_conversation
-    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/run_conversation
+    # POST /prompts/:agent_id/playground/run_conversation
+    # POST /prompts/:agent_id/versions/:agent_version_id/playground/run_conversation
     # Run a conversation turn with the LLM
     def run_conversation
       result = RunPlaygroundConversationService.call(
@@ -167,8 +167,8 @@ module PromptTracker
     end
 
     # POST /playground/reset_conversation
-    # POST /prompts/:prompt_id/playground/reset_conversation
-    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/reset_conversation
+    # POST /prompts/:agent_id/playground/reset_conversation
+    # POST /prompts/:agent_id/versions/:agent_version_id/playground/reset_conversation
     # Reset the conversation state
     def reset_conversation
       clear_conversation_state
@@ -177,11 +177,11 @@ module PromptTracker
     end
 
     # POST /playground/check_version_impact
-    # POST /prompts/:prompt_id/playground/check_version_impact
-    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/check_version_impact
+    # POST /prompts/:agent_id/playground/check_version_impact
+    # POST /prompts/:agent_id/versions/:agent_version_id/playground/check_version_impact
     # Check if saving will create a new version and why
     def check_version_impact
-      version = @prompt_version || (@prompt && (@prompt.active_version || @prompt.latest_version))
+      version = @agent_version || (@prompt && (@prompt.active_version || @prompt.latest_version))
 
       # No version = new version will be created (first version)
       unless version
@@ -232,18 +232,18 @@ module PromptTracker
       end
     end
 
-    # POST /prompts/:prompt_id/playground/push_to_remote
-    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/push_to_remote
+    # POST /prompts/:agent_id/playground/push_to_remote
+    # POST /prompts/:agent_id/versions/:agent_version_id/playground/push_to_remote
     # Push local changes to remote entity (e.g., OpenAI Assistant)
     def push_to_remote
       # Standalone mode doesn't support sync
-      unless @prompt_version || @version
+      unless @agent_version || @version
         render json: { success: false, error: "Cannot push in standalone mode" }, status: :unprocessable_entity
         return
       end
 
       # Get the version to push
-      version_to_push = @prompt_version || @version
+      version_to_push = @agent_version || @version
 
       # Update the version with current form data first
       update_params = build_update_params
@@ -255,9 +255,9 @@ module PromptTracker
 
       # Call the appropriate push service
       result = if assistant_id.present?
-        RemoteEntity::Openai::Assistants::PushService.update(prompt_version: version_to_push)
+        RemoteEntity::Openai::Assistants::PushService.update(agent_version: version_to_push)
       else
-        RemoteEntity::Openai::Assistants::PushService.create(prompt_version: version_to_push)
+        RemoteEntity::Openai::Assistants::PushService.create(agent_version: version_to_push)
       end
 
       if result.success?
@@ -274,18 +274,18 @@ module PromptTracker
       end
     end
 
-    # POST /prompts/:prompt_id/playground/pull_from_remote
-    # POST /prompts/:prompt_id/versions/:prompt_version_id/playground/pull_from_remote
-    # Pull latest from remote entity (e.g., OpenAI Assistant) and update local PromptVersion
+    # POST /prompts/:agent_id/playground/pull_from_remote
+    # POST /prompts/:agent_id/versions/:agent_version_id/playground/pull_from_remote
+    # Pull latest from remote entity (e.g., OpenAI Assistant) and update local AgentVersion
     def pull_from_remote
       # Standalone mode doesn't support sync
-      unless @prompt_version || @version
+      unless @agent_version || @version
         render json: { success: false, error: "Cannot pull in standalone mode" }, status: :unprocessable_entity
         return
       end
 
       # Get the version to update
-      version_to_update = @prompt_version || @version
+      version_to_update = @agent_version || @version
 
       # Check if assistant_id exists
       assistant_id = version_to_update.model_config&.dig(:metadata, :assistant_id) ||
@@ -297,7 +297,7 @@ module PromptTracker
       end
 
       # Call the pull service
-      result = RemoteEntity::Openai::Assistants::PullService.call(prompt_version: version_to_update)
+      result = RemoteEntity::Openai::Assistants::PullService.call(agent_version: version_to_update)
 
       if result.success?
         render json: {
@@ -327,14 +327,14 @@ module PromptTracker
 
     # Check if structural fields are changing compared to the version
     #
-    # @param version [PromptVersion] the version to compare against
+    # @param version [AgentVersion] the version to compare against
     # @return [Boolean] true if structural fields are changing
     def structural_fields_changing?(version)
       old_config = version.model_config || {}
       new_config = params[:model_config]&.to_unsafe_h || {}
 
       # Check structural model_config keys
-      structural_keys_changed = PromptVersion::STRUCTURAL_MODEL_CONFIG_KEYS.any? do |key|
+      structural_keys_changed = AgentVersion::STRUCTURAL_MODEL_CONFIG_KEYS.any? do |key|
         old_config[key] != new_config[key]
       end
 
@@ -346,7 +346,7 @@ module PromptTracker
         version.response_schema != extract_response_schema_param
     end
 
-    # Extract variables_schema from both system_prompt and user_prompt (mirrors PromptVersion#extract_variables_schema)
+    # Extract variables_schema from both system_prompt and user_prompt (mirrors AgentVersion#extract_variables_schema)
     #
     # @param system_prompt [String] the system prompt template
     # @param user_prompt [String] the user prompt template
@@ -387,16 +387,16 @@ module PromptTracker
     end
 
     def set_prompt
-      @prompt = Prompt.find(params[:prompt_id])
+      @prompt = Agent.find(params[:agent_id])
     end
 
-    def set_prompt_version
-      @prompt_version = PromptVersion.find(params[:prompt_version_id])
+    def set_agent_version
+      @agent_version = AgentVersion.find(params[:agent_version_id])
     end
 
     def set_version
       if params[:version_id]
-        @version = @prompt.prompt_versions.find(params[:version_id])
+        @version = @prompt.agent_versions.find(params[:version_id])
       end
     end
 
@@ -422,11 +422,11 @@ module PromptTracker
         success: true,
         version_id: result.version.id,
         version_number: result.version.version_number,
-        redirect_url: testing_prompt_prompt_version_path(result.prompt, result.version),
+        redirect_url: testing_agent_agent_version_path(result.agent, result.version),
         action: result.action.to_s,
         message: build_save_message(result)
       }
-      response[:prompt_id] = result.prompt.id if result.action == :created && @prompt.nil?
+      response[:agent_id] = result.agent.id if result.action == :created && @prompt.nil?
       response[:version_created_reason] = result.version_created_reason.to_s if result.version_created_reason
       response
     end
@@ -509,8 +509,8 @@ module PromptTracker
     # Generate unique session key for conversation state
     def conversation_session_key
       base_key = "playground_conversation"
-      if @prompt_version
-        "#{base_key}_version_#{@prompt_version.id}"
+      if @agent_version
+        "#{base_key}_version_#{@agent_version.id}"
       elsif @prompt
         "#{base_key}_prompt_#{@prompt.id}"
       else

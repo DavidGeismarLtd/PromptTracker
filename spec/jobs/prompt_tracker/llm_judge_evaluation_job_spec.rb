@@ -6,9 +6,9 @@ require "ruby_llm/schema"
 RSpec.describe PromptTracker::LlmJudgeEvaluationJob, type: :job do
   include ActiveJob::TestHelper
 
-  let(:prompt) { create(:prompt, :with_active_version) }
+  let(:prompt) { create(:agent, :with_active_version) }
   let(:version) { prompt.active_version }
-  let(:llm_response) { create(:llm_response, prompt_version: version) }
+  let(:llm_response) { create(:llm_response, agent_version: version) }
   let(:config) do
     {
       judge_model: "gpt-4o",

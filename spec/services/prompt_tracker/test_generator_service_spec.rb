@@ -4,10 +4,10 @@ require "rails_helper"
 
 module PromptTracker
   RSpec.describe TestGeneratorService do
-    let(:prompt) { create(:prompt) }
-    let(:prompt_version) do
-      create(:prompt_version,
-             prompt: prompt,
+    let(:prompt) { create(:agent) }
+    let(:agent_version) do
+      create(:agent_version,
+             agent: prompt,
              system_prompt: "You are a helpful assistant.",
              user_prompt: "Help me with {{ topic }}",
              variables_schema: [ { "name" => "topic", "type" => "string", "required" => true } ])
@@ -57,7 +57,7 @@ module PromptTracker
       end
 
       it "generates tests for the prompt version" do
-        result = described_class.generate(prompt_version: prompt_version)
+        result = described_class.generate(agent_version: agent_version)
 
         expect(result[:count]).to eq(2)
         expect(result[:tests].size).to eq(2)
@@ -66,26 +66,26 @@ module PromptTracker
 
       it "creates Test records in the database" do
         expect {
-          described_class.generate(prompt_version: prompt_version)
+          described_class.generate(agent_version: agent_version)
         }.to change(Test, :count).by(2)
       end
 
       it "creates EvaluatorConfig records for each test" do
         expect {
-          described_class.generate(prompt_version: prompt_version)
+          described_class.generate(agent_version: agent_version)
         }.to change(EvaluatorConfig, :count).by(2)
       end
 
       it "associates tests with the prompt version" do
-        result = described_class.generate(prompt_version: prompt_version)
+        result = described_class.generate(agent_version: agent_version)
 
         result[:tests].each do |test|
-          expect(test.testable).to eq(prompt_version)
+          expect(test.testable).to eq(agent_version)
         end
       end
 
       it "stores AI generation metadata" do
-        result = described_class.generate(prompt_version: prompt_version)
+        result = described_class.generate(agent_version: agent_version)
 
         test = result[:tests].first
         expect(test.metadata["ai_generated"]).to be true
@@ -96,7 +96,7 @@ module PromptTracker
       end
 
       it "stores the generation prompt in metadata" do
-        result = described_class.generate(prompt_version: prompt_version, instructions: "Focus on edge cases")
+        result = described_class.generate(agent_version: agent_version, instructions: "Focus on edge cases")
 
         test = result[:tests].first
         generation_prompt = test.metadata["generation_prompt"]
@@ -113,7 +113,7 @@ module PromptTracker
         ).and_return(mock_response)
 
         described_class.generate(
-          prompt_version: prompt_version,
+          agent_version: agent_version,
           instructions: "Focus on edge cases"
         )
       end
@@ -130,7 +130,7 @@ module PromptTracker
         expect(RubyLLM).to receive(:chat).with(model: "gpt-4o-custom").and_return(mock_chat)
         expect(mock_chat).to receive(:with_temperature).with(0.8).and_return(mock_chat)
 
-        described_class.generate(prompt_version: prompt_version)
+        described_class.generate(agent_version: agent_version)
       end
 
       it "falls back to defaults when context not configured" do
@@ -145,7 +145,7 @@ module PromptTracker
         expect(RubyLLM).to receive(:chat).with(model: "gpt-4o").and_return(mock_chat)
         expect(mock_chat).to receive(:with_temperature).with(0.7).and_return(mock_chat)
 
-        described_class.generate(prompt_version: prompt_version)
+        described_class.generate(agent_version: agent_version)
       end
 
       it "includes prompt context in the generation prompt" do
@@ -153,7 +153,7 @@ module PromptTracker
           a_string_including("You are a helpful assistant.")
         ).and_return(mock_response)
 
-        described_class.generate(prompt_version: prompt_version)
+        described_class.generate(agent_version: agent_version)
       end
 
       it "includes variables in the generation prompt" do
@@ -161,7 +161,7 @@ module PromptTracker
           a_string_including("topic")
         ).and_return(mock_response)
 
-        described_class.generate(prompt_version: prompt_version)
+        described_class.generate(agent_version: agent_version)
       end
 
       it "includes available evaluators in the generation prompt" do
@@ -169,13 +169,13 @@ module PromptTracker
           a_string_including("AVAILABLE EVALUATORS")
         ).and_return(mock_response)
 
-        described_class.generate(prompt_version: prompt_version)
+        described_class.generate(agent_version: agent_version)
       end
 
       context "when prompt version has vector stores configured" do
-        let(:prompt_version_with_vector_stores) do
-          create(:prompt_version,
-                 prompt: prompt,
+        let(:agent_version_with_vector_stores) do
+          create(:agent_version,
+                 agent: prompt,
                  model_config: {
                    "provider" => "openai",
                    "api" => "assistants",
@@ -199,7 +199,7 @@ module PromptTracker
               .and(a_string_including("vs_123"))
           ).and_return(mock_response)
 
-          described_class.generate(prompt_version: prompt_version_with_vector_stores)
+          described_class.generate(agent_version: agent_version_with_vector_stores)
         end
 
         it "includes file_search guidelines in the prompt" do
@@ -207,7 +207,7 @@ module PromptTracker
             a_string_including("If vector stores are configured, ALWAYS include at least one test with file_search evaluator")
           ).and_return(mock_response)
 
-          described_class.generate(prompt_version: prompt_version_with_vector_stores)
+          described_class.generate(agent_version: agent_version_with_vector_stores)
         end
       end
 
@@ -232,7 +232,7 @@ module PromptTracker
         it "skips invalid evaluators but creates valid ones" do
           allow(mock_chat).to receive(:ask).and_return(mock_response_with_invalid)
 
-          result = described_class.generate(prompt_version: prompt_version)
+          result = described_class.generate(agent_version: agent_version)
 
           test = result[:tests].first
           expect(test.evaluator_configs.count).to eq(1)
@@ -268,7 +268,7 @@ module PromptTracker
           # First call returns strings, second call returns full objects
           allow(mock_chat).to receive(:ask).and_return(string_response, expanded_response)
 
-          result = described_class.generate(prompt_version: prompt_version)
+          result = described_class.generate(agent_version: agent_version)
 
           # Verify the follow-up call was made
           expect(mock_chat).to have_received(:ask).twice

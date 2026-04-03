@@ -32,7 +32,7 @@ module PromptTracker
       #
       # @param model_config [Hash] model configuration from prompt version
       # @param use_real_llm [Boolean] whether to use real LLM API or mock
-      # @param testable [Object] the testable object (PromptVersion)
+      # @param testable [Object] the testable object (AgentVersion)
       def initialize(model_config:, use_real_llm: false, testable: nil)
         @model_config = model_config.with_indifferent_access
         @use_real_llm = use_real_llm

@@ -153,16 +153,16 @@ module PromptTracker
 
       # Step 1: Find prompt and version
       prompt = find_prompt
-      prompt_version = find_version(prompt)
+      agent_version = find_version(prompt)
 
       # Step 2: Resolve provider and model (from override or model_config)
-      resolve_provider_and_model(prompt_version)
+      resolve_provider_and_model(agent_version)
 
       # Step 3: Render template
-      rendered_prompt = render_template(prompt_version)
+      rendered_prompt = render_template(agent_version)
 
       # Step 4: Create pending LlmResponse record
-      llm_response = create_pending_response(prompt_version, rendered_prompt)
+      llm_response = create_pending_response(agent_version, rendered_prompt)
 
       # Step 5: Execute LLM call with timing
       start_time = Time.current
@@ -202,7 +202,7 @@ module PromptTracker
     # @return [Prompt] the prompt
     # @raise [PromptNotFoundError] if not found
     def find_prompt
-      prompt = Prompt.find_by(slug: prompt_slug)
+      prompt = Agent.find_by(slug: prompt_slug)
       raise PromptNotFoundError, "Prompt '#{prompt_slug}' not found" if prompt.nil?
 
       prompt
@@ -214,12 +214,12 @@ module PromptTracker
     # Otherwise, check for A/B test and select variant, or use active version.
     #
     # @param prompt [Prompt] the prompt
-    # @return [PromptVersion] the version
+    # @return [AgentVersion] the version
     # @raise [VersionNotFoundError] if not found
     def find_version(prompt)
       # If specific version requested, use it (no A/B testing)
       if version_number
-        version = prompt.prompt_versions.find_by(version_number: version_number)
+        version = prompt.agent_versions.find_by(version_number: version_number)
         if version.nil?
           raise VersionNotFoundError, "version #{version_number} not found for prompt '#{prompt_slug}'"
         end
@@ -247,19 +247,19 @@ module PromptTracker
 
     # Render the template with variables
     #
-    # @param prompt_version [PromptVersion] the version
+    # @param agent_version [AgentVersion] the version
     # @return [String] rendered template
-    def render_template(prompt_version)
-      prompt_version.render(variables)
+    def render_template(agent_version)
+      agent_version.render(variables)
     end
 
     # Create a pending LlmResponse record
     #
-    # @param prompt_version [PromptVersion] the version
+    # @param agent_version [AgentVersion] the version
     # @param rendered_prompt [String] the rendered template
     # @return [LlmResponse] the created record
-    def create_pending_response(prompt_version, rendered_prompt)
-      prompt_version.llm_responses.create!(
+    def create_pending_response(agent_version, rendered_prompt)
+      agent_version.llm_responses.create!(
         rendered_prompt: rendered_prompt,
         variables_used: variables,
         provider: provider,
@@ -278,12 +278,12 @@ module PromptTracker
     #
     # Priority: explicit params > model_config > error
     #
-    # @param prompt_version [PromptVersion] the version
+    # @param agent_version [AgentVersion] the version
     # @raise [ArgumentError] if provider/model cannot be resolved
-    def resolve_provider_and_model(prompt_version)
+    def resolve_provider_and_model(agent_version)
       # Try override first, then model_config
-      @provider = @provider_override || prompt_version.model_config&.dig("provider")
-      @model = @model_override || prompt_version.model_config&.dig("model")
+      @provider = @provider_override || agent_version.model_config&.dig("provider")
+      @model = @model_override || agent_version.model_config&.dig("model")
 
       # Validate that we have both
       if @provider.nil? || @model.nil?

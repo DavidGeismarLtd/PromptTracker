@@ -3,7 +3,7 @@
 module PromptTracker
   module AssistantChatbot
     module Functions
-      # Runs tests for a PromptVersion.
+      # Runs tests for a AgentVersion.
       #
       # This function is used by the assistant as the final step of a
       # conversational wizard. By the time it is called, the assistant
@@ -14,7 +14,7 @@ module PromptTracker
       #   custom_variables.
       #
       # Arguments:
-      # - prompt_version_id: (required) ID of the prompt version
+      # - agent_version_id: (required) ID of the prompt version
       # - test_ids: (optional) Array of specific test IDs to run. If omitted, runs all tests.
       # - run_mode: (required) "dataset" or "custom"
       # - dataset_id: (required when run_mode == "dataset") ID of the dataset to use
@@ -28,7 +28,7 @@ module PromptTracker
         protected
 
         def execute
-          version = find_prompt_version
+          version = find_agent_version
           tests = find_tests(version)
           run_mode = determine_run_mode
 
@@ -62,16 +62,16 @@ module PromptTracker
         end
 
         def validate_arguments!
-          raise ArgumentError, "prompt_version_id is required" if arg(:prompt_version_id).blank?
+          raise ArgumentError, "agent_version_id is required" if arg(:agent_version_id).blank?
           raise ArgumentError, "run_mode is required" if arg(:run_mode).blank?
         end
 
         private
 
-        def find_prompt_version
-          version_id = arg(:prompt_version_id)
-          version = PromptVersion.find_by(id: version_id)
-          raise ArgumentError, "PromptVersion #{version_id} not found" unless version
+        def find_agent_version
+          version_id = arg(:agent_version_id)
+          version = AgentVersion.find_by(id: version_id)
+          raise ArgumentError, "AgentVersion #{version_id} not found" unless version
           version
         end
 
@@ -210,7 +210,7 @@ module PromptTracker
         end
 
         def build_links(version)
-          base_path = "/prompt_tracker/testing/prompts/#{version.prompt_id}/versions/#{version.id}"
+          base_path = "/prompt_tracker/testing/prompts/#{version.agent_id}/versions/#{version.id}"
 
           [
             link("View test results", "#{base_path}#tests", icon: "list-check"),

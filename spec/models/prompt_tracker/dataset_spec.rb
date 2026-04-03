@@ -13,14 +13,14 @@ module PromptTracker
 
     # Setup
     let(:prompt) do
-      Prompt.create!(
+      Agent.create!(
         name: "test_prompt",
         description: "Test prompt for datasets"
       )
     end
 
     let(:version) do
-      v = prompt.prompt_versions.create!(
+      v = prompt.agent_versions.create!(
           system_prompt: "You are a helpful assistant.",
         user_prompt: "Hello {{name}}, your issue is {{issue}}",
         version_number: 1,
@@ -46,7 +46,7 @@ module PromptTracker
 
       it { is_expected.to validate_presence_of(:name) }
 
-      it "validates uniqueness of name scoped to prompt_version" do
+      it "validates uniqueness of name scoped to agent_version" do
         version.datasets.create!(name: "dataset1", schema: version.variables_schema)
         duplicate = version.datasets.build(name: "dataset1", schema: version.variables_schema)
 
@@ -55,7 +55,7 @@ module PromptTracker
       end
 
       it "allows same name for different versions" do
-        version2 = prompt.prompt_versions.create!(
+        version2 = prompt.agent_versions.create!(
             system_prompt: "You are a helpful assistant.",
           user_prompt: "Different {{name}}",
           version_number: 2,
@@ -137,7 +137,7 @@ module PromptTracker
 
       it "returns false when version has no schema" do
         # Create a version without variables_schema
-        version_without_schema = create(:prompt_version, prompt: prompt, variables_schema: nil)
+        version_without_schema = create(:agent_version, agent: prompt, variables_schema: nil)
 
         # Build dataset with some schema (must bypass validation)
         dataset = version_without_schema.datasets.build(

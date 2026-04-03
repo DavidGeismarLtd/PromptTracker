@@ -142,13 +142,13 @@ module PromptTracker
     end
 
     # Check if this is a prompt version test run
-    def prompt_version_test?
-      test.testable_type == "PromptTracker::PromptVersion"
+    def agent_version_test?
+      test.testable_type == "PromptTracker::AgentVersion"
     end
 
     # Get the prompt version (if this is a prompt version test)
-    def prompt_version
-      return nil unless prompt_version_test?
+    def agent_version
+      return nil unless agent_version_test?
       test.testable
     end
 

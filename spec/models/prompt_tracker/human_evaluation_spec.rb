@@ -5,9 +5,9 @@ require "rails_helper"
 module PromptTracker
   RSpec.describe HumanEvaluation, type: :model do
     # Test data setup
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
-    let(:llm_response) { create(:llm_response, prompt_version: version) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
+    let(:llm_response) { create(:llm_response, agent_version: version) }
     let(:evaluation) { create(:evaluation, llm_response: llm_response, score: 75) }
 
     describe "associations" do

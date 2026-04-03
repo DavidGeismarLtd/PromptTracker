@@ -144,7 +144,7 @@ module PromptTracker
 
     # Validates that the evaluator is compatible with the testable
     # This prevents adding evaluators to tests where they won't work
-    # (e.g., adding a ConversationJudgeEvaluator to a PromptVersion test)
+    # (e.g., adding a ConversationJudgeEvaluator to a AgentVersion test)
     def evaluator_compatible_with_testable
       return unless configurable.respond_to?(:testable)
       return if evaluator_type.blank?

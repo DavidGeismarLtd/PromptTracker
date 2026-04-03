@@ -16,20 +16,20 @@
 #  updated_at         :datetime         not null
 #
 module PromptTracker
-  # Represents a test case for any testable (PromptVersion or Assistant).
+  # Represents a test case for any testable (AgentVersion or Assistant).
   #
   # A Test defines:
   # - Evaluators to run (both binary and scored modes)
   # - Test runs are executed against datasets (DatasetRow provides variables)
-  # - For PromptVersions: uses the prompt_version's model_config for LLM calls
+  # - For AgentVersions: uses the agent_version's model_config for LLM calls
   # - For Assistants: runs multi-turn conversations with LLM-simulated users
   #
   # Tests can run in single-turn or multi-turn (conversational) mode based on
   # whether an interlocutor_simulation_prompt is provided in the test data.
   #
-  # @example Create a test for a PromptVersion
+  # @example Create a test for a AgentVersion
   #   test = Test.create!(
-  #     testable: prompt_version,
+  #     testable: agent_version,
   #     name: "greeting_premium_user",
   #     description: "Test greeting for premium customers"
   #   )
@@ -52,7 +52,7 @@ module PromptTracker
   class Test < ApplicationRecord
     self.table_name = "prompt_tracker_tests"
 
-    # Polymorphic association - can belong to PromptVersion or Assistant
+    # Polymorphic association - can belong to AgentVersion or Assistant
     belongs_to :testable, polymorphic: true
 
     # Associations
@@ -89,7 +89,7 @@ module PromptTracker
     scope :enabled, -> { where(enabled: true) }
     scope :disabled, -> { where(enabled: false) }
     scope :recent, -> { order(created_at: :desc) }
-    scope :for_prompt_versions, -> { where(testable_type: "PromptTracker::PromptVersion") }
+    scope :for_agent_versions, -> { where(testable_type: "PromptTracker::AgentVersion") }
 
     # Get recent test runs
     def recent_runs(limit = 10)
@@ -142,7 +142,7 @@ module PromptTracker
     # @return [String] the partial path
     #
     # @example Single-turn test
-    #   test.test_run_row_partial # => "prompt_tracker/testing/test_runs/prompt_versions/row"
+    #   test.test_run_row_partial # => "prompt_tracker/testing/test_runs/agent_versions/row"
     #
     # @example Conversational test
     #   test.test_run_row_partial # => "prompt_tracker/testing/test_runs/conversational_row"

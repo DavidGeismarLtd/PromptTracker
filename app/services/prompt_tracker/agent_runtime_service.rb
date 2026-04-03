@@ -138,7 +138,7 @@ module PromptTracker
       messages = []
 
       # Add system prompt if present
-      system_prompt = deployed_agent.prompt_version.system_prompt
+      system_prompt = deployed_agent.agent_version.system_prompt
       messages << { role: "system", content: system_prompt } if system_prompt.present?
 
       # Add conversation history
@@ -157,7 +157,7 @@ module PromptTracker
     end
 
     def call_llm(messages)
-      model_config = deployed_agent.prompt_version.model_config
+      model_config = deployed_agent.agent_version.model_config
 
       # Build tools array from function definitions
       tools = build_tools_array
@@ -342,11 +342,11 @@ module PromptTracker
 
     def track_response(llm_response, conversation)
       # Create LlmResponse record for monitoring
-      model_config = deployed_agent.prompt_version.model_config
+      model_config = deployed_agent.agent_version.model_config
       provider = model_config["provider"] || "openai"
 
       PromptTracker::LlmResponse.create!(
-        prompt_version: deployed_agent.prompt_version,
+        agent_version: deployed_agent.agent_version,
         agent_conversation: conversation,
         rendered_prompt: message,
         response_text: llm_response[:text],

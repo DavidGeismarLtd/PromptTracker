@@ -13,7 +13,7 @@ module PromptTracker
   #   handler = ConversationTestHandlerFactory.build(
   #     model_config: { provider: "openai", api: "chat_completions", model: "gpt-4o" },
   #     use_real_llm: true,
-  #     testable: prompt_version
+  #     testable: agent_version
   #   )
   #   # Returns: TestRunners::Openai::ChatCompletionHandler
   #

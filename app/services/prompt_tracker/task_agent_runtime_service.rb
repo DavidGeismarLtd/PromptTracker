@@ -32,7 +32,7 @@ module PromptTracker
     # @return [Hash] execution result with :success and :output or :error
     def self.call(task_agent:, task_run:, variables: nil, logger: nil)
       # Determine API type from model_config
-      model_config = task_agent.prompt_version.model_config
+      model_config = task_agent.agent_version.model_config
       api_type = ApiTypes.from_config(model_config["provider"], model_config["api"])
 
       # Route to appropriate subclass
@@ -331,8 +331,8 @@ module PromptTracker
     # @param phase [Symbol] :planning or :execution
     # @return [Hash] normalized LLM response
     def call_llm(messages, phase: :execution)
-      model_config = task_agent.prompt_version.model_config
-      system_prompt = task_agent.prompt_version.system_prompt
+      model_config = task_agent.agent_version.model_config
+      system_prompt = task_agent.agent_version.system_prompt
 
       # Enhance system prompt with planning instructions if enabled
       if @planning_enabled
@@ -520,7 +520,7 @@ module PromptTracker
     end
 
     def track_llm_response(llm_response, rendered_prompt: nil)
-      model_config = task_agent.prompt_version.model_config
+      model_config = task_agent.agent_version.model_config
       provider = model_config["provider"] || "openai"
 
       # Use explicit prompt if provided, otherwise fall back to conversation history
@@ -531,7 +531,7 @@ module PromptTracker
       end
 
       llm_response_record = PromptTracker::LlmResponse.create!(
-        prompt_version: task_agent.prompt_version,
+        agent_version: task_agent.agent_version,
         deployed_agent: task_agent,
         task_run: task_run,
         rendered_prompt: rendered_prompt,

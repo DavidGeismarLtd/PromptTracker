@@ -12,7 +12,7 @@ module PromptTracker
   # @example Basic usage
   #   selection = AbTestCoordinator.select_version_for_prompt("customer_greeting")
   #   # => {
-  #   #   version: <PromptVersion>,
+  #   #   version: <AgentVersion>,
   #   #   ab_test: <AbTest> or nil,
   #   #   variant: "A" or "B" or nil
   #   # }
@@ -46,7 +46,7 @@ module PromptTracker
     #   variant = selection[:variant]
     #
     def self.select_version_for_prompt(prompt_name)
-      prompt = Prompt.find_by(name: prompt_name)
+      prompt = Agent.find_by(name: prompt_name)
       return nil unless prompt
 
       # Check for running A/B test
@@ -80,7 +80,7 @@ module PromptTracker
     # @return [Hash] selection hash with :version, :ab_test, :variant keys
     #
     # @example
-    #   prompt = Prompt.find_by(name: "greeting")
+    #   prompt = Agent.find_by(name: "greeting")
     #   selection = AbTestCoordinator.select_version_for(prompt)
     #
     def self.select_version_for(prompt)
@@ -118,7 +118,7 @@ module PromptTracker
     #   AbTestCoordinator.ab_test_running?("greeting")  # => true or false
     #
     def self.ab_test_running?(prompt_name)
-      prompt = Prompt.find_by(name: prompt_name)
+      prompt = Agent.find_by(name: prompt_name)
       return false unless prompt
 
       prompt.ab_tests.running.exists?
@@ -133,7 +133,7 @@ module PromptTracker
     #   ab_test = AbTestCoordinator.get_running_test("greeting")
     #
     def self.get_running_test(prompt_name)
-      prompt = Prompt.find_by(name: prompt_name)
+      prompt = Agent.find_by(name: prompt_name)
       return nil unless prompt
 
       prompt.ab_tests.running.first

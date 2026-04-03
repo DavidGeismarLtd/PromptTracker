@@ -7,10 +7,10 @@ module PromptTracker
     module Openai
       module Assistants
         RSpec.describe FieldNormalizer do
-          let(:prompt) { create(:prompt, name: "Test Assistant", slug: "test_assistant") }
-          let(:prompt_version) do
-            create(:prompt_version,
-              prompt: prompt,
+          let(:prompt) { create(:agent, name: "Test Assistant", slug: "test_assistant") }
+          let(:agent_version) do
+            create(:agent_version,
+              agent: prompt,
               system_prompt: "You are a helpful assistant.",
               notes: "Test description",
               model_config: {
@@ -24,8 +24,8 @@ module PromptTracker
           end
 
           describe ".to_openai" do
-            it "converts PromptVersion to OpenAI format" do
-              result = described_class.to_openai(prompt_version)
+            it "converts AgentVersion to OpenAI format" do
+              result = described_class.to_openai(agent_version)
 
               expect(result[:model]).to eq("gpt-4o")
               expect(result[:name]).to eq("Test Assistant")
@@ -36,7 +36,7 @@ module PromptTracker
             end
 
             it "formats tools array correctly" do
-              result = described_class.to_openai(prompt_version)
+              result = described_class.to_openai(agent_version)
 
               expect(result[:tools]).to eq([
                 { "type" => "code_interpreter" },
@@ -45,26 +45,26 @@ module PromptTracker
             end
 
             it "includes metadata with version information as strings" do
-              result = described_class.to_openai(prompt_version)
+              result = described_class.to_openai(agent_version)
 
               # OpenAI requires all metadata values to be strings
-              expect(result[:metadata][:prompt_id]).to eq(prompt.id.to_s)
+              expect(result[:metadata][:agent_id]).to eq(prompt.id.to_s)
               expect(result[:metadata][:prompt_slug]).to eq("test_assistant")
-              expect(result[:metadata][:version_id]).to eq(prompt_version.id.to_s)
-              expect(result[:metadata][:version_number]).to eq(prompt_version.version_number.to_s)
+              expect(result[:metadata][:version_id]).to eq(agent_version.id.to_s)
+              expect(result[:metadata][:version_number]).to eq(agent_version.version_number.to_s)
               expect(result[:metadata][:managed_by]).to eq("prompt_tracker")
               expect(result[:metadata][:last_synced_at]).to be_present
             end
 
             it "handles empty tools array" do
-              prompt_version.update!(model_config: { tools: [] })
-              result = described_class.to_openai(prompt_version)
+              agent_version.update!(model_config: { tools: [] })
+              result = described_class.to_openai(agent_version)
 
               expect(result[:tools]).to eq([])
             end
 
             it "converts tool_config to tool_resources format" do
-              prompt_version.update!(model_config: {
+              agent_version.update!(model_config: {
                 provider: "openai",
                 api: "assistants",
                 model: "gpt-4o",
@@ -76,7 +76,7 @@ module PromptTracker
                   }
                 }
               })
-              result = described_class.to_openai(prompt_version)
+              result = described_class.to_openai(agent_version)
 
               expect(result[:tool_resources]).to eq({
                 "file_search" => { "vector_store_ids" => [ "vs_abc123" ] }
@@ -84,8 +84,8 @@ module PromptTracker
             end
 
             it "returns nil tool_resources when tool_config is empty" do
-              prompt_version.update!(model_config: { tools: [], tool_config: {} })
-              result = described_class.to_openai(prompt_version)
+              agent_version.update!(model_config: { tools: [], tool_config: {} })
+              result = described_class.to_openai(agent_version)
 
               expect(result[:tool_resources]).to be_nil
             end

@@ -85,8 +85,8 @@ module PromptTracker
       # Get the path to the testable's show page
       def testable_show_path(testable)
         case testable
-        when PromptVersion
-          testing_prompt_prompt_version_path(testable.prompt, testable)
+        when AgentVersion
+          testing_agent_agent_version_path(testable.agent, testable)
         else
           testing_runs_path
         end

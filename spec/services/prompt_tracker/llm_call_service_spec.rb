@@ -5,7 +5,7 @@ require "rails_helper"
 module PromptTracker
   RSpec.describe LlmCallService do
     let(:prompt) do
-      Prompt.create!(
+      Agent.create!(
         name: "Test Prompt",
         slug: "test_prompt",
         description: "A test prompt"
@@ -13,7 +13,7 @@ module PromptTracker
     end
 
     let(:version_with_config) do
-      prompt.prompt_versions.create!(
+      prompt.agent_versions.create!(
           system_prompt: "You are a helpful assistant.",
         user_prompt: "Hello {{name}}",
         version_number: 1,
@@ -30,7 +30,7 @@ module PromptTracker
     end
 
     let(:version_without_config) do
-      prompt.prompt_versions.create!(
+      prompt.agent_versions.create!(
           system_prompt: "You are a helpful assistant.",
         user_prompt: "Hello {{name}}",
         version_number: 2,
@@ -204,7 +204,7 @@ module PromptTracker
             variables: { name: "Helen" }
           ) { |_| "Hello Helen!" }
 
-          expect(result[:llm_response].prompt_version).to eq(version_with_config)
+          expect(result[:llm_response].agent_version).to eq(version_with_config)
           expect(result[:llm_response].provider).to eq("openai")  # From version 1's config
         end
       end

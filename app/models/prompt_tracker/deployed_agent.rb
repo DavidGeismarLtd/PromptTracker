@@ -11,7 +11,7 @@ module PromptTracker
   #
   # @example Deploy a prompt version
   #   agent = DeployedAgent.create!(
-  #     prompt_version: version,
+  #     agent_version: version,
   #     name: "Customer Support Bot",
   #     deployment_config: {
   #       auth: { type: "api_key" },
@@ -32,8 +32,8 @@ module PromptTracker
     }, _prefix: true
 
     # Associations
-    belongs_to :prompt_version,
-               class_name: "PromptTracker::PromptVersion",
+    belongs_to :agent_version,
+               class_name: "PromptTracker::AgentVersion",
                inverse_of: :deployed_agents
 
     has_many :deployed_agent_functions,
@@ -226,8 +226,8 @@ module PromptTracker
     end
 
     def extract_functions_from_version
-      # Link to FunctionDefinition records for functions in prompt_version.model_config.tool_config
-      model_cfg = prompt_version.model_config
+      # Link to FunctionDefinition records for functions in agent_version.model_config.tool_config
+      model_cfg = agent_version.model_config
       tool_config = model_cfg[:tool_config] || model_cfg["tool_config"]
       return unless tool_config
 

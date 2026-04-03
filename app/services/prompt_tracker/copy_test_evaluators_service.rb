@@ -4,11 +4,11 @@ module PromptTracker
   # Service for copying evaluator configurations from tests to monitoring.
   #
   # This service finds all evaluator_configs from all PromptTests for a given
-  # PromptVersion and copies them to the PromptVersion's evaluator_configs
+  # AgentVersion and copies them to the AgentVersion's evaluator_configs
   # (for monitoring/auto-evaluation on tracked calls).
   #
   # @example Copy evaluators from tests to monitoring
-  #   result = CopyTestEvaluatorsService.call(prompt_version: version)
+  #   result = CopyTestEvaluatorsService.call(agent_version: version)
   #   if result[:success]
   #     puts "Copied #{result[:copied_count]} evaluators"
   #   else
@@ -25,16 +25,16 @@ module PromptTracker
 
     # Copy evaluator configs from tests to monitoring
     #
-    # @param prompt_version [PromptVersion] the prompt version to copy evaluators to
+    # @param agent_version [AgentVersion] the prompt version to copy evaluators to
     # @return [Result] result object with success status and counts
-    def self.call(prompt_version:)
-      new(prompt_version).call
+    def self.call(agent_version:)
+      new(agent_version).call
     end
 
-    attr_reader :prompt_version
+    attr_reader :agent_version
 
-    def initialize(prompt_version)
-      @prompt_version = prompt_version
+    def initialize(agent_version)
+      @agent_version = agent_version
     end
 
     # Execute the copy operation
@@ -58,7 +58,7 @@ module PromptTracker
       end
 
       # Get existing monitoring evaluator types to avoid duplicates
-      existing_evaluator_types = prompt_version.evaluator_configs.pluck(:evaluator_type)
+      existing_evaluator_types = agent_version.evaluator_configs.pluck(:evaluator_type)
 
       # Copy each unique evaluator config
       test_evaluator_configs.each do |test_config|
@@ -69,7 +69,7 @@ module PromptTracker
         end
 
         # Create a copy for monitoring
-        prompt_version.evaluator_configs.create!(
+        agent_version.evaluator_configs.create!(
           evaluator_type: test_config.evaluator_type,
           config: test_config.config.deep_dup,
           enabled: true
@@ -102,7 +102,7 @@ module PromptTracker
     # @return [Array<EvaluatorConfig>] unique evaluator configs by evaluator_type
     def collect_test_evaluator_configs
       # Get all tests for this version
-      tests = prompt_version.tests
+      tests = agent_version.tests
 
       # Get all evaluator configs from all tests
       all_configs = tests.flat_map(&:evaluator_configs)

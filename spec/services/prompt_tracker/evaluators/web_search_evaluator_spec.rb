@@ -416,8 +416,8 @@ module PromptTracker
       end
 
       describe "#evaluate" do
-        let(:prompt_version) { create(:prompt_version, :with_assistants) }
-        let(:test) { create(:test, testable: prompt_version) }
+        let(:agent_version) { create(:agent_version, :with_assistants) }
+        let(:test) { create(:test, testable: agent_version) }
         let(:test_run) { create(:test_run, :for_assistant, test: test) }
         let(:evaluator_with_test_run) do
           described_class.new(conversation_data, config.merge(test_run: test_run))

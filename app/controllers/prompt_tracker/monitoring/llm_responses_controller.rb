@@ -8,13 +8,13 @@ module PromptTracker
       # List all tracked LLM responses with filtering
       def index
         @responses = LlmResponse.tracked_calls
-                                .includes(:evaluations, :human_evaluations, prompt_version: :prompt)
+                                .includes(:evaluations, :human_evaluations, agent_version: :agent)
                                 .order(created_at: :desc)
 
         # Filter by prompt
-        if params[:prompt_id].present?
-          @responses = @responses.joins(prompt_version: :prompt)
-                                 .where(prompt_tracker_prompts: { id: params[:prompt_id] })
+        if params[:agent_id].present?
+          @responses = @responses.joins(agent_version: :agent)
+                                 .where(prompt_tracker_agents: { id: params[:agent_id] })
         end
 
         # Filter by provider
@@ -72,7 +72,7 @@ module PromptTracker
         @responses = @responses.page(params[:page]).per(50)
 
         # Get filter options
-        @prompts = Prompt.active.order(:name)
+        @prompts = Agent.active.order(:name)
         @providers = LlmResponse.tracked_calls.distinct.pluck(:provider).compact.sort
         @models = LlmResponse.tracked_calls.distinct.pluck(:model).compact.sort
         @statuses = LlmResponse::STATUSES

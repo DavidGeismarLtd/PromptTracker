@@ -105,7 +105,7 @@ module PromptTracker
     # Check if an evaluator should be disabled based on testable configuration
     #
     # @param key [Symbol] The evaluator key
-    # @param testable [Object] The testable (PromptVersion, Assistant, etc.)
+    # @param testable [Object] The testable (AgentVersion, Assistant, etc.)
     # @return [Array<Boolean, String|nil>] [is_disabled, reason]
     def evaluator_disabled_state(key, testable)
       requirement = EVALUATOR_REQUIREMENTS[key.to_sym]

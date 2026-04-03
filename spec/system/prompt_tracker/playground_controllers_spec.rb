@@ -3,11 +3,11 @@
 require "rails_helper"
 
 RSpec.describe "Playground Controllers", type: :system, js: true do
-  let(:prompt) { create(:prompt, name: "Test Prompt", slug: "test_prompt") }
-  let(:prompt_version) do
+  let(:prompt) { create(:agent, name: "Test Prompt", slug: "test_prompt") }
+  let(:agent_version) do
     create(
-      :prompt_version,
-      prompt: prompt,
+      :agent_version,
+      agent: prompt,
       system_prompt: "You are a helpful assistant.",
       user_prompt: "Hello {{ name }}!",
       variables_schema: [ { "name" => "name", "type" => "string", "required" => true } ],
@@ -24,7 +24,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
   describe "Initial Page Load" do
     context "when visiting prompt-specific playground" do
       it "connects all controllers successfully" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
 
         # Wait for page to load
         expect(page).to have_content("Playground")
@@ -51,7 +51,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
 
   describe "Model Config Controller" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
     end
 
     it "updates API dropdown when provider changes" do
@@ -111,7 +111,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
 
   describe "Editor Controller" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
     end
 
     it "extracts variables from user prompt" do
@@ -152,7 +152,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
 
   describe "Preview Controller" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
     end
 
     it "updates preview when prompt changes", :vcr do
@@ -212,7 +212,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
   describe "Save Controller" do
     context "with existing prompt (has version without responses)" do
       before do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
       end
 
       it "saves draft with valid data", :vcr do
@@ -288,8 +288,8 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
   describe "Sync Controller" do
     let(:assistant_version) do
       create(
-        :prompt_version,
-        prompt: prompt,
+        :agent_version,
+        agent: prompt,
         model_config: {
           provider: "openai",
           api: "assistants",
@@ -300,7 +300,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
     end
 
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, assistant_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, assistant_version)
     end
 
     it "syncs with remote entity when push button clicked", :vcr do
@@ -322,7 +322,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
 
   describe "Response Schema Controller" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
       # Expand the response schema accordion
       find('button[data-bs-target="#responseSchemaOptions"]').click
       sleep 0.3 # Wait for accordion animation
@@ -373,7 +373,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
 
   describe "UI Controller" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
     end
 
     it "shows/hides panels based on API capabilities" do
@@ -394,7 +394,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
 
   describe "Coordinator Controller" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
     end
 
     it "refreshes preview with Cmd+Enter keyboard shortcut", :vcr do
@@ -436,7 +436,7 @@ RSpec.describe "Playground Controllers", type: :system, js: true do
 
   describe "Inter-controller Communication" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
     end
 
     it "flows events from editor to preview" do

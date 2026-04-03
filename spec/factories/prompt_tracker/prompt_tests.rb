@@ -20,7 +20,7 @@
 FactoryBot.define do
   # New polymorphic Test factory
   factory :test, class: "PromptTracker::Test" do
-    association :testable, factory: :prompt_version
+    association :testable, factory: :agent_version
 
     sequence(:name) { |n| "test_#{n}" }
     description { "Test description" }
@@ -28,14 +28,14 @@ FactoryBot.define do
     metadata { {} }
 
     # Trait for prompt version tests
-    trait :for_prompt_version do
-      association :testable, factory: :prompt_version
+    trait :for_agent_version do
+      association :testable, factory: :agent_version
     end
 
     # Trait for assistant tests
-    # Uses a prompt_version with assistants api config
+    # Uses a agent_version with assistants api config
     trait :for_assistant do
-      association :testable, factory: [ :prompt_version, :with_assistants ]
+      association :testable, factory: [ :agent_version, :with_assistants ]
     end
 
     # Trait with evaluator configs

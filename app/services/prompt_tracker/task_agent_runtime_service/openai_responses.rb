@@ -24,8 +24,8 @@ module PromptTracker
       def call_llm(messages, phase: :execution)
         @logger.info "[TaskAgentRuntimeService::OpenaiResponses] 🚀 Starting call_llm (phase: #{phase})"
 
-        model_config = task_agent.prompt_version.model_config
-        system_prompt = task_agent.prompt_version.system_prompt
+        model_config = task_agent.agent_version.model_config
+        system_prompt = task_agent.agent_version.system_prompt
 
         # Enhance system prompt with planning instructions if enabled
         if @planning_enabled

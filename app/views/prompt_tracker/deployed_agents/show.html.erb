@@ -27,7 +27,7 @@
         <p style="color: #581C87; margin: 0.5rem 0 0 0;">
           Deployed <%= time_ago_in_words(@agent.deployed_at) %> ago from
           <%= link_to "#{@prompt.name} v#{@version.version_number}",
-              testing_prompt_prompt_version_path(@prompt, @version),
+              testing_agent_agent_version_path(@prompt, @version),
               style: "color: #581C87; text-decoration: underline;" %>
         </p>
       </div>

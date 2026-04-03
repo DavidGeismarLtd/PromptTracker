@@ -4,23 +4,23 @@ module PromptTracker
   module RemoteEntity
     module Openai
       module Assistants
-        # Service for pushing PromptVersion changes to OpenAI Assistants API.
+        # Service for pushing AgentVersion changes to OpenAI Assistants API.
         #
         # This service handles one-way synchronization:
-        # - PromptTracker PromptVersions (local) → OpenAI Assistants (remote)
+        # - PromptTracker AgentVersions (local) → OpenAI Assistants (remote)
         #
         # Strategy:
         # - Each Prompt has ONE corresponding remote assistant
-        # - Multiple PromptVersions update the same remote assistant
+        # - Multiple AgentVersions update the same remote assistant
         # - Version metadata is stored in assistant's metadata field
         #
         # @example Create a new assistant
-        #   result = PushService.create(prompt_version: version)
+        #   result = PushService.create(agent_version: version)
         #   result.success? # => true
         #   result.assistant_id # => "asst_abc123"
         #
         # @example Update an existing assistant
-        #   result = PushService.update(prompt_version: version)
+        #   result = PushService.update(agent_version: version)
         #   result.success? # => true
         #
         class PushService
@@ -30,38 +30,38 @@ module PromptTracker
 
           # Create a new assistant on OpenAI.
           #
-          # @param prompt_version [PromptVersion] the prompt version to push
+          # @param agent_version [AgentVersion] the prompt version to push
           # @return [Result] result with success?, assistant_id, synced_at, errors
-          def self.create(prompt_version:)
-            new(prompt_version: prompt_version).create
+          def self.create(agent_version:)
+            new(agent_version: agent_version).create
           end
 
           # Update an existing assistant on OpenAI.
           #
-          # @param prompt_version [PromptVersion] the prompt version to push
+          # @param agent_version [AgentVersion] the prompt version to push
           # @return [Result] result with success?, assistant_id, synced_at, errors
-          def self.update(prompt_version:)
-            new(prompt_version: prompt_version).update
+          def self.update(agent_version:)
+            new(agent_version: agent_version).update
           end
 
-          attr_reader :prompt_version, :model_config
+          attr_reader :agent_version, :model_config
 
-          def initialize(prompt_version:)
-            @prompt_version = prompt_version
-            @model_config = prompt_version.model_config || {}
+          def initialize(agent_version:)
+            @agent_version = agent_version
+            @model_config = agent_version.model_config || {}
           end
 
-          # Create a new assistant on OpenAI and update the PromptVersion with the assistant_id.
+          # Create a new assistant on OpenAI and update the AgentVersion with the assistant_id.
           #
           # @return [Result] result object
           def create
-            params = FieldNormalizer.to_openai(prompt_version)
+            params = FieldNormalizer.to_openai(agent_version)
 
             # Call OpenAI API to create assistant
             response = client.assistants.create(parameters: params)
 
-            # Update the PromptVersion with the assistant_id
-            update_prompt_version_with_assistant_id(response["id"])
+            # Update the AgentVersion with the assistant_id
+            update_agent_version_with_assistant_id(response["id"])
 
             success_result(response["id"])
           rescue => e
@@ -75,7 +75,7 @@ module PromptTracker
             assistant_id = extract_assistant_id
             raise PushError, "No assistant_id found in model_config" if assistant_id.blank?
 
-            params = FieldNormalizer.to_openai(prompt_version)
+            params = FieldNormalizer.to_openai(agent_version)
 
             # Call OpenAI API to update assistant
             response = client.assistants.modify(
@@ -99,15 +99,15 @@ module PromptTracker
               model_config.dig("metadata", "assistant_id")
           end
 
-          # Update PromptVersion with the assistant_id after creation
-          def update_prompt_version_with_assistant_id(assistant_id)
+          # Update AgentVersion with the assistant_id after creation
+          def update_agent_version_with_assistant_id(assistant_id)
             updated_config = model_config.deep_dup
             updated_config[:metadata] ||= {}
             updated_config[:metadata][:assistant_id] = assistant_id
             updated_config[:metadata][:synced_at] = Time.current.iso8601
             updated_config[:metadata][:sync_status] = "synced"
 
-            prompt_version.update!(model_config: updated_config)
+            agent_version.update!(model_config: updated_config)
           end
 
           # Update sync metadata after successful update
@@ -117,7 +117,7 @@ module PromptTracker
             updated_config[:metadata][:synced_at] = Time.current.iso8601
             updated_config[:metadata][:sync_status] = "synced"
 
-            prompt_version.update!(model_config: updated_config)
+            agent_version.update!(model_config: updated_config)
           end
 
           # Build OpenAI client

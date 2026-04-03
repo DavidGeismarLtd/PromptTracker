@@ -13,14 +13,14 @@ module PromptTracker
 
     # Setup
     let(:prompt) do
-      Prompt.create!(
+      Agent.create!(
         name: "test_prompt",
         description: "Test prompt for dataset rows"
       )
     end
 
     let(:version) do
-      v = prompt.prompt_versions.create!(
+      v = prompt.agent_versions.create!(
           system_prompt: "You are a helpful assistant.",
         user_prompt: "Hello {{name}}, your issue is {{issue}}",
         version_number: 1,

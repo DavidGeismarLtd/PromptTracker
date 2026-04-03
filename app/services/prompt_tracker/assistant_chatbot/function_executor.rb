@@ -60,16 +60,16 @@ module PromptTracker
       def find_function_class(name)
         # Map function names to classes
         function_map = {
-          "create_prompt" => Functions::CreatePrompt,
+          "create_prompt" => Functions::CreateAgent,
           "create_dataset" => Functions::CreateDataset,
           "generate_tests" => Functions::GenerateTests,
           "run_tests" => Functions::RunTests,
             "deploy_agent" => Functions::DeployAgent,
-          "get_prompt_version_info" => Functions::GetPromptVersionInfo,
+          "get_agent_version_info" => Functions::GetAgentVersionInfo,
           "get_tests_summary" => Functions::GetTestsSummary,
-          "search_prompts" => Functions::SearchPrompts,
-          "available_tests_for_prompt_version" => Functions::AvailableTestsForPromptVersion,
-          "available_datasets_for_prompt_version" => Functions::AvailableDatasetsForPromptVersion
+          "search_prompts" => Functions::SearchAgents,
+          "available_tests_for_agent_version" => Functions::AvailableTestsForAgentVersion,
+          "available_datasets_for_agent_version" => Functions::AvailableDatasetsForAgentVersion
         }
 
         function_map[name]

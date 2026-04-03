@@ -5,11 +5,11 @@ require "rails_helper"
 module PromptTracker
   module Evaluators
     RSpec.describe PatternMatchEvaluator do
-      let(:prompt) { create(:prompt) }
-      let(:version) { create(:prompt_version, prompt: prompt) }
+      let(:prompt) { create(:agent) }
+      let(:version) { create(:agent_version, agent: prompt) }
 
       def create_response(text)
-        create(:llm_response, prompt_version: version, response_text: text)
+        create(:llm_response, agent_version: version, response_text: text)
       end
 
       describe ".param_schema" do

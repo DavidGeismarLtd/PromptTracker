@@ -3,9 +3,9 @@
 require "rails_helper"
 
 RSpec.describe PromptTracker::AutoEvaluationService do
-  let(:prompt) { create(:prompt) }
-  let(:version) { create(:prompt_version, prompt: prompt) }
-  let(:llm_response) { create(:llm_response, prompt_version: version) }
+  let(:prompt) { create(:agent) }
+  let(:version) { create(:agent_version, agent: prompt) }
+  let(:llm_response) { create(:llm_response, agent_version: version) }
 
   describe ".evaluate" do
     it "creates a new instance and calls evaluate" do

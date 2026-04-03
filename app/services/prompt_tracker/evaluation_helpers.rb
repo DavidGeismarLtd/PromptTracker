@@ -13,7 +13,7 @@ module PromptTracker
   #   # => 4.25
   #
   # @example Calculate average score for a prompt version
-  #   avg = EvaluationHelpers.average_score_for_version(prompt_version)
+  #   avg = EvaluationHelpers.average_score_for_version(agent_version)
   #   # => 4.2
   #
   module EvaluationHelpers
@@ -49,7 +49,7 @@ module PromptTracker
     #
     # Normalizes all scores to 0-1 scale before averaging
     #
-    # @param prompt_version [PromptVersion] the prompt version
+    # @param agent_version [AgentVersion] the prompt version
     # @param evaluator_type [String, nil] optional filter by evaluator type
     # @return [Float, nil] average normalized score, or nil if no evaluations
     #
@@ -60,8 +60,8 @@ module PromptTracker
     # @example Get average score for human evaluations only
     #   average_score_for_version(version, evaluator_type: "human")
     #   # => 0.92
-    def self.average_score_for_version(prompt_version, evaluator_type: nil)
-      evaluations = prompt_version.evaluations
+    def self.average_score_for_version(agent_version, evaluator_type: nil)
+      evaluations = agent_version.evaluations
       evaluations = evaluations.where(evaluator_type: evaluator_type) if evaluator_type
 
       return nil if evaluations.empty?
@@ -97,7 +97,7 @@ module PromptTracker
     # @return [Hash] statistics hash with min, max, avg, median, count
     #
     # @example
-    #   stats = evaluation_statistics(prompt_version.evaluations)
+    #   stats = evaluation_statistics(agent_version.evaluations)
     #   # => {
     #   #   count: 10,
     #   #   min: 0.6,
@@ -126,15 +126,15 @@ module PromptTracker
 
     # Compare scores across multiple prompt versions
     #
-    # @param prompt_versions [Array<PromptVersion>] versions to compare
+    # @param agent_versions [Array<AgentVersion>] versions to compare
     # @param evaluator_type [String, nil] optional filter by evaluator type
     # @return [Hash] hash of version_number => average_score
     #
     # @example
     #   compare_versions([version1, version2, version3])
     #   # => { 1 => 0.75, 2 => 0.85, 3 => 0.92 }
-    def self.compare_versions(prompt_versions, evaluator_type: nil)
-      prompt_versions.each_with_object({}) do |version, hash|
+    def self.compare_versions(agent_versions, evaluator_type: nil)
+      agent_versions.each_with_object({}) do |version, hash|
         avg = average_score_for_version(version, evaluator_type: evaluator_type)
         hash[version.version_number] = avg if avg
       end
@@ -142,19 +142,19 @@ module PromptTracker
 
     # Get the best performing version based on average score
     #
-    # @param prompt_versions [Array<PromptVersion>] versions to compare
+    # @param agent_versions [Array<AgentVersion>] versions to compare
     # @param evaluator_type [String, nil] optional filter by evaluator type
-    # @return [PromptVersion, nil] the best version, or nil if no evaluations
+    # @return [AgentVersion, nil] the best version, or nil if no evaluations
     #
     # @example
-    #   best = best_version(prompt.prompt_versions)
-    #   # => #<PromptVersion version_number: 3>
-    def self.best_version(prompt_versions, evaluator_type: nil)
-      scores = compare_versions(prompt_versions, evaluator_type: evaluator_type)
+    #   best = best_version(prompt.agent_versions)
+    #   # => #<AgentVersion version_number: 3>
+    def self.best_version(agent_versions, evaluator_type: nil)
+      scores = compare_versions(agent_versions, evaluator_type: evaluator_type)
       return nil if scores.empty?
 
       best_version_number = scores.max_by { |_version, score| score }&.first
-      prompt_versions.find { |v| v.version_number == best_version_number }
+      agent_versions.find { |v| v.version_number == best_version_number }
     end
 
     # Aggregate criteria scores across multiple evaluations

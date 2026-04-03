@@ -17,8 +17,8 @@ module PromptTracker
       testable = test.testable
 
       case testable
-      when PromptTracker::PromptVersion
-        engine_path(:run_testing_prompt_version_test_path, testable, test)
+      when PromptTracker::AgentVersion
+        engine_path(:run_testing_agent_version_test_path, testable, test)
       else
         raise ArgumentError, "Unknown testable type: #{testable.class}"
       end
@@ -26,13 +26,13 @@ module PromptTracker
 
     # Generate the path to datasets for a testable
     #
-    # @param testable [PromptTracker::PromptVersion] The testable
+    # @param testable [PromptTracker::AgentVersion] The testable
     # @return [String] The path to the datasets index
     # @raise [ArgumentError] if the testable type is unknown
     def datasets_path_for_testable(testable)
       case testable
-      when PromptTracker::PromptVersion
-        engine_path(:testing_prompt_prompt_version_datasets_path, testable.prompt, testable)
+      when PromptTracker::AgentVersion
+        engine_path(:testing_agent_agent_version_datasets_path, testable.agent, testable)
       else
         raise ArgumentError, "Unknown testable type: #{testable.class}"
       end
@@ -49,8 +49,8 @@ module PromptTracker
       testable = test.testable
 
       case testable
-      when PromptTracker::PromptVersion
-        engine_path(:load_more_runs_testing_prompt_version_test_path, testable, test, offset: offset, limit: limit)
+      when PromptTracker::AgentVersion
+        engine_path(:load_more_runs_testing_agent_version_test_path, testable, test, offset: offset, limit: limit)
       else
         raise ArgumentError, "Unknown testable type: #{testable.class}"
       end

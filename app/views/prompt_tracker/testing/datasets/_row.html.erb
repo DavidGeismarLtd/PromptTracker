@@ -1,12 +1,12 @@
 <% dataset ||= @dataset # Support both local and instance variable %>
 <%
-  # All testables are now PromptVersions
-  if dataset.testable.is_a?(PromptTracker::PromptVersion)
-    prompt_version = dataset.testable
-    prompt = prompt_version.prompt
+  # All testables are now AgentVersions
+  if dataset.testable.is_a?(PromptTracker::AgentVersion)
+    agent_version = dataset.testable
+    prompt = agent_version.agent
     # Use engine_path helper for multi-tenant support
-    delete_path = engine_path(:testing_prompt_prompt_version_dataset_dataset_row_path, prompt, prompt_version, dataset, row)
-    update_path = engine_path(:testing_prompt_prompt_version_dataset_dataset_row_path, prompt, prompt_version, dataset, row)
+    delete_path = engine_path(:testing_agent_agent_version_dataset_dataset_row_path, prompt, agent_version, dataset, row)
+    update_path = engine_path(:testing_agent_agent_version_dataset_dataset_row_path, prompt, agent_version, dataset, row)
   end
 %>
 <tr id="dataset-row-<%= row.id %>">

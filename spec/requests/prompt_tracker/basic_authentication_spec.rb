@@ -19,7 +19,7 @@ module PromptTracker
         PromptTracker.configuration.basic_auth_username = nil
         PromptTracker.configuration.basic_auth_password = nil
 
-        get "/prompt_tracker/testing/prompts"
+        get "/prompt_tracker/testing"
         expect(response).to have_http_status(:success)
       end
     end
@@ -31,30 +31,30 @@ module PromptTracker
       end
 
       it "requires authentication" do
-        get "/prompt_tracker/testing/prompts"
+        get "/prompt_tracker/testing/agents"
         expect(response).to have_http_status(:unauthorized)
       end
 
       it "allows access with correct credentials" do
         credentials = ActionController::HttpAuthentication::Basic.encode_credentials("admin", "secret")
-        get "/prompt_tracker/testing/prompts", headers: { "HTTP_AUTHORIZATION" => credentials }
+        get "/prompt_tracker/testing", headers: { "HTTP_AUTHORIZATION" => credentials }
         expect(response).to have_http_status(:success)
       end
 
       it "denies access with incorrect username" do
         credentials = ActionController::HttpAuthentication::Basic.encode_credentials("wrong", "secret")
-        get "/prompt_tracker/testing/prompts", headers: { "HTTP_AUTHORIZATION" => credentials }
+        get "/prompt_tracker/testing/agents", headers: { "HTTP_AUTHORIZATION" => credentials }
         expect(response).to have_http_status(:unauthorized)
       end
 
       it "denies access with incorrect password" do
         credentials = ActionController::HttpAuthentication::Basic.encode_credentials("admin", "wrong")
-        get "/prompt_tracker/testing/prompts", headers: { "HTTP_AUTHORIZATION" => credentials }
+        get "/prompt_tracker/testing/agents", headers: { "HTTP_AUTHORIZATION" => credentials }
         expect(response).to have_http_status(:unauthorized)
       end
 
       it "protects all routes when enabled" do
-        get "/prompt_tracker/testing/prompts"
+        get "/prompt_tracker/testing/agents"
         expect(response).to have_http_status(:unauthorized)
 
         get "/prompt_tracker/monitoring/responses"

@@ -3,10 +3,10 @@
 require "rails_helper"
 
 RSpec.describe "Agents API", type: :request do
-  let(:prompt_version) { create(:prompt_version, :active) }
+  let(:agent_version) { create(:agent_version, :active) }
   let!(:deployed_agent) do
     agent = build(:deployed_agent,
-           prompt_version: prompt_version,
+           agent_version: agent_version,
            status: "active",
            deployment_config: {
              auth: { type: "api_key" },

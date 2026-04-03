@@ -14,12 +14,12 @@ module PromptTracker
   #   end
   #
   # @example In a view or helper
-  #   engine_path(:testing_prompt_version_tests_path, version)
+  #   engine_path(:testing_agent_version_tests_path, version)
   #   engine_url(:testing_root_url)
   #
   # @example In a background job
   #   include PromptTracker::UrlHelper
-  #   engine_path(:run_testing_prompt_version_test_path, version, test)
+  #   engine_path(:run_testing_agent_version_test_path, version, test)
   module UrlHelper
     extend ActiveSupport::Concern
 
@@ -29,8 +29,8 @@ module PromptTracker
     # @param args [Array] Arguments to pass to the route helper
     # @return [String] The generated path
     # @example
-    #   engine_path(:testing_prompt_version_tests_path, version)
-    #   engine_path(:testing_prompt_version_test_path, version, test)
+    #   engine_path(:testing_agent_version_tests_path, version)
+    #   engine_path(:testing_agent_version_test_path, version, test)
     def engine_path(route_name, *args)
       generate_engine_url(route_name, *args)
     end

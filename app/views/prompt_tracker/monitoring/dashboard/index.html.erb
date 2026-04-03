@@ -66,9 +66,9 @@
                 <!-- Prompt Version -->
                 <td style="padding: 0.75rem; vertical-align: top;">
                   <%= link_to monitoring_evaluation_path(evaluation), style: "color: #DC2626; text-decoration: none; font-weight: 500;" do %>
-                    <%= evaluation.llm_response.prompt_version.prompt.name %>
+                    <%= evaluation.llm_response.agent_version.agent.name %>
                     <br>
-                    <small style="color: #991B1B;">v<%= evaluation.llm_response.prompt_version.version_number %></small>
+                    <small style="color: #991B1B;">v<%= evaluation.llm_response.agent_version.version_number %></small>
                   <% end %>
                 </td>
 
@@ -164,8 +164,8 @@
             <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">
               Prompt
             </label>
-            <%= f.select :prompt_id,
-                options_for_select([["All Prompts", ""]] + @prompts.map { |p| [p.name, p.id] }, params[:prompt_id]),
+            <%= f.select :agent_id,
+                options_for_select([["All Prompts", ""]] + @prompts.map { |p| [p.name, p.id] }, params[:agent_id]),
                 {},
                 style: "width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 0.875rem;" %>
           </div>

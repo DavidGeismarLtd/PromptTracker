@@ -4,8 +4,8 @@ require "rails_helper"
 
 module PromptTracker
   RSpec.describe PlaygroundHelper, type: :helper do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
 
     before do
       # Set up instance variable that views would have

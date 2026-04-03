@@ -21,10 +21,10 @@
       <% end %>
     </h1>
     <p class="text-muted">
-      <%= @ab_test.prompt.name %> •
-      <%= @ab_test.metric_to_optimize.humanize %>
-      (<%= @ab_test.optimization_direction %>)
-    </p>
+	      <%= @ab_test.agent.name %> •
+	      <%= @ab_test.metric_to_optimize.humanize %>
+	      (<%= @ab_test.optimization_direction %>)
+	    </p>
   </div>
   <div class="col-auto">
     <div class="btn-group">

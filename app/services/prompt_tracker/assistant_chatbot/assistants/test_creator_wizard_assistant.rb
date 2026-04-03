@@ -23,29 +23,29 @@ module PromptTracker
 
         # Build a focused system prompt for the test creator wizard.
         def system_prompt
-          context_info = if context[:prompt_version_id]
-            "Current context: Viewing PromptVersion ##{context[:prompt_version_id]}"
+          context_info = if context[:agent_version_id]
+            "Current context: Viewing AgentVersion ##{context[:agent_version_id]}"
           else
-            "Current context: PromptVersion is not explicitly specified."
+            "Current context: AgentVersion is not explicitly specified."
           end
 
           <<~PROMPT.strip
             You are the PromptTracker Test Creator Wizard Assistant.
 
-            Your ONLY job is to help the user generate (create) tests for a single PromptVersion using AI.
+            Your ONLY job is to help the user generate (create) tests for a single AgentVersion using AI.
 
             #{context_info}
 
             Wizard behavior for generating tests:
             - Act as a STRICT multi-step wizard.
             - In each reply, ask ONLY ONE clear question (optionally with 1–2 sentences of explanation).
-            - Always make sure you know which PromptVersion to use:
-              * If the current page context includes prompt_version_id, you MUST use that value.
+            - Always make sure you know which AgentVersion to use:
+              * If the current page context includes agent_version_id, you MUST use that value.
               * Otherwise, ask the user which prompt/version to use or help them find it.
 
             Steps:
             1) Understand the prompt
-               - Call the get_prompt_version_info tool to understand the prompt's system prompt, variables, and configuration.
+               - Call the get_agent_version_info tool to understand the prompt's system prompt, variables, and configuration.
                - Briefly summarize what the prompt does (1–2 sentences).
 
             2) Ask how many tests to generate
@@ -71,7 +71,7 @@ module PromptTracker
 
             The JSON object MUST have this shape:
             {
-              "prompt_version_id": <integer>,
+              "agent_version_id": <integer>,
               "count": <integer between 1 and 10>,
               "instructions": <string or null>
             }

@@ -10,7 +10,7 @@ module PromptTracker
     # - `redirect_path`: Return the path to redirect to after actions
     #
     # Supported testable types:
-    # - PromptTracker::PromptVersion (via DatasetRowsController)
+    # - PromptTracker::AgentVersion (via DatasetRowsController)
     #
     class DatasetRowsControllerBase < ApplicationController
       include DatasetsHelper
@@ -24,10 +24,10 @@ module PromptTracker
         index = @dataset.dataset_rows.where("id <= ?", @row.id).count
 
         # Determine update path based on testable type
-        if @dataset.testable.is_a?(PromptTracker::PromptVersion)
-          prompt_version = @dataset.testable
-          prompt = prompt_version.prompt
-          update_path = helpers.engine_path(:testing_prompt_prompt_version_dataset_dataset_row_path, prompt, prompt_version, @dataset, @row)
+        if @dataset.testable.is_a?(PromptTracker::AgentVersion)
+          agent_version = @dataset.testable
+          prompt = agent_version.agent
+          update_path = helpers.engine_path(:testing_agent_agent_version_dataset_dataset_row_path, prompt, agent_version, @dataset, @row)
         end
 
         render partial: "prompt_tracker/testing/datasets/edit_row_modal",

@@ -6,7 +6,7 @@ module PromptTracker
   RSpec.describe AbTest, type: :model do
     # Setup
     let(:prompt) do
-      Prompt.create!(
+      Agent.create!(
         name: "greeting",
         description: "Customer greeting prompt",
         category: "support",
@@ -15,7 +15,7 @@ module PromptTracker
     end
 
     let(:version_1) do
-      prompt.prompt_versions.create!(
+      prompt.agent_versions.create!(
         user_prompt: "Hello {{name}}, how can I help you today?",
           system_prompt: "You are a helpful assistant.",
           version_number: 1,
@@ -29,7 +29,7 @@ module PromptTracker
     end
 
     let(:version_2) do
-      prompt.prompt_versions.create!(
+      prompt.agent_versions.create!(
         user_prompt: "Hi {{name}}! Need help?",
           system_prompt: "You are a helpful assistant.",
           version_number: 2,
@@ -44,7 +44,7 @@ module PromptTracker
 
     let(:valid_attributes) do
       {
-        prompt: prompt,
+        agent: prompt,
         name: "Test A/B Test",
         description: "Testing shorter greeting",
         hypothesis: "Version 2 will reduce response time by 20%",
@@ -222,9 +222,9 @@ module PromptTracker
     # Association Tests
 
     describe "associations" do
-      it "belongs to prompt" do
+      it "belongs to agent" do
         ab_test = AbTest.create!(valid_attributes)
-        expect(ab_test.prompt).to eq(prompt)
+        expect(ab_test.agent).to eq(prompt)
       end
 
       it "has many llm_responses" do
@@ -268,8 +268,8 @@ module PromptTracker
 
       describe ".for_prompt" do
         it "returns tests for specific prompt" do
-          other_prompt = Prompt.create!(name: "other_prompt", description: "Other")
-          other_version = other_prompt.prompt_versions.create!(
+          other_prompt = Agent.create!(name: "other_prompt", description: "Other")
+          other_version = other_prompt.agent_versions.create!(
             user_prompt: "Other template",
               system_prompt: "You are a helpful assistant.",
             version_number: 1,
@@ -278,7 +278,7 @@ module PromptTracker
 
           test1 = AbTest.create!(valid_attributes)
           test2 = AbTest.create!(
-            prompt: other_prompt,
+            agent: other_prompt,
             name: "Other test",
             description: "Testing other prompt",
             hypothesis: "Other hypothesis",
@@ -525,7 +525,7 @@ module PromptTracker
 
     describe "multi-variant support" do
       it "supports more than 2 variants" do
-        version_3 = prompt.prompt_versions.create!(
+        version_3 = prompt.agent_versions.create!(
           user_prompt: "Version 3",
             system_prompt: "You are a helpful assistant.",
           version_number: 3,

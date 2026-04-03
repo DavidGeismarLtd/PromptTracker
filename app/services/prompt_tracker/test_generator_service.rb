@@ -3,18 +3,18 @@
 require "ruby_llm/schema"
 
 module PromptTracker
-  # Service for generating tests with AI based on a PromptVersion's configuration.
+  # Service for generating tests with AI based on a AgentVersion's configuration.
   #
   # Analyzes the prompt's content, variables, tools, and functions to generate
   # comprehensive test cases with appropriate evaluators.
   #
   # @example Generate tests for a prompt version
-  #   result = TestGeneratorService.generate(prompt_version: version)
+  #   result = TestGeneratorService.generate(agent_version: version)
   #   # => { tests: [<Test>, ...], overall_reasoning: "...", count: 4 }
   #
   # @example Generate tests with custom instructions
   #   result = TestGeneratorService.generate(
-  #     prompt_version: version,
+  #     agent_version: version,
   #     instructions: "Focus on edge cases with empty inputs"
   #   )
   #
@@ -29,18 +29,18 @@ module PromptTracker
     # Custom error for malformed LLM responses
     class MalformedResponseError < StandardError; end
 
-    def self.generate(prompt_version:, instructions: nil, count: 5)
-      new(prompt_version: prompt_version, instructions: instructions, count: count).generate
+    def self.generate(agent_version:, instructions: nil, count: 5)
+      new(agent_version: agent_version, instructions: instructions, count: count).generate
     end
 
-    def initialize(prompt_version:, instructions: nil, count: 5)
-      @prompt_version = prompt_version
+    def initialize(agent_version:, instructions: nil, count: 5)
+      @agent_version = agent_version
       @instructions = instructions
       @count = count.to_i.clamp(1, 10) # Ensure count is between 1 and 10
     end
 
     def generate
-      Rails.logger.info "[TestGeneratorService] Starting generation for PromptVersion##{prompt_version.id}"
+      Rails.logger.info "[TestGeneratorService] Starting generation for AgentVersion##{agent_version.id}"
       Rails.logger.info "[TestGeneratorService] Instructions: #{instructions.presence || '(none)'}"
 
       context = build_context
@@ -79,7 +79,7 @@ module PromptTracker
 
     private
 
-    attr_reader :prompt_version, :instructions, :count
+    attr_reader :agent_version, :instructions, :count
 
     # Get the configured model for test generation.
     # Falls back to FALLBACK_MODEL if not configured.
@@ -102,16 +102,16 @@ module PromptTracker
     # @return [Hash] context data
     def build_context
       {
-        prompt_name: prompt_version.prompt.name,
-        system_prompt: prompt_version.system_prompt,
-        user_prompt: prompt_version.user_prompt,
-        variables: prompt_version.variables_schema || [],
-        model_config: prompt_version.model_config || {},
+        prompt_name: agent_version.agent.name,
+        system_prompt: agent_version.system_prompt,
+        user_prompt: agent_version.user_prompt,
+        variables: agent_version.variables_schema || [],
+        model_config: agent_version.model_config || {},
         tools: extract_tools,
         functions: extract_functions,
         vector_stores: extract_vector_stores,
-        response_schema: prompt_version.response_schema,
-        api_type: prompt_version.api_type
+        response_schema: agent_version.response_schema,
+        api_type: agent_version.api_type
       }
     end
 
@@ -119,28 +119,28 @@ module PromptTracker
     #
     # @return [Array] array of tool names
     def extract_tools
-      prompt_version.model_config&.dig("tools") || []
+      agent_version.model_config&.dig("tools") || []
     end
 
     # Extract functions from model_config
     #
     # @return [Array] array of function definitions
     def extract_functions
-      prompt_version.model_config&.dig("tool_config", "functions") || []
+      agent_version.model_config&.dig("tool_config", "functions") || []
     end
 
     # Extract vector stores from model_config (for file_search tool)
     #
     # @return [Array] array of vector store definitions
     def extract_vector_stores
-      prompt_version.model_config&.dig("tool_config", "file_search", "vector_stores") || []
+      agent_version.model_config&.dig("tool_config", "file_search", "vector_stores") || []
     end
 
     # Build evaluator schemas from the registry for compatible evaluators
     #
     # @return [Array<Hash>] array of evaluator schema definitions
     def build_evaluator_schemas
-      EvaluatorRegistry.for_testable(prompt_version).map do |key, meta|
+      EvaluatorRegistry.for_testable(agent_version).map do |key, meta|
         evaluator_class = meta[:evaluator_class]
 
         {
@@ -340,7 +340,7 @@ module PromptTracker
         Rails.logger.info "[TestGeneratorService] Creating test #{index + 1}: #{test_data[:name]}"
         Rails.logger.debug "[TestGeneratorService] Test data: #{test_data.inspect}"
 
-        test = prompt_version.tests.create!(
+        test = agent_version.tests.create!(
           name: test_data[:name],
           description: test_data[:description],
           enabled: true,

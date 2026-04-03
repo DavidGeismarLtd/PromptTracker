@@ -2,7 +2,7 @@
 
 FactoryBot.define do
   factory :deployed_agent, class: "PromptTracker::DeployedAgent" do
-    association :prompt_version, factory: :prompt_version, strategy: :create
+    association :agent_version, factory: :agent_version, strategy: :create
     sequence(:name) { |n| "Deployed Agent #{n}" }
     status { "active" }
     created_by { "test@example.com" }

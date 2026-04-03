@@ -8,9 +8,9 @@ namespace :prompt_tracker do
     puts ""
 
     # Prompts
-    total_prompts = PromptTracker::Prompt.count
-    active_prompts = PromptTracker::Prompt.active.count
-    archived_prompts = PromptTracker::Prompt.archived.count
+    total_prompts = PromptTracker::Agent.count
+    active_prompts = PromptTracker::Agent.active.count
+    archived_prompts = PromptTracker::Agent.archived.count
 
     puts "Prompts:"
     puts "  Total: #{total_prompts}"
@@ -19,8 +19,8 @@ namespace :prompt_tracker do
     puts ""
 
     # Versions
-    total_versions = PromptTracker::PromptVersion.count
-    active_versions = PromptTracker::PromptVersion.active.count
+    total_versions = PromptTracker::AgentVersion.count
+    active_versions = PromptTracker::AgentVersion.active.count
 
     puts "Versions:"
     puts "  Total: #{total_versions}"

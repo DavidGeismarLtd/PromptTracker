@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
-  let(:prompt) { create(:prompt, name: "Test Prompt", slug: "test_prompt") }
+  let(:prompt) { create(:agent, name: "Test Prompt", slug: "test_prompt") }
 
   before do
     # Configure providers for testing
@@ -16,8 +16,8 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
     context "when starting with Chat Completions API" do
       let(:chat_version) do
         create(
-          :prompt_version,
-          prompt: prompt,
+          :agent_version,
+          agent: prompt,
           system_prompt: "You are a helpful assistant.",
           user_prompt: "Hello {{ name }}!",
           model_config: {
@@ -30,7 +30,7 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
       end
 
       it "hides sync buttons initially" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, chat_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, chat_version)
 
         # Sync buttons should be hidden (display: none)
         sync_buttons = find('[data-playground-sync-visibility-target="syncButtons"]', visible: :all)
@@ -38,7 +38,7 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
       end
 
       it "shows sync buttons when switching to Assistants API" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, chat_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, chat_version)
 
         # Initially hidden
         expect(page).not_to have_button("Push", wait: 1)
@@ -53,7 +53,7 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
       end
 
       it "hides sync buttons when switching back to Chat Completions" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, chat_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, chat_version)
 
         # Switch to Assistants
         select "Assistants", from: "API"
@@ -74,8 +74,8 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
     context "when starting with Assistants API" do
       let(:assistant_version) do
         create(
-          :prompt_version,
-          prompt: prompt,
+          :agent_version,
+          agent: prompt,
           system_prompt: "You are a helpful assistant.",
           model_config: {
             "provider" => "openai",
@@ -87,7 +87,7 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
       end
 
       it "shows sync buttons initially" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, assistant_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, assistant_version)
 
         # The sync buttons should be visible for Assistants API
         expect(page).to have_button("Push")
@@ -97,7 +97,7 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
       end
 
       it "hides sync buttons when switching to Chat Completions API" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, assistant_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, assistant_version)
 
         # Initially visible
         sync_buttons = find('[data-playground-sync-visibility-target="syncButtons"]', visible: :all)
@@ -117,8 +117,8 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
     context "when assistant_id is present in metadata" do
       let(:synced_assistant_version) do
         create(
-          :prompt_version,
-          prompt: prompt,
+          :agent_version,
+          agent: prompt,
           system_prompt: "You are a helpful assistant.",
           model_config: {
             "provider" => "openai",
@@ -135,7 +135,7 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
       end
 
       it "shows both Push and Pull buttons" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, synced_assistant_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, synced_assistant_version)
 
         # Both buttons should be visible
         expect(page).to have_button("Push")
@@ -143,7 +143,7 @@ RSpec.describe "Playground Sync Buttons Visibility", type: :system, js: true do
       end
 
       it "maintains Pull button visibility when switching APIs" do
-        visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, synced_assistant_version)
+        visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, synced_assistant_version)
 
         # Initially both buttons visible
         expect(page).to have_button("Push")

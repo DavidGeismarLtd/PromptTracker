@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
-  let(:prompt) { create(:prompt) }
-  let(:version) { create(:prompt_version, prompt: prompt, status: "active") }
+  let(:prompt) { create(:agent) }
+  let(:version) { create(:agent_version, agent: prompt, status: "active") }
   let(:evaluator_config) do
     create(:evaluator_config,
            configurable: version,
@@ -24,10 +24,10 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
   end
 
-  describe "GET /prompts/:prompt_id/evaluators" do
+  describe "GET /agents/:agent_id/evaluators" do
     it "returns JSON with configs and available evaluators" do
       evaluator_config # create it
-      get "/prompt_tracker/prompts/#{prompt.id}/evaluators", headers: { "Accept" => "application/json" }
+      get "/prompt_tracker/agents/#{prompt.id}/evaluators", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:success)
 
       json = JSON.parse(response.body)
@@ -40,7 +40,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       config2 = create(:evaluator_config, configurable: version, evaluator_key: "format")
       config3 = create(:evaluator_config, configurable: version, evaluator_key: "length")
 
-      get "/prompt_tracker/prompts/#{prompt.id}/evaluators", headers: { "Accept" => "application/json" }
+      get "/prompt_tracker/agents/#{prompt.id}/evaluators", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:success)
 
       json = JSON.parse(response.body)
@@ -49,9 +49,9 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
   end
 
-  describe "GET /prompts/:prompt_id/evaluators/:id" do
+  describe "GET /agents/:agent_id/evaluators/:id" do
     it "returns evaluator config as JSON" do
-      get "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}", headers: { "Accept" => "application/json" }
+      get "/prompt_tracker/agents/#{prompt.id}/evaluators/#{evaluator_config.id}", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:success)
 
       json = JSON.parse(response.body)
@@ -61,16 +61,16 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
     it "returns 404 for non-existent config" do
       version # ensure version exists
-      get "/prompt_tracker/prompts/#{prompt.id}/evaluators/999999", headers: { "Accept" => "application/json" }
+      get "/prompt_tracker/agents/#{prompt.id}/evaluators/999999", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:not_found)
     end
   end
 
-  describe "POST /prompts/:prompt_id/evaluators" do
+  describe "POST /agents/:agent_id/evaluators" do
     it "creates evaluator config" do
       version # ensure version exists
       expect {
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
           evaluator_config: {
             evaluator_key: "keyword",
             enabled: true,
@@ -82,7 +82,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
         }
       }.to change(PromptTracker::EvaluatorConfig, :count).by(1)
 
-      expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+      expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Evaluator configured successfully")
     end
@@ -90,7 +90,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     it "creates evaluator config as JSON" do
       version # ensure version exists
       expect {
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators",
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators",
              params: {
                evaluator_config: {
                  evaluator_key: "keyword",
@@ -110,7 +110,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
     it "processes config params correctly" do
       version # ensure version exists
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "keyword",
           enabled: true,
@@ -132,7 +132,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     it "handles invalid evaluator config" do
       version # ensure version exists
       expect {
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
           evaluator_config: {
             evaluator_key: "", # Invalid - blank
             enabled: true,
@@ -143,7 +143,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
         }
       }.not_to change(PromptTracker::EvaluatorConfig, :count)
 
-      expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+      expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Failed to configure evaluator")
     end
@@ -151,7 +151,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     it "handles invalid evaluator config as JSON" do
       version # ensure version exists
       expect {
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators",
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators",
              params: {
                evaluator_config: {
                  evaluator_key: "",
@@ -170,15 +170,15 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
   end
 
-  describe "PATCH /prompts/:prompt_id/evaluators/:id" do
-    it "updates evaluator config" do
-      patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}", params: {
+  describe "PATCH /agents/:agent_id/evaluators/:id" do
+      it "updates evaluator config" do
+        patch "/prompt_tracker/agents/#{prompt.id}/evaluators/#{evaluator_config.id}", params: {
         evaluator_config: {
           config: { min_length: 20, max_length: 200 }
         }
-      }
+        }
 
-      expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+        expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Evaluator updated successfully")
 
@@ -187,8 +187,8 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       expect(evaluator_config.config["max_length"]).to eq(200)
     end
 
-    it "updates evaluator config as JSON" do
-      patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}",
+      it "updates evaluator config as JSON" do
+        patch "/prompt_tracker/agents/#{prompt.id}/evaluators/#{evaluator_config.id}",
             params: { evaluator_config: { config: { min_length: 30 } } },
             headers: { "Accept" => "application/json" }
 
@@ -197,12 +197,12 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       expect(json["config"]["min_length"]).to eq(30)
     end
 
-    it "updates evaluator to different type" do
-      patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}", params: {
+      it "updates evaluator to different type" do
+        patch "/prompt_tracker/agents/#{prompt.id}/evaluators/#{evaluator_config.id}", params: {
         evaluator_config: { evaluator_key: "keyword" } # Change from length to keyword
-      }
+        }
 
-      expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+        expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Evaluator updated successfully")
 
@@ -210,8 +210,8 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       expect(evaluator_config.evaluator_type).to eq("PromptTracker::Evaluators::KeywordEvaluator")
     end
 
-    it "updates evaluator to different type as JSON" do
-      patch "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}",
+      it "updates evaluator to different type as JSON" do
+        patch "/prompt_tracker/agents/#{prompt.id}/evaluators/#{evaluator_config.id}",
             params: { evaluator_config: { evaluator_key: "keyword" } },
             headers: { "Accept" => "application/json" }
 
@@ -221,24 +221,24 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
   end
 
-  describe "DELETE /prompts/:prompt_id/evaluators/:id" do
-    it "destroys evaluator config" do
-      evaluator_config # create it first
+  describe "DELETE /agents/:agent_id/evaluators/:id" do
+      it "destroys evaluator config" do
+        evaluator_config # create it first
 
-      expect {
-        delete "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}"
-      }.to change(PromptTracker::EvaluatorConfig, :count).by(-1)
+        expect {
+          delete "/prompt_tracker/agents/#{prompt.id}/evaluators/#{evaluator_config.id}"
+        }.to change(PromptTracker::EvaluatorConfig, :count).by(-1)
 
-      expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+        expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
       follow_redirect!
       expect(response.body).to include("Evaluator removed successfully")
     end
 
-    it "destroys evaluator config as JSON" do
-      evaluator_config # create it first
+      it "destroys evaluator config as JSON" do
+        evaluator_config # create it first
 
-      expect {
-        delete "/prompt_tracker/prompts/#{prompt.id}/evaluators/#{evaluator_config.id}",
+        expect {
+          delete "/prompt_tracker/agents/#{prompt.id}/evaluators/#{evaluator_config.id}",
                headers: { "Accept" => "application/json" }
       }.to change(PromptTracker::EvaluatorConfig, :count).by(-1)
 
@@ -253,7 +253,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       # Mock the evaluator class to verify delegation
       allow(PromptTracker::Evaluators::KeywordEvaluator).to receive(:process_params).and_call_original
 
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "keyword",
           enabled: true,
@@ -270,7 +270,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     it "uses evaluator's param_schema for type conversion" do
       version # ensure version exists
 
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "length",
           enabled: true,
@@ -293,7 +293,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
   describe "config processing" do
     it "processes required_keywords from textarea" do
       version # ensure version exists
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "keyword",
           enabled: true,
@@ -312,7 +312,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
     it "processes forbidden_keywords from textarea" do
       version # ensure version exists
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "keyword",
           enabled: true,
@@ -331,7 +331,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
     it "processes boolean values" do
       version # ensure version exists
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "format",
           enabled: true,
@@ -352,7 +352,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
     it "processes integer values" do
       version # ensure version exists
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "length",
           enabled: true,
@@ -375,7 +375,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       version # ensure version exists
       schema = { type: "object", properties: { name: { type: "string" } } }
 
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "format",
           enabled: true,
@@ -394,7 +394,7 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
     it "handles invalid JSON schema gracefully" do
       version # ensure version exists
-      post "/prompt_tracker/prompts/#{prompt.id}/evaluators", params: {
+      post "/prompt_tracker/agents/#{prompt.id}/evaluators", params: {
         evaluator_config: {
           evaluator_key: "format",
           enabled: true,
@@ -412,13 +412,13 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
     end
   end
 
-  describe "POST /prompts/:prompt_id/evaluators/copy_from_tests" do
+  describe "POST /agents/:agent_id/evaluators/copy_from_tests" do
     context "when there are no tests" do
       it "redirects with alert message" do
         version # ensure version exists
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
 
-        expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+        expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
         follow_redirect!
         expect(response.body).to include("No evaluators found in test config to copy")
       end
@@ -430,9 +430,9 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
       end
 
       it "redirects with alert message" do
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
 
-        expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+        expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
         follow_redirect!
         expect(response.body).to include("No evaluators found in test config to copy")
       end
@@ -449,14 +449,14 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
       it "copies evaluators to monitoring" do
         expect {
-          post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+          post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
         }.to change { version.evaluator_configs.count }.by(1)
       end
 
       it "redirects with success message" do
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
 
-        expect(response).to redirect_to("/prompt_tracker/monitoring/prompts/#{prompt.id}/versions/#{version.id}#auto-evaluators")
+        expect(response).to redirect_to("/prompt_tracker/monitoring/agents/#{prompt.id}/versions/#{version.id}#auto-evaluators")
         follow_redirect!
         expect(response.body).to include("Successfully copied 1 evaluator(s) from test config")
       end
@@ -480,12 +480,12 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
       it "copies all evaluators" do
         expect {
-          post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+          post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
         }.to change { version.evaluator_configs.count }.by(2)
       end
 
       it "shows correct count in success message" do
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
 
         follow_redirect!
         expect(response.body).to include("Successfully copied 2 evaluator(s) from test config")
@@ -509,12 +509,12 @@ RSpec.describe "PromptTracker::EvaluatorConfigsController", type: :request do
 
       it "skips duplicates" do
         expect {
-          post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+          post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
         }.not_to change { version.evaluator_configs.count }
       end
 
       it "shows skipped count in message" do
-        post "/prompt_tracker/prompts/#{prompt.id}/evaluators/copy_from_tests"
+        post "/prompt_tracker/agents/#{prompt.id}/evaluators/copy_from_tests"
 
         follow_redirect!
         expect(response.body).to include("No evaluators found in test config to copy")

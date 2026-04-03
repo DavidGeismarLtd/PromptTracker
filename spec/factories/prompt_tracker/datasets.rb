@@ -42,15 +42,15 @@ FactoryBot.define do
     end
 
     # Trait for prompt version datasets (single-turn by default)
-    trait :for_prompt_version do
-      association :testable, factory: :prompt_version
+    trait :for_agent_version do
+      association :testable, factory: :agent_version
       dataset_type { :single_turn }
     end
 
     # Trait for assistant datasets (conversational by default)
-    # Uses a prompt_version with assistants api config
+    # Uses a agent_version with assistants api config
     trait :for_assistant do
-      association :testable, factory: [ :prompt_version, :with_assistants ]
+      association :testable, factory: [ :agent_version, :with_assistants ]
       dataset_type { :conversational }
     end
 

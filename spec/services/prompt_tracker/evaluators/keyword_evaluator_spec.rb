@@ -6,7 +6,7 @@ module PromptTracker
   module Evaluators
     RSpec.describe KeywordEvaluator do
       let(:prompt) do
-        Prompt.create!(
+        Agent.create!(
           name: "test_prompt",
           description: "Test",
           category: "test"
@@ -14,7 +14,7 @@ module PromptTracker
       end
 
       let(:version) do
-        prompt.prompt_versions.create!(
+        prompt.agent_versions.create!(
             system_prompt: "You are a helpful assistant.",
           user_prompt: "Test",
           status: "active",

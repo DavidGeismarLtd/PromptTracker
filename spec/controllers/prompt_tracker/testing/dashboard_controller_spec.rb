@@ -25,19 +25,19 @@ module PromptTracker
 
         context "when filter is 'all'" do
           it "loads prompts" do
-            prompt = create(:prompt)
+            prompt = create(:agent)
 
             get :index, params: { filter: "all" }
 
             expect(assigns(:prompts)).to include(prompt)
-            # Assistants are now PromptVersions with api: "assistants", not a separate model
+            # Assistants are now AgentVersions with api: "assistants", not a separate model
             expect(assigns(:assistants)).to be_empty
           end
         end
 
         context "when filter is 'prompts'" do
           it "loads only prompts" do
-            prompt = create(:prompt)
+            prompt = create(:agent)
 
             get :index, params: { filter: "prompts" }
 
@@ -48,11 +48,11 @@ module PromptTracker
 
         context "when filter is 'assistants'" do
           it "returns empty prompts and assistants" do
-            prompt = create(:prompt)
+            prompt = create(:agent)
 
             get :index, params: { filter: "assistants" }
 
-            # Assistants are now PromptVersions, so both are empty when filtering by assistants
+            # Assistants are now AgentVersions, so both are empty when filtering by assistants
             expect(assigns(:prompts)).to be_empty
             expect(assigns(:assistants)).to be_empty
           end
@@ -80,13 +80,13 @@ module PromptTracker
           }
         end
 
-        let(:service_instance) { instance_double(SyncOpenaiAssistantsToPromptVersionsService, call: service_result) }
+        let(:service_instance) { instance_double(SyncOpenaiAssistantsToAgentVersionsService, call: service_result) }
 
         before do
-          allow(SyncOpenaiAssistantsToPromptVersionsService).to receive(:new).and_return(service_instance)
+          allow(SyncOpenaiAssistantsToAgentVersionsService).to receive(:new).and_return(service_instance)
         end
 
-        it "calls SyncOpenaiAssistantsToPromptVersionsService" do
+        it "calls SyncOpenaiAssistantsToAgentVersionsService" do
           expect(service_instance).to receive(:call)
           post :sync_openai_assistants
         end
@@ -121,7 +121,7 @@ module PromptTracker
         context "when sync raises SyncError" do
           before do
             allow(service_instance).to receive(:call)
-              .and_raise(SyncOpenaiAssistantsToPromptVersionsService::SyncError, "API key not set")
+              .and_raise(SyncOpenaiAssistantsToAgentVersionsService::SyncError, "API key not set")
           end
 
           it "redirects to testing root" do

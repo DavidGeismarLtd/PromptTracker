@@ -24,9 +24,9 @@ module PromptTracker
               ]
             end
             format.html do
-              redirect_to testing_prompt_prompt_version_prompt_test_path(
-                            @prompt_test_run.prompt_version.prompt,
-                            @prompt_test_run.prompt_version,
+              redirect_to testing_agent_agent_version_prompt_test_path(
+                            @prompt_test_run.agent_version.agent,
+                            @prompt_test_run.agent_version,
                             @prompt_test_run.prompt_test
                           ),
                           notice: "Human evaluation added successfully! Score: #{@human_evaluation.score}"
@@ -39,9 +39,9 @@ module PromptTracker
                                                         locals: { type: "alert", message: "Error: #{@human_evaluation.errors.full_messages.join(', ')}" })
             end
             format.html do
-              redirect_to testing_prompt_prompt_version_prompt_test_path(
-                            @prompt_test_run.prompt_version.prompt,
-                            @prompt_test_run.prompt_version,
+              redirect_to testing_agent_agent_version_prompt_test_path(
+                            @prompt_test_run.agent_version.agent,
+                            @prompt_test_run.agent_version,
                             @prompt_test_run.prompt_test
                           ),
                           alert: "Error creating human evaluation: #{@human_evaluation.errors.full_messages.join(', ')}"

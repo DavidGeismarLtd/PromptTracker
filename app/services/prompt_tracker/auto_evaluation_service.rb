@@ -34,7 +34,7 @@ module PromptTracker
     # @param context [String] evaluation context
     def initialize(llm_response, context: "tracked_call")
       @llm_response = llm_response
-      @prompt_version = llm_response.prompt_version
+      @agent_version = llm_response.agent_version
       @evaluation_context = context
     end
 
@@ -42,10 +42,10 @@ module PromptTracker
     #
     # @return [void]
     def evaluate
-      return unless @prompt_version
+      return unless @agent_version
 
       # Run all enabled evaluators in order
-      @prompt_version.evaluator_configs.enabled.order(:created_at).each do |config|
+      @agent_version.evaluator_configs.enabled.order(:created_at).each do |config|
         run_evaluation(config)
       end
     end

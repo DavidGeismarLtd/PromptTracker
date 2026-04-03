@@ -1,0 +1,166 @@
+# frozen_string_literal: true
+
+# == Schema Information
+#
+# Table name: prompt_tracker_agents
+#
+#  archived_at :datetime
+#  category    :string
+#  created_at  :datetime         not null
+#  created_by  :string
+#  description :text
+#  id          :bigint           not null, primary key
+#  name        :string           not null
+#  slug        :string           not null
+#  tags        :jsonb
+#  updated_at  :datetime         not null
+#
+module PromptTracker
+  # Represents a prompt template container.
+  #
+  # A Prompt is a named container that groups all versions of a prompt template together.
+  # Think of it like a Git repository - the Prompt is the repo, and AgentVersions are commits.
+  #
+  # @example Creating a new prompt
+  #   prompt = Agent.create!(
+  #     name: "Customer Support Greeting",
+  #     slug: "customer_support_greeting",  # Auto-generated if not provided
+  #     description: "Initial greeting for customer support chats",
+  #     created_by: "john@example.com"
+  #   )
+  #
+  # @example Finding a prompt by slug
+  #   prompt = Agent.find_by!(slug: "customer_support_greeting")
+  #   active_version = prompt.active_version
+  #
+  class Agent < ApplicationRecord
+    # Associations
+    has_many :agent_versions,
+             class_name: "PromptTracker::AgentVersion",
+             dependent: :destroy,
+             inverse_of: :agent
+
+    has_many :ab_tests,
+             class_name: "PromptTracker::AbTest",
+             dependent: :destroy,
+             inverse_of: :agent
+
+    has_many :llm_responses,
+             through: :agent_versions,
+             class_name: "PromptTracker::LlmResponse"
+
+    has_many :evaluations,
+             through: :llm_responses,
+             class_name: "PromptTracker::Evaluation"
+
+    # Validations
+    validates :name, presence: true
+    validates :slug,
+              presence: true,
+              uniqueness: { case_sensitive: false },
+              format: {
+                with: /\A[a-z0-9_]+\z/,
+                message: "must contain only lowercase letters, numbers, and underscores"
+              }
+
+    # Callbacks
+    before_validation :generate_slug, if: -> { slug.blank? && name.present? }
+
+    # Scopes
+
+    # Returns only active (non-archived) prompts
+    # @return [ActiveRecord::Relation<Prompt>]
+    scope :active, -> { where(archived_at: nil) }
+
+    # Returns only archived prompts
+    # @return [ActiveRecord::Relation<Prompt>]
+    scope :archived, -> { where.not(archived_at: nil) }
+
+    # Instance Methods
+
+    # Returns the currently active version of this prompt
+    # @return [AgentVersion, nil] the active version or nil if none exists
+    def active_version
+      agent_versions.active.first
+    end
+
+    # Returns the most recently created version (regardless of status)
+    # @return [AgentVersion, nil] the latest version or nil if none exists
+    def latest_version
+      agent_versions.order(created_at: :desc).first
+    end
+
+    # Archives this prompt (soft delete)
+    # Also deprecates all versions
+    # @return [Boolean] true if successful
+    def archive!
+      transaction do
+        update!(archived_at: Time.current)
+        agent_versions.each(&:deprecate!)
+      end
+      true
+    end
+
+    # Unarchives this prompt
+    # @return [Boolean] true if successful
+    def unarchive!
+      update!(archived_at: nil)
+    end
+
+    # Checks if this prompt is archived
+    # @return [Boolean] true if archived
+    def archived?
+      archived_at.present?
+    end
+
+    # Returns total number of LLM calls across all versions
+    # @return [Integer] total count of LLM responses
+    def total_llm_calls
+      llm_responses.count
+    end
+
+    # Returns total cost across all versions
+    # @return [Float] total cost in USD
+    def total_cost_usd
+      llm_responses.sum(:cost_usd) || 0.0
+    end
+
+    # Returns average response time across all versions
+    # @return [Float, nil] average response time in milliseconds
+    def average_response_time_ms
+      llm_responses.average(:response_time_ms)&.to_f
+    end
+
+    # Returns evaluator configs for the active version
+    # @return [ActiveRecord::Relation<EvaluatorConfig>] evaluator configs or empty relation
+    def active_evaluator_configs
+      active_version&.evaluator_configs || EvaluatorConfig.none
+    end
+
+    private
+
+    # Auto-generate slug from name if not provided
+    # Converts name to lowercase, replaces spaces and special chars with underscores
+    # @return [void]
+    def generate_slug
+      return if name.blank?
+
+      # Convert to lowercase, replace spaces and non-alphanumeric chars with underscores
+      base_slug = name.downcase
+                      .gsub(/[^a-z0-9]+/, "_")  # Replace non-alphanumeric with underscore
+                      .gsub(/^_+|_+$/, "")       # Remove leading/trailing underscores
+                      .gsub(/_+/, "_")           # Collapse multiple underscores
+
+      # Ensure uniqueness by appending number if needed
+      slug_candidate = base_slug
+      counter = 1
+
+      while Agent.where(slug: slug_candidate).where.not(id: id).exists?
+        slug_candidate = "#{base_slug}_#{counter}"
+        counter += 1
+      end
+
+      self.slug = slug_candidate
+    end
+  end
+end

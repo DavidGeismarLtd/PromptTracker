@@ -17,7 +17,7 @@ PromptTracker::Dataset.delete_all  # Delete datasets before prompt versions
 PromptTracker::AgentConversation.delete_all  # Delete conversations before deployed agents (messages are JSONB, not separate table)
 PromptTracker::DeployedAgentFunction.delete_all if defined?(PromptTracker::DeployedAgentFunction)  # Delete agent-function associations before deployed agents
 PromptTracker::DeployedAgent.delete_all  # Delete deployed agents before prompt versions
-PromptTracker::PromptVersion.delete_all
-PromptTracker::Prompt.delete_all
+PromptTracker::AgentVersion.delete_all
+PromptTracker::Agent.delete_all
 
 puts "  ✓ Cleanup complete"

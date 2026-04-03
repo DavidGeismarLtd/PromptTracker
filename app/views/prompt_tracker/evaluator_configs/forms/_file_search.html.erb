@@ -14,8 +14,8 @@
   vector_store_files = []
   vector_store_ids = []
 
-  if testable.is_a?(PromptTracker::PromptVersion)
-    # PromptVersions store vector stores in model_config.tool_config
+  if testable.is_a?(PromptTracker::AgentVersion)
+    # AgentVersions store vector stores in model_config.tool_config
     vector_store_ids = testable.model_config&.dig("tool_config", "file_search", "vector_store_ids") || []
   end
 

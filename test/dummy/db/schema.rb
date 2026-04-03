@@ -10,12 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_03_101731) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "prompt_tracker_ab_tests", force: :cascade do |t|
-    t.bigint "prompt_id", null: false
+    t.bigint "agent_id", null: false
     t.string "name", null: false
     t.text "description"
     t.string "hypothesis"
@@ -35,10 +35,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
     t.jsonb "metadata", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index [ "agent_id", "status" ], name: "index_prompt_tracker_ab_tests_on_agent_id_and_status"
+    t.index [ "agent_id" ], name: "index_prompt_tracker_ab_tests_on_agent_id"
     t.index [ "completed_at" ], name: "index_prompt_tracker_ab_tests_on_completed_at"
     t.index [ "metric_to_optimize" ], name: "index_prompt_tracker_ab_tests_on_metric_to_optimize"
-    t.index [ "prompt_id", "status" ], name: "index_prompt_tracker_ab_tests_on_prompt_id_and_status"
-    t.index [ "prompt_id" ], name: "index_prompt_tracker_ab_tests_on_prompt_id"
     t.index [ "started_at" ], name: "index_prompt_tracker_ab_tests_on_started_at"
     t.index [ "status" ], name: "index_prompt_tracker_ab_tests_on_status"
   end
@@ -56,6 +56,45 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
     t.index [ "deployed_agent_id" ], name: "index_prompt_tracker_agent_conversations_on_deployed_agent_id"
     t.index [ "expires_at" ], name: "index_prompt_tracker_agent_conversations_on_expires_at"
     t.index [ "last_message_at" ], name: "index_prompt_tracker_agent_conversations_on_last_message_at"
+  end
+
+  create_table "prompt_tracker_agent_versions", force: :cascade do |t|
+    t.bigint "agent_id", null: false
+    t.text "user_prompt"
+    t.text "system_prompt"
+    t.integer "version_number", null: false
+    t.string "status", default: "draft", null: false
+    t.jsonb "variables_schema", default: []
+    t.jsonb "model_config", default: {}
+    t.jsonb "response_schema"
+    t.text "notes"
+    t.string "created_by"
+    t.datetime "archived_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "agent_id", "status" ], name: "index_agent_versions_on_prompt_and_status"
+    t.index [ "agent_id", "version_number" ], name: "index_agent_versions_on_prompt_and_version_number", unique: true
+    t.index [ "agent_id" ], name: "index_prompt_tracker_agent_versions_on_agent_id"
+    t.index [ "archived_at" ], name: "index_prompt_tracker_agent_versions_on_archived_at"
+    t.index [ "status" ], name: "index_prompt_tracker_agent_versions_on_status"
+  end
+
+  create_table "prompt_tracker_agents", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.text "description"
+    t.string "category"
+    t.jsonb "tags", default: []
+    t.string "created_by"
+    t.datetime "archived_at"
+    t.string "score_aggregation_strategy", default: "weighted_average"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index [ "archived_at" ], name: "index_prompt_tracker_agents_on_archived_at"
+    t.index [ "category" ], name: "index_prompt_tracker_agents_on_category"
+    t.index [ "name" ], name: "index_prompt_tracker_agents_on_name", unique: true
+    t.index [ "score_aggregation_strategy" ], name: "index_prompts_on_aggregation_strategy"
+    t.index [ "slug" ], name: "index_prompt_tracker_agents_on_slug", unique: true
   end
 
   create_table "prompt_tracker_dataset_rows", force: :cascade do |t|
@@ -97,7 +136,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
   end
 
   create_table "prompt_tracker_deployed_agents", force: :cascade do |t|
-    t.bigint "prompt_version_id", null: false
+    t.bigint "agent_version_id", null: false
     t.string "name", null: false
     t.string "slug", null: false
     t.string "status", default: "active", null: false
@@ -109,13 +148,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
     t.datetime "last_request_at"
     t.string "created_by"
     t.text "api_key"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.string "agent_type", default: "conversational", null: false
     t.jsonb "task_config", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "agent_type" ], name: "index_prompt_tracker_deployed_agents_on_agent_type"
+    t.index [ "agent_version_id" ], name: "index_prompt_tracker_deployed_agents_on_agent_version_id"
     t.index [ "created_at" ], name: "index_prompt_tracker_deployed_agents_on_created_at"
-    t.index [ "prompt_version_id" ], name: "index_prompt_tracker_deployed_agents_on_prompt_version_id"
     t.index [ "slug" ], name: "index_prompt_tracker_deployed_agents_on_slug", unique: true
     t.index [ "status" ], name: "index_prompt_tracker_deployed_agents_on_status"
   end
@@ -200,12 +239,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
     t.datetime "last_executed_at"
     t.integer "execution_count", default: 0, null: false
     t.integer "average_execution_time_ms"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.string "lambda_function_name"
     t.string "deployment_status", default: "not_deployed", null: false
     t.datetime "deployed_at"
     t.text "deployment_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "category" ], name: "index_prompt_tracker_function_definitions_on_category"
     t.index [ "created_at" ], name: "index_prompt_tracker_function_definitions_on_created_at"
     t.index [ "deployment_status" ], name: "index_prompt_tracker_function_definitions_on_deployment_status"
@@ -224,11 +263,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
     t.integer "execution_time_ms"
     t.datetime "executed_at", null: false
     t.string "planning_step_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.bigint "deployed_agent_id"
     t.bigint "agent_conversation_id"
     t.bigint "task_run_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "agent_conversation_id" ], name: "idx_on_agent_conversation_id_74963468f2"
     t.index [ "deployed_agent_id" ], name: "index_prompt_tracker_function_executions_on_deployed_agent_id"
     t.index [ "executed_at" ], name: "index_prompt_tracker_function_executions_on_executed_at"
@@ -254,7 +293,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
   end
 
   create_table "prompt_tracker_llm_responses", force: :cascade do |t|
-    t.bigint "prompt_version_id", null: false
+    t.bigint "agent_version_id", null: false
     t.text "rendered_prompt", null: false
     t.text "rendered_system_prompt"
     t.jsonb "variables_used", default: {}
@@ -285,21 +324,21 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
     t.jsonb "tools_used", default: []
     t.jsonb "tool_outputs", default: {}
     t.jsonb "tool_calls", default: []
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.bigint "deployed_agent_id"
     t.bigint "agent_conversation_id"
     t.bigint "task_run_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "ab_test_id", "ab_variant" ], name: "index_llm_responses_on_ab_test_and_variant"
     t.index [ "ab_test_id" ], name: "index_prompt_tracker_llm_responses_on_ab_test_id"
     t.index [ "agent_conversation_id" ], name: "index_prompt_tracker_llm_responses_on_agent_conversation_id"
+    t.index [ "agent_version_id" ], name: "index_prompt_tracker_llm_responses_on_agent_version_id"
     t.index [ "conversation_id", "turn_number" ], name: "index_llm_responses_on_conversation_turn"
     t.index [ "conversation_id" ], name: "index_prompt_tracker_llm_responses_on_conversation_id"
     t.index [ "deployed_agent_id" ], name: "index_prompt_tracker_llm_responses_on_deployed_agent_id"
     t.index [ "environment" ], name: "index_prompt_tracker_llm_responses_on_environment"
     t.index [ "model" ], name: "index_prompt_tracker_llm_responses_on_model"
     t.index [ "previous_response_id" ], name: "index_prompt_tracker_llm_responses_on_previous_response_id"
-    t.index [ "prompt_version_id" ], name: "index_prompt_tracker_llm_responses_on_prompt_version_id"
     t.index [ "provider", "model", "created_at" ], name: "index_llm_responses_on_provider_model_created_at"
     t.index [ "provider" ], name: "index_prompt_tracker_llm_responses_on_provider"
     t.index [ "response_id" ], name: "index_prompt_tracker_llm_responses_on_response_id", unique: true, where: "(response_id IS NOT NULL)"
@@ -336,55 +375,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
   create_table "prompt_tracker_prompt_test_suites", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.bigint "prompt_id"
+    t.bigint "agent_id"
     t.boolean "enabled", default: true, null: false
     t.jsonb "tags", default: [], null: false
     t.jsonb "metadata", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index [ "agent_id" ], name: "index_prompt_tracker_prompt_test_suites_on_agent_id"
     t.index [ "enabled" ], name: "index_prompt_tracker_prompt_test_suites_on_enabled"
     t.index [ "name" ], name: "index_prompt_tracker_prompt_test_suites_on_name", unique: true
-    t.index [ "prompt_id" ], name: "index_prompt_tracker_prompt_test_suites_on_prompt_id"
     t.index [ "tags" ], name: "index_prompt_tracker_prompt_test_suites_on_tags", using: :gin
-  end
-
-  create_table "prompt_tracker_prompt_versions", force: :cascade do |t|
-    t.bigint "prompt_id", null: false
-    t.text "user_prompt"
-    t.text "system_prompt"
-    t.integer "version_number", null: false
-    t.string "status", default: "draft", null: false
-    t.jsonb "variables_schema", default: []
-    t.jsonb "model_config", default: {}
-    t.jsonb "response_schema"
-    t.text "notes"
-    t.string "created_by"
-    t.datetime "archived_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index [ "archived_at" ], name: "index_prompt_tracker_prompt_versions_on_archived_at"
-    t.index [ "prompt_id", "status" ], name: "index_prompt_versions_on_prompt_and_status"
-    t.index [ "prompt_id", "version_number" ], name: "index_prompt_versions_on_prompt_and_version_number", unique: true
-    t.index [ "prompt_id" ], name: "index_prompt_tracker_prompt_versions_on_prompt_id"
-    t.index [ "status" ], name: "index_prompt_tracker_prompt_versions_on_status"
-  end
-
-  create_table "prompt_tracker_prompts", force: :cascade do |t|
-    t.string "name", null: false
-    t.string "slug", null: false
-    t.text "description"
-    t.string "category"
-    t.jsonb "tags", default: []
-    t.string "created_by"
-    t.datetime "archived_at"
-    t.string "score_aggregation_strategy", default: "weighted_average"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index [ "archived_at" ], name: "index_prompt_tracker_prompts_on_archived_at"
-    t.index [ "category" ], name: "index_prompt_tracker_prompts_on_category"
-    t.index [ "name" ], name: "index_prompt_tracker_prompts_on_name", unique: true
-    t.index [ "score_aggregation_strategy" ], name: "index_prompts_on_aggregation_strategy"
-    t.index [ "slug" ], name: "index_prompt_tracker_prompts_on_slug", unique: true
   end
 
   create_table "prompt_tracker_spans", force: :cascade do |t|
@@ -509,12 +509,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
     t.index [ "user_id" ], name: "index_prompt_tracker_traces_on_user_id"
   end
 
-  add_foreign_key "prompt_tracker_ab_tests", "prompt_tracker_prompts", column: "prompt_id"
+  add_foreign_key "prompt_tracker_ab_tests", "prompt_tracker_agents", column: "agent_id"
   add_foreign_key "prompt_tracker_agent_conversations", "prompt_tracker_deployed_agents", column: "deployed_agent_id"
+  add_foreign_key "prompt_tracker_agent_versions", "prompt_tracker_agents", column: "agent_id"
   add_foreign_key "prompt_tracker_dataset_rows", "prompt_tracker_datasets", column: "dataset_id"
-  add_foreign_key "prompt_tracker_deployed_agent_functions", "prompt_tracker_deployed_agents", column: "deployed_agent_id"
-  add_foreign_key "prompt_tracker_deployed_agent_functions", "prompt_tracker_function_definitions", column: "function_definition_id"
-  add_foreign_key "prompt_tracker_deployed_agents", "prompt_tracker_prompt_versions", column: "prompt_version_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_test_runs", column: "test_run_id"
   add_foreign_key "prompt_tracker_function_definition_environment_variables", "prompt_tracker_environment_variables", column: "environment_variable_id"
   add_foreign_key "prompt_tracker_function_definition_environment_variables", "prompt_tracker_function_definitions", column: "function_definition_id"
@@ -527,12 +525,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_26_162052) do
   add_foreign_key "prompt_tracker_human_evaluations", "prompt_tracker_test_runs", column: "test_run_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_ab_tests", column: "ab_test_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_agent_conversations", column: "agent_conversation_id"
+  add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_agent_versions", column: "agent_version_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_deployed_agents", column: "deployed_agent_id"
-  add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_prompt_versions", column: "prompt_version_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_spans", column: "span_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_task_runs", column: "task_run_id"
   add_foreign_key "prompt_tracker_llm_responses", "prompt_tracker_traces", column: "trace_id"
-  add_foreign_key "prompt_tracker_prompt_versions", "prompt_tracker_prompts", column: "prompt_id"
   add_foreign_key "prompt_tracker_spans", "prompt_tracker_spans", column: "parent_span_id"
   add_foreign_key "prompt_tracker_spans", "prompt_tracker_traces", column: "trace_id"
   add_foreign_key "prompt_tracker_task_runs", "prompt_tracker_deployed_agents", column: "deployed_agent_id"

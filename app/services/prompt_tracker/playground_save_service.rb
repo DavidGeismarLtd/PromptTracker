@@ -22,7 +22,7 @@ module PromptTracker
   #   result = PlaygroundSaveService.call(
   #     params: { user_prompt: "Hello {{name}}", save_action: "update" },
   #     prompt: existing_prompt,
-  #     prompt_version: existing_version
+  #     agent_version: existing_version
   #   )
   #   result.success? # => true
   #   result.version  # => updated version
@@ -36,33 +36,33 @@ module PromptTracker
   #   result = PlaygroundSaveService.call(...)
   #   result.version_created_reason # => :structural_change_with_tests
   class PlaygroundSaveService
-    Result = Data.define(:success?, :action, :prompt, :version, :errors, :version_created_reason)
+    Result = Data.define(:success?, :action, :agent, :version, :errors, :version_created_reason)
 
-    def self.call(params:, prompt: nil, prompt_version: nil)
-      new(params: params, prompt: prompt, prompt_version: prompt_version).call
+    def self.call(params:, agent: nil, agent_version: nil)
+      new(params: params, agent: agent, agent_version: agent_version).call
     end
 
-    def initialize(params:, prompt: nil, prompt_version: nil)
+    def initialize(params:, agent: nil, agent_version: nil)
       @params = params
-      @prompt = prompt
-      @prompt_version = prompt_version
+      @agent = agent
+      @agent_version = agent_version
     end
 
     def call
-      if prompt
+      if agent
         determine_save_action
       else
-        create_new_prompt
+        create_new_agent
       end
     end
 
     private
 
-    attr_reader :params, :prompt, :prompt_version
+    attr_reader :params, :agent, :agent_version
 
     # Determines the appropriate save action based on version state
     def determine_save_action
-      if prompt_version.nil?
+      if agent_version.nil?
         create_new_version(reason: nil)
       elsif must_create_new_version?
         create_new_version(reason: version_creation_reason)
@@ -76,8 +76,8 @@ module PromptTracker
     # @return [Boolean] true if new version required
     def must_create_new_version?
       return true if params[:save_action] == "new_version"
-      return true if prompt_version.production_state?
-      return true if prompt_version.testing_state? && structural_fields_changing?
+      return true if agent_version.production_state?
+      return true if agent_version.testing_state? && structural_fields_changing?
 
       false
     end
@@ -86,17 +86,17 @@ module PromptTracker
     #
     # @return [Boolean] true if any structural field is different
     def structural_fields_changing?
-      old_config = prompt_version.model_config || {}
+      old_config = agent_version.model_config || {}
       new_config = params[:model_config] || {}
 
       # Check structural model_config keys
-      structural_keys_changed = PromptVersion::STRUCTURAL_MODEL_CONFIG_KEYS.any? do |key|
+      structural_keys_changed = AgentVersion::STRUCTURAL_MODEL_CONFIG_KEYS.any? do |key|
         old_config[key] != new_config[key]
       end
 
       structural_keys_changed ||
-        prompt_version.variables_schema != params[:variables_schema] ||
-        prompt_version.response_schema != params[:response_schema]
+        agent_version.variables_schema != params[:variables_schema] ||
+        agent_version.response_schema != params[:response_schema]
     end
 
     # Returns the reason for creating a new version
@@ -105,45 +105,45 @@ module PromptTracker
     def version_creation_reason
       if params[:save_action] == "new_version"
         :user_requested
-      elsif prompt_version.production_state?
+      elsif agent_version.production_state?
         :production_immutable
-      elsif prompt_version.testing_state?
+      elsif agent_version.testing_state?
         :structural_change_with_tests
       end
     end
 
     def update_existing_version
-      if prompt_version.update(version_attributes)
-        success_result(:updated, prompt, prompt_version, version_created_reason: nil)
+      if agent_version.update(version_attributes)
+        success_result(:updated, agent, agent_version, version_created_reason: nil)
       else
-        failure_result(prompt_version.errors.full_messages)
+        failure_result(agent_version.errors.full_messages)
       end
     end
 
     def create_new_version(reason:)
-      version = prompt.prompt_versions.build(version_attributes.merge(status: "draft"))
+      version = agent.agent_versions.build(version_attributes.merge(status: "draft"))
 
       if version.save
-        success_result(:created, prompt, version, version_created_reason: reason)
+        success_result(:created, agent, version, version_created_reason: reason)
       else
         failure_result(version.errors.full_messages)
       end
     end
 
-    def create_new_prompt
+    def create_new_agent
       return failure_result([ "Prompt name is required" ]) if params[:prompt_name].blank?
 
-      new_prompt = Prompt.new(
+      new_agent = Agent.new(
         name: params[:prompt_name],
         slug: params[:prompt_slug].presence,
         description: params[:notes]
       )
-      version = new_prompt.prompt_versions.build(version_attributes.merge(status: "draft"))
+      version = new_agent.agent_versions.build(version_attributes.merge(status: "draft"))
 
-      if new_prompt.save
-        success_result(:created, new_prompt, version, version_created_reason: nil)
+      if new_agent.save
+        success_result(:created, new_agent, version, version_created_reason: nil)
       else
-        failure_result(new_prompt.errors.full_messages + version.errors.full_messages)
+        failure_result(new_agent.errors.full_messages + version.errors.full_messages)
       end
     end
 
@@ -160,11 +160,11 @@ module PromptTracker
       attrs
     end
 
-    def success_result(action, prompt, version, version_created_reason:)
+    def success_result(action, agent, version, version_created_reason:)
       Result.new(
         success?: true,
         action: action,
-        prompt: prompt,
+        agent: agent,
         version: version,
         errors: [],
         version_created_reason: version_created_reason
@@ -175,7 +175,7 @@ module PromptTracker
       Result.new(
         success?: false,
         action: nil,
-        prompt: nil,
+        agent: nil,
         version: nil,
         errors: errors,
         version_created_reason: nil

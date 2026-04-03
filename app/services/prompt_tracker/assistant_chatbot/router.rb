@@ -38,7 +38,7 @@ module PromptTracker
         # relevant. This keeps latency low on purely informational
         # pages.
         case context[:page_type]
-        when :prompt_version_detail, # tests / datasets / deployment
+        when :agent_version_detail, # tests / datasets / deployment
              :prompts_list,          # prompt creation
              :playground,            # save-as-prompt
              :agents                 # deployment from agents index
@@ -91,7 +91,7 @@ module PromptTracker
 
         routing_prompt = <<~PROMPT.strip
           Page type: #{context[:page_type] || "none"}
-          Prompt version id: #{context[:prompt_version_id] || "none"}
+          Prompt version id: #{context[:agent_version_id] || "none"}
 
           User message:
           #{message}

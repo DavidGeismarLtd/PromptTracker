@@ -26,7 +26,7 @@ module PromptTracker
     attr_accessor :plain_api_key
 
     # Agent type enum
-    enum agent_type: {
+    enum :agent_type, {
       conversational: "conversational",
       task: "task"
     }, _prefix: true

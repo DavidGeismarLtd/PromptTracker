@@ -482,8 +482,9 @@ export default class extends Controller {
     this.showFilesLoading(modalEl)
 
     try {
-      // Fetch files from API
-      const response = await fetch(`/prompt_tracker/api/vector_stores/${vectorStoreId}/files`, {
+      // Fetch files from API (pass provider so Pinecone stores don't hit OpenAI)
+      const provider = this.getSelectedProvider()
+      const response = await fetch(`/prompt_tracker/api/vector_stores/${vectorStoreId}/files?provider=${provider}`, {
         headers: {
           "Accept": "application/json",
           "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content

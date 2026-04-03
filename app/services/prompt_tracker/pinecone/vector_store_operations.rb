@@ -59,12 +59,20 @@ module PromptTracker
           { id: name, name: name, provider: "pinecone" }
         end
 
-        # List files cached for a namespace.
+        # List files in a namespace.
+        # First checks the local cache. If empty, queries Pinecone with a zero
+        # vector to extract unique filenames from stored metadata.
         #
         # @param vector_store_id [String] namespace name
         # @return [Array<Hash>]
         def list_vector_store_files(vector_store_id:)
-          Rails.cache.fetch(file_cache_key(vector_store_id), expires_in: 5.minutes) { [] }
+          cached = Rails.cache.read(file_cache_key(vector_store_id))
+          return cached if cached.present?
+
+          # Reconstruct from Pinecone metadata by querying with a zero vector
+          files = reconstruct_file_list(vector_store_id)
+          Rails.cache.write(file_cache_key(vector_store_id), files, expires_in: 1.hour) if files.present?
+          files
         end
 
         # Upsert document chunks into a Pinecone namespace.
@@ -213,6 +221,46 @@ module PromptTracker
 
         def index_name
           pinecone_config[:index_name] || "prompt-tracker"
+        end
+
+        # Query Pinecone with a zero vector to retrieve metadata and extract
+        # unique filenames. This is a fallback when the cache is empty (e.g.
+        # after a server restart).
+        def reconstruct_file_list(namespace)
+          host = index_host
+          return [] unless host
+
+          # Get index dimension from describe_index_stats or config
+          dimension = resolve_index_dimension(host)
+          return [] unless dimension
+
+          zero_vector = Array.new(dimension, 0.0)
+          result = data_plane_post(host, "/query", {
+            vector:          zero_vector,
+            namespace:       namespace,
+            topK:            100,
+            includeMetadata: true
+          })
+
+          filenames = (result["matches"] || [])
+            .map { |m| m.dig("metadata", "filename") }
+            .compact
+            .uniq
+
+          filenames.map { |fn| { filename: fn, status: "completed", bytes: 0 } }
+        rescue StandardError => e
+          Rails.logger.warn("[Pinecone] Could not reconstruct file list for '#{namespace}': #{e.message}")
+          []
+        end
+
+        # Get the dimension of the index (cached).
+        def resolve_index_dimension(host)
+          Rails.cache.fetch("pinecone_index_dimension_#{index_name}", expires_in: 10.minutes) do
+            stats = data_plane_post(host, "/describe_index_stats", {})
+            stats["dimension"]
+          end
+        rescue StandardError
+          nil
         end
 
         def file_cache_key(namespace)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_02_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_03_101731) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -148,10 +148,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_02_000001) do
     t.datetime "last_request_at"
     t.string "created_by"
     t.text "api_key"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.string "agent_type", default: "conversational", null: false
     t.jsonb "task_config", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "agent_type" ], name: "index_prompt_tracker_deployed_agents_on_agent_type"
     t.index [ "agent_version_id" ], name: "index_prompt_tracker_deployed_agents_on_agent_version_id"
     t.index [ "created_at" ], name: "index_prompt_tracker_deployed_agents_on_created_at"
@@ -239,12 +239,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_02_000001) do
     t.datetime "last_executed_at"
     t.integer "execution_count", default: 0, null: false
     t.integer "average_execution_time_ms"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.string "lambda_function_name"
     t.string "deployment_status", default: "not_deployed", null: false
     t.datetime "deployed_at"
     t.text "deployment_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "category" ], name: "index_prompt_tracker_function_definitions_on_category"
     t.index [ "created_at" ], name: "index_prompt_tracker_function_definitions_on_created_at"
     t.index [ "deployment_status" ], name: "index_prompt_tracker_function_definitions_on_deployment_status"
@@ -263,11 +263,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_02_000001) do
     t.integer "execution_time_ms"
     t.datetime "executed_at", null: false
     t.string "planning_step_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.bigint "deployed_agent_id"
     t.bigint "agent_conversation_id"
     t.bigint "task_run_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "agent_conversation_id" ], name: "idx_on_agent_conversation_id_74963468f2"
     t.index [ "deployed_agent_id" ], name: "index_prompt_tracker_function_executions_on_deployed_agent_id"
     t.index [ "executed_at" ], name: "index_prompt_tracker_function_executions_on_executed_at"
@@ -324,11 +324,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_02_000001) do
     t.jsonb "tools_used", default: []
     t.jsonb "tool_outputs", default: {}
     t.jsonb "tool_calls", default: []
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.bigint "deployed_agent_id"
     t.bigint "agent_conversation_id"
     t.bigint "task_run_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index [ "ab_test_id", "ab_variant" ], name: "index_llm_responses_on_ab_test_and_variant"
     t.index [ "ab_test_id" ], name: "index_prompt_tracker_llm_responses_on_ab_test_id"
     t.index [ "agent_conversation_id" ], name: "index_prompt_tracker_llm_responses_on_agent_conversation_id"
@@ -513,9 +513,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_02_000001) do
   add_foreign_key "prompt_tracker_agent_conversations", "prompt_tracker_deployed_agents", column: "deployed_agent_id"
   add_foreign_key "prompt_tracker_agent_versions", "prompt_tracker_agents", column: "agent_id"
   add_foreign_key "prompt_tracker_dataset_rows", "prompt_tracker_datasets", column: "dataset_id"
-  add_foreign_key "prompt_tracker_deployed_agent_functions", "prompt_tracker_deployed_agents", column: "deployed_agent_id"
-  add_foreign_key "prompt_tracker_deployed_agent_functions", "prompt_tracker_function_definitions", column: "function_definition_id"
-  add_foreign_key "prompt_tracker_deployed_agents", "prompt_tracker_agent_versions", column: "agent_version_id"
   add_foreign_key "prompt_tracker_evaluations", "prompt_tracker_test_runs", column: "test_run_id"
   add_foreign_key "prompt_tracker_function_definition_environment_variables", "prompt_tracker_environment_variables", column: "environment_variable_id"
   add_foreign_key "prompt_tracker_function_definition_environment_variables", "prompt_tracker_function_definitions", column: "function_definition_id"

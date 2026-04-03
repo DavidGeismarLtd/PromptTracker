@@ -31,10 +31,10 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     enable_extension "plpgsql"
 
     # ============================================================================
-    # TABLE 1: prompts
-    # Container for different versions of a prompt template
+    # TABLE 1: agents
+    # Container for different versions of an agent template
     # ============================================================================
-    create_table :prompt_tracker_prompts do |t|
+    create_table :prompt_tracker_agents do |t|
       t.string :name, null: false
       t.string :slug, null: false
       t.text :description
@@ -46,11 +46,11 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :prompt_tracker_prompts, :name, unique: true
-    add_index :prompt_tracker_prompts, :slug, unique: true
-    add_index :prompt_tracker_prompts, :category
-    add_index :prompt_tracker_prompts, :archived_at
-    add_index :prompt_tracker_prompts, :score_aggregation_strategy, name: "index_prompts_on_aggregation_strategy"
+    add_index :prompt_tracker_agents, :name, unique: true
+    add_index :prompt_tracker_agents, :slug, unique: true
+    add_index :prompt_tracker_agents, :category
+    add_index :prompt_tracker_agents, :archived_at
+    add_index :prompt_tracker_agents, :score_aggregation_strategy, name: "index_prompts_on_aggregation_strategy"
 
     # ============================================================================
     # TABLE 2: agent_versions
@@ -58,7 +58,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     # ============================================================================
     create_table :prompt_tracker_agent_versions do |t|
       t.bigint :agent_id, null: false
-      t.text :user_prompt, null: false
+      t.text :user_prompt
       t.text :system_prompt
       t.integer :version_number, null: false
       t.string :status, default: "draft", null: false
@@ -122,6 +122,11 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       # Task Agent Timeline: Store LLM's intent to call tools (before execution)
       t.jsonb :tool_calls, default: []   # Array of tool call objects from LLM response
 
+      # Deployed agent context (for both conversational and task agents)
+      t.bigint :deployed_agent_id
+      t.bigint :agent_conversation_id
+      t.bigint :task_run_id
+
       t.timestamps
     end
 
@@ -143,6 +148,9 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_llm_responses, [ :ab_test_id, :ab_variant ], name: "index_llm_responses_on_ab_test_and_variant"
     add_index :prompt_tracker_llm_responses, :response_id, unique: true, where: "response_id IS NOT NULL"
     add_index :prompt_tracker_llm_responses, :previous_response_id
+    add_index :prompt_tracker_llm_responses, :deployed_agent_id
+    add_index :prompt_tracker_llm_responses, :agent_conversation_id
+    add_index :prompt_tracker_llm_responses, :task_run_id
 
     # ============================================================================
     # TABLE 4: evaluations
@@ -475,6 +483,10 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.datetime :last_executed_at
       t.integer :execution_count, default: 0, null: false
       t.integer :average_execution_time_ms
+      t.string :lambda_function_name
+      t.string :deployment_status, default: "not_deployed", null: false
+      t.datetime :deployed_at
+      t.text :deployment_error
       t.timestamps
     end
 
@@ -483,13 +495,190 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_function_definitions, :language
     add_index :prompt_tracker_function_definitions, :last_executed_at
     add_index :prompt_tracker_function_definitions, :created_at
+    add_index :prompt_tracker_function_definitions, :lambda_function_name
+    add_index :prompt_tracker_function_definitions, :deployment_status
+
+    # ============================================================================
+    # TABLE: environment_variables
+    # Shared environment variables (API keys, secrets) reused across functions
+    # ============================================================================
+    create_table :prompt_tracker_environment_variables do |t|
+      t.string :name, null: false
+      t.string :key, null: false
+      t.text :value, null: false
+      t.text :description
+
+      t.timestamps
+    end
+
+    add_index :prompt_tracker_environment_variables, :key, unique: true
+    add_index :prompt_tracker_environment_variables, :name
+
+    # ============================================================================
+    # JOIN TABLE: function_definition_environment_variables
+    # Many-to-many relationship between functions and shared environment variables
+    # ============================================================================
+    create_table :prompt_tracker_function_definition_environment_variables do |t|
+      t.references :function_definition,
+                   null: false,
+                   index: { name: "index_func_def_env_vars_on_func_def_id" }
+      t.references :environment_variable,
+                   null: false,
+                   index: { name: "index_func_def_env_vars_on_env_var_id" }
+
+      t.timestamps
+    end
+
+    add_index :prompt_tracker_function_definition_environment_variables,
+              [ :function_definition_id, :environment_variable_id ],
+              unique: true,
+              name: "index_func_def_env_vars_unique"
+
+    # ============================================================================
+    # TABLE: deployed_agents
+    # Deployed agent versions accessible via unique URLs
+    # ============================================================================
+    create_table :prompt_tracker_deployed_agents do |t|
+      t.references :agent_version,
+                   null: false,
+                   index: true
+
+      t.string :name, null: false
+      t.string :slug, null: false
+      t.string :status, null: false, default: "active"
+      t.jsonb :deployment_config, default: {}, null: false
+      t.datetime :deployed_at
+      t.datetime :paused_at
+      t.text :error_message
+      t.integer :request_count, default: 0, null: false
+      t.datetime :last_request_at
+      t.string :created_by
+      t.text :api_key
+      t.string :agent_type, default: "conversational", null: false
+      t.jsonb :task_config, default: {}, null: false
+
+      t.timestamps
+    end
+
+    add_index :prompt_tracker_deployed_agents, :slug, unique: true
+    add_index :prompt_tracker_deployed_agents, :status
+    add_index :prompt_tracker_deployed_agents, :created_at
+    add_index :prompt_tracker_deployed_agents, :agent_type
+
+    # ============================================================================
+    # TABLE: agent_conversations
+    # Conversation state for deployed agents
+    # ============================================================================
+    create_table :prompt_tracker_agent_conversations do |t|
+      t.references :deployed_agent,
+                   null: false,
+                   index: true
+
+      t.string :conversation_id, null: false
+      t.jsonb :messages, default: [], null: false
+      t.jsonb :metadata, default: {}, null: false
+      t.datetime :last_message_at
+      t.datetime :expires_at
+
+      t.timestamps
+    end
+
+    add_index :prompt_tracker_agent_conversations,
+              [ :deployed_agent_id, :conversation_id ],
+              unique: true,
+              name: "index_agent_conversations_on_agent_and_conversation"
+    add_index :prompt_tracker_agent_conversations, :expires_at
+    add_index :prompt_tracker_agent_conversations, :last_message_at
+
+    # ============================================================================
+    # JOIN TABLE: deployed_agent_functions
+    # Many-to-many relationship between deployed agents and function definitions
+    # ============================================================================
+    create_table :prompt_tracker_deployed_agent_functions do |t|
+      t.references :deployed_agent,
+                   null: false,
+                   index: { name: "index_deployed_agent_funcs_on_agent_id" }
+      t.references :function_definition,
+                   null: false,
+                   index: { name: "index_deployed_agent_funcs_on_func_def_id" }
+
+      t.timestamps
+    end
+
+    add_index :prompt_tracker_deployed_agent_functions,
+              [ :deployed_agent_id, :function_definition_id ],
+              unique: true,
+              name: "index_deployed_agent_functions_unique"
+
+    # ============================================================================
+    # TABLE: task_runs
+    # Individual task agent executions
+    # ============================================================================
+    create_table :prompt_tracker_task_runs do |t|
+      t.references :deployed_agent,
+                   null: false,
+                   index: true
+
+      t.string :status, null: false, default: "queued"
+      t.string :trigger_type, null: false
+
+      t.datetime :started_at
+      t.datetime :completed_at
+
+      t.jsonb :variables_used, default: {}, null: false
+      t.text :output_summary
+      t.text :error_message
+      t.jsonb :metadata, default: {}, null: false
+
+      t.integer :llm_calls_count, default: 0, null: false
+      t.integer :function_calls_count, default: 0, null: false
+      t.integer :iterations_count, default: 0, null: false
+      t.decimal :total_cost_usd, precision: 10, scale: 6
+
+      t.timestamps
+    end
+
+    add_index :prompt_tracker_task_runs, :status
+    add_index :prompt_tracker_task_runs, :trigger_type
+    add_index :prompt_tracker_task_runs, :started_at
+    add_index :prompt_tracker_task_runs, [ :deployed_agent_id, :created_at ],
+              name: "index_task_runs_on_agent_and_created"
+
+    # ============================================================================
+    # TABLE: task_schedules
+    # Scheduled task execution configuration for deployed task agents
+    # ============================================================================
+    create_table :prompt_tracker_task_schedules do |t|
+      t.references :deployed_agent,
+                   null: false,
+                   index: { unique: true }
+
+      t.string :schedule_type, null: false
+      t.string :cron_expression
+      t.integer :interval_value
+      t.string :interval_unit
+
+      t.string :timezone, default: "UTC", null: false
+      t.boolean :enabled, default: true, null: false
+
+      t.datetime :last_run_at
+      t.datetime :next_run_at
+      t.integer :run_count, default: 0, null: false
+
+      t.timestamps
+    end
+
+    add_index :prompt_tracker_task_schedules, :enabled
+    add_index :prompt_tracker_task_schedules, :next_run_at
+    add_index :prompt_tracker_task_schedules, [ :enabled, :next_run_at ],
+              name: "index_task_schedules_on_enabled_and_next_run"
 
     # ============================================================================
     # TABLE 16: function_executions
     # Individual function execution logs for analytics and debugging
     # ============================================================================
     create_table :prompt_tracker_function_executions do |t|
-      t.bigint :function_definition_id, null: false
+      t.bigint :function_definition_id
       t.jsonb :arguments, default: {}, null: false
       t.jsonb :result
       t.boolean :success, null: false, default: true
@@ -498,7 +687,11 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.datetime :executed_at, null: false
 
       # Task Agent Timeline: Link to planning step that triggered this execution
-      t.string :planning_step_id  # References step ID from task_run.metadata["plan"]["steps"]
+      t.string :planning_step_id
+
+      t.bigint :deployed_agent_id
+      t.bigint :agent_conversation_id
+      t.bigint :task_run_id
 
       t.timestamps
     end
@@ -509,29 +702,43 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_function_executions, :success
     add_index :prompt_tracker_function_executions, [ :function_definition_id, :executed_at ],
               name: "index_function_executions_on_definition_and_executed_at"
+    add_index :prompt_tracker_function_executions, :deployed_agent_id
+    add_index :prompt_tracker_function_executions, :agent_conversation_id, name: "idx_on_agent_conversation_id_74963468f2"
+    add_index :prompt_tracker_function_executions, :task_run_id
 
     # ============================================================================
     # FOREIGN KEYS
     # Add all foreign key constraints
     # ============================================================================
-    add_foreign_key :prompt_tracker_ab_tests, :prompt_tracker_prompts, column: :agent_id
+    add_foreign_key :prompt_tracker_ab_tests, :prompt_tracker_agents, column: :agent_id
+    add_foreign_key :prompt_tracker_agent_conversations, :prompt_tracker_deployed_agents, column: :deployed_agent_id
+    add_foreign_key :prompt_tracker_agent_versions, :prompt_tracker_agents, column: :agent_id
     add_foreign_key :prompt_tracker_dataset_rows, :prompt_tracker_datasets, column: :dataset_id
     # llm_response_id is optional - evaluations can be for test_runs (no llm_response) or tracked_calls (has llm_response)
     # Don't add foreign key constraint to allow NULL values
     add_foreign_key :prompt_tracker_evaluations, :prompt_tracker_test_runs, column: :test_run_id
+    add_foreign_key :prompt_tracker_function_definition_environment_variables, :prompt_tracker_environment_variables, column: :environment_variable_id
+    add_foreign_key :prompt_tracker_function_definition_environment_variables, :prompt_tracker_function_definitions, column: :function_definition_id
+    add_foreign_key :prompt_tracker_function_executions, :prompt_tracker_agent_conversations, column: :agent_conversation_id
+    add_foreign_key :prompt_tracker_function_executions, :prompt_tracker_deployed_agents, column: :deployed_agent_id
+    add_foreign_key :prompt_tracker_function_executions, :prompt_tracker_function_definitions, column: :function_definition_id
+    add_foreign_key :prompt_tracker_function_executions, :prompt_tracker_task_runs, column: :task_run_id
     add_foreign_key :prompt_tracker_human_evaluations, :prompt_tracker_evaluations, column: :evaluation_id
     add_foreign_key :prompt_tracker_human_evaluations, :prompt_tracker_llm_responses, column: :llm_response_id
     add_foreign_key :prompt_tracker_human_evaluations, :prompt_tracker_test_runs, column: :test_run_id
     add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_ab_tests, column: :ab_test_id
+    add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_agent_conversations, column: :agent_conversation_id
     add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_agent_versions, column: :agent_version_id
+    add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_deployed_agents, column: :deployed_agent_id
     add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_spans, column: :span_id
+    add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_task_runs, column: :task_run_id
     add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_traces, column: :trace_id
+    add_foreign_key :prompt_tracker_task_runs, :prompt_tracker_deployed_agents, column: :deployed_agent_id
+    add_foreign_key :prompt_tracker_task_schedules, :prompt_tracker_deployed_agents, column: :deployed_agent_id
     add_foreign_key :prompt_tracker_test_runs, :prompt_tracker_tests, column: :test_id
     add_foreign_key :prompt_tracker_test_runs, :prompt_tracker_datasets, column: :dataset_id
     add_foreign_key :prompt_tracker_test_runs, :prompt_tracker_dataset_rows, column: :dataset_row_id
-    add_foreign_key :prompt_tracker_agent_versions, :prompt_tracker_prompts, column: :agent_id
     add_foreign_key :prompt_tracker_spans, :prompt_tracker_spans, column: :parent_span_id
     add_foreign_key :prompt_tracker_spans, :prompt_tracker_traces, column: :trace_id
-    add_foreign_key :prompt_tracker_function_executions, :prompt_tracker_function_definitions, column: :function_definition_id
   end
 end

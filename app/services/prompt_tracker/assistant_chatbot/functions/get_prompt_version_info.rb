@@ -20,6 +20,20 @@ module PromptTracker
       #   result = function.call
       #
       class GetPromptVersionInfo < Base
+        def self.tool_definition
+          {
+            name: "get_prompt_version_info",
+            description: "Get detailed information about a PromptVersion including model config, status, and test statistics",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version" }
+              },
+              required: %w[prompt_version_id]
+            }
+          }
+        end
+
         protected
 
         def execute

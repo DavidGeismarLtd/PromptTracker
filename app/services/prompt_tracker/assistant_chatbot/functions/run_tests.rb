@@ -25,6 +25,25 @@ module PromptTracker
       # dataset_type (single_turn vs conversational).
       #
       class RunTests < Base
+        def self.tool_definition
+          {
+            name: "run_tests",
+            description: "Run tests for a PromptVersion using either datasets or custom variables.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version" },
+                test_ids: { type: "array", items: { type: "integer" }, description: "Specific test IDs to run (optional, runs all if omitted)" },
+                run_mode: { type: "string", description: "How to run the tests: 'dataset' to run against a dataset, or 'custom' to run once with custom variables.", enum: %w[dataset custom] },
+                dataset_id: { type: "integer", description: "Dataset to run tests against (required when run_mode is 'dataset')." },
+                execution_mode: { type: "string", description: "Execution mode for custom runs: 'single' for a single-turn response or 'conversation' for a multi-turn simulated conversation (default: 'single').", enum: %w[single conversation] },
+                custom_variables: { type: "object", description: "Custom variables to use for a single run when not using a dataset. Keys should match variable names from the prompt version's variables_schema. For conversational runs, MUST include interlocutor_simulation_prompt and MAY include max_turns." }
+              },
+              required: %w[prompt_version_id run_mode]
+            }
+          }
+        end
+
         protected
 
         def execute

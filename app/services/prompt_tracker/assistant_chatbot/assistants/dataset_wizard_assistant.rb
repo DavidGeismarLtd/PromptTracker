@@ -14,9 +14,17 @@ module PromptTracker
       # It does NOT call create_dataset directly. The main
       # AssistantChatbotService will parse the JSON and route it
       # to the function with the usual confirmation flow.
-      class DatasetWizardAssistant
-        def initialize(context: {})
-          @context = context || {}
+      class DatasetWizardAssistant < BaseWizardAssistant
+        def function_name
+          "create_dataset"
+        end
+
+        def required_plan_keys
+          %w[prompt_version_id]
+        end
+
+        def allowed_tool_names
+          %w[get_prompt_version_info available_datasets_for_prompt_version]
         end
 
         def system_prompt
@@ -85,10 +93,6 @@ module PromptTracker
             with the usual confirmation flow.
           PROMPT
         end
-
-        private
-
-        attr_reader :context
       end
     end
   end

@@ -18,6 +18,22 @@ module PromptTracker
       #   result = function.call
       #
       class GenerateTests < Base
+        def self.tool_definition
+          {
+            name: "generate_tests",
+            description: "Generate AI-powered tests for a PromptVersion",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version to generate tests for" },
+                count: { type: "integer", description: "Number of tests to generate (1-10, default: 5)" },
+                instructions: { type: "string", description: "Custom instructions for test generation (optional)" }
+              },
+              required: %w[prompt_version_id]
+            }
+          }
+        end
+
         protected
 
         def execute

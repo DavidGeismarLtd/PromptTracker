@@ -30,5 +30,15 @@ RSpec.describe PromptTracker::AssistantChatbot::Assistants::TestRunnerWizardAssi
       expect(prompt).to include("\"prompt_version_id\"")
       expect(prompt).to include("\"run_mode\"")
     end
+
+    it "requires listing datasets before asking the user to choose one" do
+      assistant = described_class.new(context: { prompt_version_id: 12 })
+
+      prompt = assistant.system_prompt
+
+      expect(prompt).to include("you MUST call the available_datasets_for_prompt_version tool")
+      expect(prompt).to include("BEFORE asking the user which dataset to use")
+      expect(prompt).to include("NEVER invent or guess a dataset ID")
+    end
   end
 end

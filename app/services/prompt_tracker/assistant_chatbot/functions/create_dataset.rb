@@ -21,6 +21,26 @@ module PromptTracker
       # - Create the dataset
       # - Optionally enqueue GenerateDatasetRowsJob
       class CreateDataset < Base
+        def self.tool_definition
+          {
+            name: "create_dataset",
+            description: "Create a new dataset for a prompt version and optionally generate dataset rows with AI.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version this dataset belongs to" },
+                name: { type: "string", description: "Short raw name for the dataset (optional - will be enhanced with AI)." },
+                description: { type: "string", description: "Short description / purpose for the dataset (optional - will be enhanced with AI)." },
+                dataset_type: { type: "string", description: "Type of dataset: 'single_turn' or 'conversational' (default: 'single_turn').", enum: %w[single_turn conversational] },
+                count: { type: "integer", description: "Number of rows to generate with AI after creating the dataset (optional, 1-100)." },
+                instructions: { type: "string", description: "Extra instructions for how the AI should generate dataset rows (optional)." },
+                model: { type: "string", description: "Optional model override for dataset row generation." }
+              },
+              required: %w[prompt_version_id]
+            }
+          }
+        end
+
         protected
 
         def execute

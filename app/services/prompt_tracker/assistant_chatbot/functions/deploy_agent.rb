@@ -15,6 +15,59 @@ module PromptTracker
       # The shape of deployment_config and task_config mirrors
       # PromptTracker::DeployedAgent#deployment_config and #task_config.
       class DeployAgent < Base
+        def self.tool_definition
+          {
+            name: "deploy_agent",
+            description: "Deploy a PromptVersion as a conversational or task agent.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version to deploy" },
+                name: { type: "string", description: "Optional name for the deployed agent (e.g., 'Support Agent')" },
+                agent_type: { type: "string", description: "Type of agent to create: 'conversational' (chat UI + API) or 'task' (background task agent).", enum: %w[conversational task] },
+                deployment_config: {
+                  type: "object",
+                  description: "Configuration for conversational agents.",
+                  properties: {
+                    conversation_ttl: { type: "integer", description: "How long to keep conversations alive in seconds (e.g., 3600)." },
+                    enable_web_ui: { type: "boolean", description: "Whether to enable the public web chat UI." },
+                    auth: { type: "object", description: "Authentication configuration (optional).", properties: { type: { type: "string", description: "Auth type identifier." } } },
+                    rate_limit: { type: "object", description: "Optional rate limiting configuration.", properties: { requests_per_minute: { type: "integer", description: "Maximum requests per minute." } } },
+                    cors: { type: "object", description: "Optional CORS configuration.", properties: { allowed_origins: { type: "array", items: { type: "string" }, description: "List of allowed origins." } } }
+                  }
+                },
+                task_config: {
+                  type: "object",
+                  description: "Configuration for task agents.",
+                  properties: {
+                    initial_prompt: { type: "string", description: "Instruction describing the task the agent should perform." },
+                    variables: { type: "object", description: "Optional default variables object for the task." },
+                    execution: {
+                      type: "object", description: "Execution configuration.",
+                      properties: {
+                        max_iterations: { type: "integer", description: "Maximum number of agent iterations (default 5)." },
+                        timeout_seconds: { type: "integer", description: "Maximum time allowed for the task in seconds (default 3600)." },
+                        retry_on_failure: { type: "boolean", description: "Whether to retry the task on failure (default false)." },
+                        max_retries: { type: "integer", description: "Maximum number of retries (default 3)." }
+                      }
+                    },
+                    planning: {
+                      type: "object", description: "Optional planning configuration.",
+                      properties: {
+                        enabled: { type: "boolean", description: "Whether explicit planning is enabled." },
+                        max_steps: { type: "integer", description: "Maximum number of planning steps (default 20)." },
+                        allow_plan_modifications: { type: "boolean", description: "Whether the agent may modify its plan as it executes." }
+                      }
+                    },
+                    completion_criteria: { type: "object", description: "Optional completion criteria.", properties: { type: { type: "string", description: "Completion criteria type identifier." } } }
+                  }
+                }
+              },
+              required: %w[prompt_version_id]
+            }
+          }
+        end
+
         protected
 
         def execute

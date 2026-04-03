@@ -44,9 +44,10 @@ module PromptTracker
         [
           "Write tests for this prompt",
           "Run all tests",
-            "What model is this prompt using?",
-            "Show me a summary of the tests",
-            "Create a dataset for this prompt version"
+          "Deploy Agent",
+          "What model is this prompt using?",
+          "Show me a summary of the tests",
+          "Create a dataset for this prompt version"
         ]
       end
 

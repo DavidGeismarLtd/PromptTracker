@@ -16,9 +16,17 @@ module PromptTracker
       # single JSON object. The main AssistantChatbotService
       # will parse this JSON and route it to the run_tests
       # function with the usual confirmation flow.
-      class TestRunnerWizardAssistant
-        def initialize(context: {})
-          @context = context || {}
+      class TestRunnerWizardAssistant < BaseWizardAssistant
+        def function_name
+          "run_tests"
+        end
+
+        def required_plan_keys
+          %w[prompt_version_id run_mode]
+        end
+
+        def allowed_tool_names
+          %w[get_prompt_version_info get_tests_summary available_tests_for_prompt_version available_datasets_for_prompt_version]
         end
 
         # Build a focused system prompt for the test runner wizard.
@@ -46,23 +54,25 @@ module PromptTracker
             - Always make sure you know which PromptVersion to use:
               * If the current page context includes prompt_version_id, you MUST use that value.
               * Otherwise, ask the user which prompt/version to use or help them find it.
+            - NEVER invent or guess a dataset ID.
 
             Steps:
-            1) Decide which tests to run
-               - First, ask whether the user wants to run ALL enabled tests or ONLY a specific subset.
-               - Present exactly these two options as a short bullet list in your first reply:
+            1) Choose data source first
+               - If prompt_version_id is known, you MUST call the available_datasets_for_prompt_version tool with that exact prompt_version_id BEFORE asking the user which dataset to use.
+               - Present the actual datasets returned by the tool and ask the user to choose one of those IDs, or reply "custom".
+               - If no datasets exist, explain that clearly and ask whether they want to run once with custom variables instead.
+
+            2) Decide which tests to run
+               - Ask whether the user wants to run ALL enabled tests or ONLY a specific subset.
+               - Present exactly these two options as a short bullet list when you need to ask:
                  - "Run all tests"
                  - "Run a specific test"
                - If the user clearly says they want to "run all tests" (or similar), treat that as choosing ALL and move on.
                - Only if they choose a subset or ask what tests exist should you call the available_tests_for_prompt_version tool.
 
-            2) Choose data source (dataset vs custom variables)
-               - Call the available_datasets_for_prompt_version tool to see existing datasets (if any).
-               - Then ask whether to run tests using one of these datasets or with a single set of custom variables.
-               - Example question: "Do you want to run using a dataset (reply with a dataset ID) or run once with custom variables (reply 'custom')?"
-
             3A) If the user chooses a dataset
                - Confirm which dataset ID to use.
+               - The dataset ID MUST be one that came back from available_datasets_for_prompt_version.
                - Once you know the tests to run and dataset_id, summarize what will happen.
 
             3B) If the user chooses custom variables (no dataset)
@@ -97,10 +107,6 @@ module PromptTracker
             with confirmation through the usual UI flow.
           PROMPT
         end
-
-        private
-
-        attr_reader :context
       end
     end
   end

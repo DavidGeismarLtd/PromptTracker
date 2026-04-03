@@ -4,8 +4,8 @@ require "rails_helper"
 
 RSpec.describe PromptTracker::AssistantChatbot::Router do
   describe ".assistant_for" do
-    def route_for(message, context)
-      described_class.assistant_for(message: message, context: context)
+    def route_for(message, context, conversation_history: [])
+      described_class.assistant_for(message: message, context: context, conversation_history: conversation_history)
     end
 
     let(:prompt_version_context) do
@@ -76,10 +76,10 @@ RSpec.describe PromptTracker::AssistantChatbot::Router do
         expect(assistant).to eq(:default)
       end
 
-      it "routes prompt creation requests on prompts list page to the prompt creation wizard" do
+      it "routes prompt creation requests on prompts list page to the agent creation wizard" do
         prompt_creation_response = double(
           "NormalizedLlmResponse",
-          text: "prompt_creation_wizard",
+          text: "agent_creation_wizard",
           tool_calls: []
         )
 
@@ -89,7 +89,26 @@ RSpec.describe PromptTracker::AssistantChatbot::Router do
 
         assistant = route_for("Create a new prompt called Support Bot", { page_type: :prompts_list })
 
-        expect(assistant).to eq(:prompt_creation_wizard)
+        expect(assistant).to eq(:agent_creation_wizard)
+      end
+
+      it "includes conversation history in the LLM prompt" do
+        history = [
+          { role: "user", content: "Create a new agent" },
+          { role: "assistant", content: "What should we call it?" }
+        ]
+
+        allow(PromptTracker::LlmClients::RubyLlmService)
+          .to receive(:call)
+          .and_return(llm_default_response)
+
+        route_for("Marty", prompt_version_context, conversation_history: history)
+
+        expect(PromptTracker::LlmClients::RubyLlmService).to have_received(:call).with(
+          hash_including(
+            prompt: a_string_including("Create a new agent", "What should we call it?", "Marty")
+          )
+        )
       end
   end
 end

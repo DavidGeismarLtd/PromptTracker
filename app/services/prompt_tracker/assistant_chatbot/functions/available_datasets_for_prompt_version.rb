@@ -16,6 +16,20 @@ module PromptTracker
       # dataset IDs, names, types, and row counts so the model can ask
       # the user which dataset to use.
       class AvailableDatasetsForPromptVersion < Base
+        def self.tool_definition
+          {
+            name: "available_datasets_for_prompt_version",
+            description: "List datasets for a PromptVersion to help choose between dataset runs and custom variables.",
+            parameters: {
+              type: "object",
+              properties: {
+                prompt_version_id: { type: "integer", description: "ID of the prompt version" }
+              },
+              required: %w[prompt_version_id]
+            }
+          }
+        end
+
         protected
 
         def execute

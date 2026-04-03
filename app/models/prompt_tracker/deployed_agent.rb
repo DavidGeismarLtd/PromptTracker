@@ -29,7 +29,7 @@ module PromptTracker
     enum :agent_type, {
       conversational: "conversational",
       task: "task"
-    }, _prefix: true
+    }, prefix: true
 
     # Associations
     belongs_to :agent_version,

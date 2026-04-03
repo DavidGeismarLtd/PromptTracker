@@ -43,7 +43,7 @@
                     <% end %>
                   </div>
                   <div>
-                    <span class="badge bg-secondary"><%= prompt.prompt_versions.count %> versions</span>
+                    <span class="badge bg-secondary"><%= prompt.agent_versions.count %> versions</span>
                   </div>
                 </div>
               </button>
@@ -54,7 +54,7 @@
                   <p class="text-muted mb-3"><%= prompt.description %></p>
                 <% end %>
 
-                <% if prompt.prompt_versions.any? %>
+                <% if prompt.agent_versions.any? %>
                   <div class="table-responsive">
                     <table class="table table-sm table-hover">
                       <thead>
@@ -74,7 +74,7 @@
                         <%
                           # Sort versions: active first, then by version number descending
                           active_version = prompt.active_version
-                          sorted_versions = prompt.prompt_versions.sort_by do |v|
+                          sorted_versions = prompt.agent_versions.sort_by do |v|
                             [v == active_version ? 0 : 1, -v.version_number]
                           end
                         %>
@@ -129,7 +129,7 @@
                               <td class="text-end">
                                 <%
                                   # Get tracked calls count for this version
-                                  tracked_calls_count = PromptTracker::LlmResponse.tracked_calls.where(prompt_version_id: version.id).count
+                                  tracked_calls_count = PromptTracker::LlmResponse.tracked_calls.where(agent_version_id: version.id).count
                                 %>
                                 <% if tracked_calls_count > 0 %>
                                   <span class="badge bg-info"><%= tracked_calls_count %> calls</span>
@@ -140,15 +140,15 @@
                             <% end %>
                             <td>
                               <div class="btn-group" role="group">
-                                <%= link_to "View", testing_prompt_prompt_version_path(prompt, version), class: "btn btn-sm btn-outline-primary" %>
-                                <%= link_to testing_prompt_prompt_version_datasets_path(prompt, version), class: "btn btn-sm btn-outline-secondary", title: "Datasets" do %>
+                                <%= link_to "View", testing_agent_agent_version_path(prompt, version), class: "btn btn-sm btn-outline-primary" %>
+                                <%= link_to testing_agent_agent_version_datasets_path(prompt, version), class: "btn btn-sm btn-outline-secondary", title: "Datasets" do %>
                                   <i class="bi bi-table"></i>
                                 <% end %>
                                 <% if show_monitor_button %>
-                                  <%= link_to "Monitor", monitoring_prompt_prompt_version_path(prompt, version), class: "btn btn-sm btn-outline-success", title: "View Tracked Calls" %>
+                                  <%= link_to "Monitor", monitoring_agent_agent_version_path(prompt, version), class: "btn btn-sm btn-outline-success", title: "View Tracked Calls" %>
                                 <% end %>
                                 <% unless version.active? %>
-                                  <%= button_to "Activate", activate_testing_prompt_prompt_version_path(prompt, version), method: :post, class: "btn btn-sm btn-outline-success", title: "Activate", data: { confirm: "Activate this version? This will deprecate all other versions." } %>
+                                  <%= button_to "Activate", activate_testing_agent_agent_version_path(prompt, version), method: :post, class: "btn btn-sm btn-outline-success", title: "Activate", data: { confirm: "Activate this version? This will deprecate all other versions." } %>
                                 <% end %>
                               </div>
                             </td>

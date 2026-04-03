@@ -10,7 +10,7 @@
 #  id                 :bigint           not null, primary key
 #  metadata           :jsonb            not null
 #  name               :string           not null
-#  prompt_version_id  :bigint           not null
+#  agent_version_id  :bigint           not null
 #  tags               :jsonb            not null
 #  updated_at         :datetime         not null
 #
@@ -18,8 +18,8 @@ require "rails_helper"
 
 module PromptTracker
   RSpec.describe Test, type: :model do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
     let(:test) do
       create(:test,
              testable: version,

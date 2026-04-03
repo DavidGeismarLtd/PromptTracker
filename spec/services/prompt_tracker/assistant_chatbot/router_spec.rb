@@ -8,8 +8,8 @@ RSpec.describe PromptTracker::AssistantChatbot::Router do
       described_class.assistant_for(message: message, context: context)
     end
 
-    let(:prompt_version_context) do
-      { page_type: :prompt_version_detail, prompt_version_id: 42 }
+    let(:agent_version_context) do
+      { page_type: :agent_version_detail, agent_version_id: 42 }
     end
 
     let(:llm_default_response) do
@@ -37,7 +37,7 @@ RSpec.describe PromptTracker::AssistantChatbot::Router do
         .to receive(:call)
         .and_return(test_runner_response)
 
-      assistant = route_for("Run all tests", prompt_version_context)
+      assistant = route_for("Run all tests", agent_version_context)
 
       expect(assistant).to eq(:test_runner_wizard)
     end
@@ -53,13 +53,13 @@ RSpec.describe PromptTracker::AssistantChatbot::Router do
         .to receive(:call)
         .and_return(test_creator_response)
 
-      assistant = route_for("Write tests for this prompt", prompt_version_context)
+      assistant = route_for("Write tests for this prompt", agent_version_context)
 
       expect(assistant).to eq(:test_creator_wizard)
     end
 
     it "routes generic messages on prompt version page to the default assistant" do
-      assistant = route_for("Help me improve this prompt", prompt_version_context)
+      assistant = route_for("Help me improve this prompt", agent_version_context)
 
       expect(assistant).to eq(:default)
     end

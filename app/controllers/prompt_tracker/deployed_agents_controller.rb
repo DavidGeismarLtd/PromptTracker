@@ -8,7 +8,7 @@ module PromptTracker
     # GET /agents
     # Dashboard showing all deployed agents
     def index
-      @agents = DeployedAgent.includes(:prompt_version)
+      @agents = DeployedAgent.includes(:agent_version)
                              .order(created_at: :desc)
                              .page(params[:page])
                              .per(20)
@@ -26,8 +26,8 @@ module PromptTracker
     # GET /agents/:slug
     # Show agent details with tabs
     def show
-      @prompt = @agent.prompt_version.prompt
-      @version = @agent.prompt_version
+      @prompt = @agent.agent_version.agent
+      @version = @agent.agent_version
 
       if @agent.agent_type_task?
         # Task agent view
@@ -64,10 +64,10 @@ module PromptTracker
     # GET /agents/new
     # Form to deploy a new agent from a prompt version
     def new
-      @version = PromptVersion.find(params[:prompt_version_id])
-      @prompt = @version.prompt
+      @version = AgentVersion.find(params[:agent_version_id])
+      @prompt = @version.agent
       @agent = DeployedAgent.new(
-        prompt_version: @version,
+        agent_version: @version,
         name: "#{@prompt.name} Agent",
         deployment_config: {}
       )
@@ -76,8 +76,8 @@ module PromptTracker
     # POST /agents
     # Deploy a new agent
     def create
-      @version = PromptVersion.find(params[:deployed_agent][:prompt_version_id])
-      @prompt = @version.prompt
+      @version = AgentVersion.find(params[:deployed_agent][:agent_version_id])
+      @prompt = @version.agent
       @agent = DeployedAgent.new(agent_params)
 
       if @agent.save
@@ -91,8 +91,8 @@ module PromptTracker
 
     # GET /agents/:slug/edit
     def edit
-      @prompt = @agent.prompt_version.prompt
-      @version = @agent.prompt_version
+      @prompt = @agent.agent_version.agent
+      @version = @agent.agent_version
     end
 
     # PATCH /agents/:slug
@@ -179,7 +179,7 @@ module PromptTracker
 
     def agent_params
       permitted = params.require(:deployed_agent).permit(
-        :prompt_version_id,
+        :agent_version_id,
         :name,
         :agent_type,
         deployment_config: [

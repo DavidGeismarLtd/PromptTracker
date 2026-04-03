@@ -4,13 +4,13 @@ require "rails_helper"
 
 module PromptTracker
   RSpec.describe CopyTestEvaluatorsService do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
 
     describe ".call" do
       context "when there are no tests" do
         it "returns success with zero counts" do
-          result = described_class.call(prompt_version: version)
+          result = described_class.call(agent_version: version)
 
           expect(result).to be_success
           expect(result.copied_count).to eq(0)
@@ -25,7 +25,7 @@ module PromptTracker
         end
 
         it "returns success with zero counts" do
-          result = described_class.call(prompt_version: version)
+          result = described_class.call(agent_version: version)
 
           expect(result).to be_success
           expect(result.copied_count).to eq(0)
@@ -44,12 +44,12 @@ module PromptTracker
 
         it "copies the evaluator config to monitoring" do
           expect {
-            described_class.call(prompt_version: version)
+            described_class.call(agent_version: version)
           }.to change { version.evaluator_configs.count }.by(1)
         end
 
         it "returns success with correct counts" do
-          result = described_class.call(prompt_version: version)
+          result = described_class.call(agent_version: version)
 
           expect(result).to be_success
           expect(result.copied_count).to eq(1)
@@ -57,7 +57,7 @@ module PromptTracker
         end
 
         it "copies the config correctly" do
-          described_class.call(prompt_version: version)
+          described_class.call(agent_version: version)
 
           monitoring_config = version.evaluator_configs.first
           expect(monitoring_config.evaluator_type).to eq("PromptTracker::Evaluators::LengthEvaluator")
@@ -66,11 +66,11 @@ module PromptTracker
         end
 
         it "creates a separate record (not sharing the same config)" do
-          described_class.call(prompt_version: version)
+          described_class.call(agent_version: version)
 
           monitoring_config = version.evaluator_configs.first
           expect(monitoring_config.id).not_to eq(test_config.id)
-          expect(monitoring_config.configurable_type).to eq("PromptTracker::PromptVersion")
+          expect(monitoring_config.configurable_type).to eq("PromptTracker::AgentVersion")
           expect(monitoring_config.configurable_id).to eq(version.id)
         end
       end
@@ -93,12 +93,12 @@ module PromptTracker
 
         it "copies all unique evaluator configs" do
           expect {
-            described_class.call(prompt_version: version)
+            described_class.call(agent_version: version)
           }.to change { version.evaluator_configs.count }.by(2)
         end
 
         it "returns success with correct counts" do
-          result = described_class.call(prompt_version: version)
+          result = described_class.call(agent_version: version)
 
           expect(result).to be_success
           expect(result.copied_count).to eq(2)
@@ -123,12 +123,12 @@ module PromptTracker
 
         it "skips evaluators that already exist in monitoring" do
           expect {
-            described_class.call(prompt_version: version)
+            described_class.call(agent_version: version)
           }.not_to change { version.evaluator_configs.count }
         end
 
         it "returns success with correct skip count" do
-          result = described_class.call(prompt_version: version)
+          result = described_class.call(agent_version: version)
 
           expect(result).to be_success
           expect(result.copied_count).to eq(0)
@@ -136,7 +136,7 @@ module PromptTracker
         end
 
         it "does not modify existing monitoring config" do
-          described_class.call(prompt_version: version)
+          described_class.call(agent_version: version)
 
           existing_monitoring_config.reload
           expect(existing_monitoring_config.config).to eq({ "min_length" => 50 })
@@ -161,12 +161,12 @@ module PromptTracker
 
         it "copies only the first occurrence" do
           expect {
-            described_class.call(prompt_version: version)
+            described_class.call(agent_version: version)
           }.to change { version.evaluator_configs.count }.by(1)
         end
 
         it "uses the config from the first test" do
-          described_class.call(prompt_version: version)
+          described_class.call(agent_version: version)
 
           monitoring_config = version.evaluator_configs.first
           expect(monitoring_config.config).to eq({ "min_length" => 10 })

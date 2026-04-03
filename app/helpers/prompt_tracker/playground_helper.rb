@@ -6,7 +6,7 @@ module PromptTracker
   module PlaygroundHelper
     # Returns a human-readable label for the version state.
     #
-    # @param version [PromptVersion] the prompt version
+    # @param version [AgentVersion] the prompt version
     # @return [String] "Production", "Testing", or "Development"
     def version_state_label(version)
       return "Development" if version.nil?
@@ -22,7 +22,7 @@ module PromptTracker
 
     # Returns Bootstrap badge CSS class for the version state.
     #
-    # @param version [PromptVersion] the prompt version
+    # @param version [AgentVersion] the prompt version
     # @return [String] Bootstrap badge class
     def version_state_badge_class(version)
       return "bg-success" if version.nil?
@@ -38,7 +38,7 @@ module PromptTracker
 
     # Returns a description of what changes are allowed in the current state.
     #
-    # @param version [PromptVersion] the prompt version
+    # @param version [AgentVersion] the prompt version
     # @return [String] description of allowed changes
     def version_state_description(version)
       return "All changes are allowed." if version.nil?
@@ -210,7 +210,7 @@ module PromptTracker
     # Build complete model config data for playground form
     # Extracts all the data preparation logic from the view
     #
-    # @param version [PromptVersion] the prompt version (can be nil)
+    # @param version [AgentVersion] the prompt version (can be nil)
     # @return [Hash] complete config data with all necessary information
     def playground_model_config_data(version)
       available_providers_list = enabled_providers

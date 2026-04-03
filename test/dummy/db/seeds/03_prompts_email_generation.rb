@@ -6,7 +6,7 @@
 
 puts "  Creating email generation prompts..."
 
-email_summary = PromptTracker::Prompt.create!(
+email_summary = PromptTracker::Agent.create!(
   name: "email_summary_generator",
   description: "Generates concise summaries of long email threads",
   category: "email",
@@ -14,7 +14,8 @@ email_summary = PromptTracker::Prompt.create!(
   created_by: "product-team@example.com"
 )
 
-email_summary_v1 = email_summary.prompt_versions.create!(
+email_summary_v1 = email_summary.agent_versions.create!(
+  system_prompt: "You are an assistant that summarizes long email threads into concise overviews.",
   user_prompt: "Summarize the following email thread in 2-3 sentences:\n\n{{email_thread}}",
   status: "active",
   variables_schema: [
@@ -31,7 +32,8 @@ email_summary_v1 = email_summary.prompt_versions.create!(
 )
 
 # Version 2 - Draft: Bullet point format using Claude
-email_summary_v2 = email_summary.prompt_versions.create!(
+email_summary_v2 = email_summary.agent_versions.create!(
+  system_prompt: "You are an assistant that turns email threads into clear bullet point summaries.",
   user_prompt: "Summarize the following email thread as bullet points (3-5 key points):\n\n{{email_thread}}",
   status: "draft",
   variables_schema: [

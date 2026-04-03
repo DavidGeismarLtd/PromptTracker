@@ -18,7 +18,7 @@
 #  minimum_sample_size       :integer          default(100)
 #  name                      :string           not null
 #  optimization_direction    :string           default("minimize"), not null
-#  prompt_id                 :bigint           not null
+#  agent_id                 :bigint           not null
 #  results                   :jsonb
 #  started_at                :datetime
 #  status                    :string           default("draft"), not null
@@ -28,7 +28,7 @@
 #
 FactoryBot.define do
   factory :ab_test, class: "PromptTracker::AbTest" do
-    association :prompt, factory: :prompt
+    association :agent, factory: :agent
     sequence(:name) { |n| "A/B Test #{n}" }
     description { "Testing different prompt versions" }
     hypothesis { "Version B will perform better than Version A" }
@@ -48,8 +48,8 @@ FactoryBot.define do
 
     after(:build) do |ab_test, evaluator|
       # Create versions if not provided
-      v_a = evaluator.version_a || create(:prompt_version, prompt: ab_test.prompt, version_number: 1)
-      v_b = evaluator.version_b || create(:prompt_version, prompt: ab_test.prompt, version_number: 2)
+      v_a = evaluator.version_a || create(:agent_version, agent: ab_test.agent, version_number: 1)
+      v_b = evaluator.version_b || create(:agent_version, agent: ab_test.agent, version_number: 2)
 
       ab_test.variants = [
         { "name" => "A", "version_id" => v_a.id, "description" => "Control version" },
@@ -98,13 +98,13 @@ FactoryBot.define do
       after(:create) do |ab_test|
         # Create responses for variant A
         create_list(:llm_response, 10,
-          prompt_version: ab_test.prompt.prompt_versions.first,
+          agent_version: ab_test.agent.agent_versions.first,
           ab_test: ab_test,
           ab_test_variant: "A"
         )
         # Create responses for variant B
         create_list(:llm_response, 10,
-          prompt_version: ab_test.prompt.prompt_versions.second,
+          agent_version: ab_test.agent.agent_versions.second,
           ab_test: ab_test,
           ab_test_variant: "B"
         )

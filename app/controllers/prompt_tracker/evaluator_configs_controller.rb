@@ -56,7 +56,7 @@ module PromptTracker
       HTML
     end
 
-    # GET /prompts/:prompt_id/evaluators
+    # GET /prompts/:agent_id/evaluators
     # List all evaluator configs for a prompt version (returns JSON for AJAX)
     def index
       @evaluator_configs = @version.evaluator_configs.order(:created_at)
@@ -68,7 +68,7 @@ module PromptTracker
       end
     end
 
-    # GET /prompts/:prompt_id/evaluators/:id
+    # GET /prompts/:agent_id/evaluators/:id
     # Get a single evaluator config (for editing)
     def show
       respond_to do |format|
@@ -76,7 +76,7 @@ module PromptTracker
       end
     end
 
-    # POST /prompts/:prompt_id/evaluators
+    # POST /prompts/:agent_id/evaluators
     # Create a new evaluator config for the active version
     def create
       # Process config params using evaluator class
@@ -87,18 +87,18 @@ module PromptTracker
 
       if @evaluator_config.save
         respond_to do |format|
-          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator configured successfully." }
+          format.html { redirect_to monitoring_agent_agent_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator configured successfully." }
           format.json { render json: @evaluator_config, status: :created }
         end
       else
         respond_to do |format|
-          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to configure evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
+          format.html { redirect_to monitoring_agent_agent_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to configure evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
           format.json { render json: { errors: @evaluator_config.errors.full_messages }, status: :unprocessable_entity }
         end
       end
     end
 
-    # PATCH/PUT /prompts/:prompt_id/evaluators/:id
+    # PATCH/PUT /prompts/:agent_id/evaluators/:id
     # Update an evaluator config
     def update
       # Process config params using evaluator class
@@ -111,32 +111,32 @@ module PromptTracker
 
       if @evaluator_config.update(processed_params)
         respond_to do |format|
-          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator updated successfully." }
+          format.html { redirect_to monitoring_agent_agent_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator updated successfully." }
           format.json { render json: @evaluator_config }
         end
       else
         respond_to do |format|
-          format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to update evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
+          format.html { redirect_to monitoring_agent_agent_version_path(@prompt, @version, anchor: "auto-evaluators"), alert: "Failed to update evaluator: #{@evaluator_config.errors.full_messages.join(', ')}" }
           format.json { render json: { errors: @evaluator_config.errors.full_messages }, status: :unprocessable_entity }
         end
       end
     end
 
-    # DELETE /prompts/:prompt_id/evaluators/:id
+    # DELETE /prompts/:agent_id/evaluators/:id
     # Delete an evaluator config
     def destroy
       @evaluator_config.destroy
 
       respond_to do |format|
-        format.html { redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator removed successfully." }
+        format.html { redirect_to monitoring_agent_agent_version_path(@prompt, @version, anchor: "auto-evaluators"), notice: "Evaluator removed successfully." }
         format.json { head :no_content }
       end
     end
 
-    # POST /prompts/:prompt_id/evaluators/copy_from_tests
+    # POST /prompts/:agent_id/evaluators/copy_from_tests
     # Copy evaluator configs from tests to monitoring
     def copy_from_tests
-      result = CopyTestEvaluatorsService.call(prompt_version: @version)
+      result = CopyTestEvaluatorsService.call(agent_version: @version)
 
       if result.success?
         if result.copied_count > 0
@@ -149,13 +149,13 @@ module PromptTracker
         flash[:alert] = "Failed to copy evaluators: #{result.error}"
       end
 
-      redirect_to monitoring_prompt_prompt_version_path(@prompt, @version, anchor: "auto-evaluators")
+      redirect_to monitoring_agent_agent_version_path(@prompt, @version, anchor: "auto-evaluators")
     end
 
     private
 
     def set_prompt_and_version
-      @prompt = Prompt.find(params[:prompt_id])
+      @prompt = Agent.find(params[:agent_id])
       @version = @prompt.active_version
 
       unless @version

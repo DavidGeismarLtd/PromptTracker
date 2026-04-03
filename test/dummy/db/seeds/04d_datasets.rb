@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # ============================================================================
-# Datasets for PromptVersions
+# Datasets for AgentVersions
 # ============================================================================
 
 puts "  Creating datasets for prompt versions..."
@@ -10,8 +10,8 @@ puts "  Creating datasets for prompt versions..."
 # 1. Customer Support Greeting Dataset
 # ============================================================================
 
-support_greeting_v3 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "customer_support_greeting" })
+support_greeting_v3 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "customer_support_greeting" })
   .where(status: "active")
   .first!
 
@@ -65,8 +65,8 @@ puts "  ✓ Created customer support greeting dataset (5 rows)"
 # 2. Email Summary Generator Dataset
 # ============================================================================
 
-email_summary_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "email_summary_generator" })
+email_summary_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "email_summary_generator" })
   .where(status: "active")
   .first!
 
@@ -168,8 +168,8 @@ puts "  ✓ Created email summary dataset (3 rows)"
 # 3. Code Review Assistant Dataset
 # ============================================================================
 
-code_review_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "code_review_assistant" })
+code_review_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "code_review_assistant" })
   .where(status: "active")
   .first!
 
@@ -244,8 +244,8 @@ puts "  ✓ Created code review dataset (4 rows)"
 # 4. Research Assistant Dataset (Web Search)
 # ============================================================================
 
-research_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "research_assistant" })
+research_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "research_assistant" })
   .where(status: "active")
   .first!
 
@@ -282,8 +282,8 @@ puts "  ✓ Created research assistant dataset (3 rows)"
 # 5. Competitive Intelligence Dataset (Web Search)
 # ============================================================================
 
-competitor_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "competitive_intelligence" })
+competitor_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "competitive_intelligence" })
   .where(status: "active")
   .first!
 
@@ -323,8 +323,8 @@ puts "  ✓ Created competitive intelligence dataset (3 rows)"
 # 6. Data Analysis Dataset (Code Interpreter)
 # ============================================================================
 
-data_analysis_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "data_analyst" })
+data_analysis_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "data_analyst" })
   .where(status: "active")
   .first!
 
@@ -364,8 +364,8 @@ puts "  ✓ Created data analysis dataset (3 rows)"
 # 7. Financial Modeling Dataset (Code Interpreter)
 # ============================================================================
 
-finance_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "financial_modeler" })
+finance_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "financial_modeler" })
   .where(status: "active")
   .first!
 
@@ -405,8 +405,8 @@ puts "  ✓ Created financial modeling dataset (3 rows)"
 # 8. Travel Booking Assistant Dataset (Functions)
 # ============================================================================
 
-travel_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "travel_booking_assistant" })
+travel_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "travel_booking_assistant" })
   .where(status: "active")
   .first!
 
@@ -454,8 +454,8 @@ puts "  ✓ Created travel booking dataset (3 rows)"
 # 9. E-commerce Assistant Dataset (Functions)
 # ============================================================================
 
-ecommerce_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "ecommerce_assistant" })
+ecommerce_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "ecommerce_assistant" })
   .where(status: "active")
   .first!
 
@@ -502,8 +502,8 @@ puts "  ✓ Created e-commerce assistant dataset (3 rows)"
 # 10. News Analyst Dataset (Web Search)
 # ============================================================================
 
-news_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "news_analyst" })
+news_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "news_analyst" })
   .where(status: "active")
   .first!
 
@@ -872,8 +872,8 @@ puts "  ✓ Created e-commerce conversational dataset (3 rows)"
 # 15. Tech Support Assistant Dataset (Anthropic + Functions)
 # ============================================================================
 
-tech_support_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "tech_support_assistant_claude" })
+tech_support_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "tech_support_assistant_claude" })
   .where(status: "active")
   .first!
 

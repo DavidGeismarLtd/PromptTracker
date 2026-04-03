@@ -10,7 +10,7 @@ puts "  Creating prompts with Response API tools..."
 # 1. Research Assistant Prompt (Web Search)
 # ============================================================================
 
-research_prompt = PromptTracker::Prompt.create!(
+research_prompt = PromptTracker::Agent.create!(
   name: "research_assistant",
   description: "Researches topics using web search and provides sourced answers",
   category: "research",
@@ -18,7 +18,7 @@ research_prompt = PromptTracker::Prompt.create!(
   created_by: "research-team@example.com"
 )
 
-research_prompt.prompt_versions.create!(
+research_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are a research assistant. Your role is to:
     1. Use web search to find accurate, up-to-date information
@@ -52,7 +52,7 @@ puts "  ✓ Created research assistant prompt with web search"
 # 2. Competitive Intelligence Prompt (Web Search with Domain Focus)
 # ============================================================================
 
-competitor_prompt = PromptTracker::Prompt.create!(
+competitor_prompt = PromptTracker::Agent.create!(
   name: "competitive_intelligence",
   description: "Researches competitors using web search from authoritative sources",
   category: "business",
@@ -60,7 +60,7 @@ competitor_prompt = PromptTracker::Prompt.create!(
   created_by: "strategy-team@example.com"
 )
 
-competitor_prompt.prompt_versions.create!(
+competitor_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are a competitive intelligence assistant. Your role is to:
     1. Research competitors using authoritative business sources
@@ -95,7 +95,7 @@ puts "  ✓ Created competitive intelligence prompt with web search"
 # 3. Data Analysis Prompt (Code Interpreter)
 # ============================================================================
 
-data_analysis_prompt = PromptTracker::Prompt.create!(
+data_analysis_prompt = PromptTracker::Agent.create!(
   name: "data_analyst",
   description: "Analyzes data using Python code execution",
   category: "analytics",
@@ -103,7 +103,7 @@ data_analysis_prompt = PromptTracker::Prompt.create!(
   created_by: "data-team@example.com"
 )
 
-data_analysis_prompt.prompt_versions.create!(
+data_analysis_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are a data analysis assistant. Your role is to:
     1. Use Python code to analyze data provided by users
@@ -138,7 +138,7 @@ puts "  ✓ Created data analysis prompt with code interpreter"
 # 4. Financial Modeling Prompt (Code Interpreter with Visualizations)
 # ============================================================================
 
-finance_prompt = PromptTracker::Prompt.create!(
+finance_prompt = PromptTracker::Agent.create!(
   name: "financial_modeler",
   description: "Creates financial models and visualizations using Python",
   category: "finance",
@@ -146,7 +146,7 @@ finance_prompt = PromptTracker::Prompt.create!(
   created_by: "finance-team@example.com"
 )
 
-finance_prompt.prompt_versions.create!(
+finance_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are a financial modeling assistant. Your role is to:
     1. Build financial models using Python (pandas, numpy)
@@ -181,7 +181,7 @@ puts "  ✓ Created financial modeling prompt with code interpreter"
 # 5. Travel Booking Assistant (Function Calls)
 # ============================================================================
 
-travel_prompt = PromptTracker::Prompt.create!(
+travel_prompt = PromptTracker::Agent.create!(
   name: "travel_booking_assistant",
   description: "Helps users plan and book travel using function calls",
   category: "travel",
@@ -189,7 +189,7 @@ travel_prompt = PromptTracker::Prompt.create!(
   created_by: "travel-team@example.com"
 )
 
-travel_prompt.prompt_versions.create!(
+travel_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are a travel booking assistant. Your role is to:
     1. Help users search for flights and hotels
@@ -284,7 +284,7 @@ puts "  ✓ Created travel booking prompt with function calls"
 # 6. E-commerce Assistant (Function Calls)
 # ============================================================================
 
-ecommerce_prompt = PromptTracker::Prompt.create!(
+ecommerce_prompt = PromptTracker::Agent.create!(
   name: "ecommerce_assistant",
   description: "Helps customers with product search, orders, and support",
   category: "ecommerce",
@@ -292,7 +292,7 @@ ecommerce_prompt = PromptTracker::Prompt.create!(
   created_by: "ecommerce-team@example.com"
 )
 
-ecommerce_prompt.prompt_versions.create!(
+ecommerce_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are an e-commerce assistant. Your role is to:
     1. Help customers find products using search
@@ -384,7 +384,7 @@ puts "  ✓ Created e-commerce assistant prompt with function calls"
 # 7. News Analyst Prompt (Web Search)
 # ============================================================================
 
-news_prompt = PromptTracker::Prompt.create!(
+news_prompt = PromptTracker::Agent.create!(
   name: "news_analyst",
   description: "Analyzes current events using web search",
   category: "media",
@@ -392,7 +392,7 @@ news_prompt = PromptTracker::Prompt.create!(
   created_by: "media-team@example.com"
 )
 
-news_prompt.prompt_versions.create!(
+news_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are a news analyst assistant. Your role is to:
     1. Search for the latest news on requested topics using the fetch_news_articles function
@@ -447,7 +447,7 @@ puts "  ✓ Created news analyst prompt with function calls"
 # 8. Tech Support Assistant (Anthropic with Function Calls)
 # ============================================================================
 
-tech_support_prompt = PromptTracker::Prompt.create!(
+tech_support_prompt = PromptTracker::Agent.create!(
   name: "tech_support_assistant_claude",
   description: "Provides technical support using Claude with function calls",
   category: "support",
@@ -455,7 +455,7 @@ tech_support_prompt = PromptTracker::Prompt.create!(
   created_by: "support-team@example.com"
 )
 
-tech_support_prompt.prompt_versions.create!(
+tech_support_prompt.agent_versions.create!(
   system_prompt: <<~SYSTEM.strip,
     You are a technical support assistant powered by Claude. Your role is to:
     1. Diagnose technical issues by gathering system information

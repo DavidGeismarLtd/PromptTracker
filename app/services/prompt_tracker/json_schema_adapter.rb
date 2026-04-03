@@ -3,7 +3,7 @@
 module PromptTracker
   # Adapter for converting JSON Schema (Hash) to RubyLLM::Schema classes.
   #
-  # This enables using JSON Schema definitions stored in PromptVersion.response_schema
+  # This enables using JSON Schema definitions stored in AgentVersion.response_schema
   # with RubyLLM's structured output feature.
   #
   # @example Convert a JSON Schema to RubyLLM::Schema

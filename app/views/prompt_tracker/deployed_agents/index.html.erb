@@ -102,8 +102,8 @@
                     <small class="text-muted"><code><%= agent.slug %></code></small>
                   </td>
                   <td>
-                    <%= link_to "#{agent.prompt_version.prompt.name} v#{agent.prompt_version.version_number}",
-                        testing_prompt_prompt_version_path(agent.prompt_version.prompt, agent.prompt_version),
+                    <%= link_to "#{agent.agent_version.agent.name} v#{agent.agent_version.version_number}",
+                        testing_agent_agent_version_path(agent.agent_version.agent, agent.agent_version),
                         class: "text-decoration-none" %>
                   </td>
                   <td>

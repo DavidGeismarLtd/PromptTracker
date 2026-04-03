@@ -4,10 +4,10 @@ require "rails_helper"
 
 RSpec.describe PromptTracker::TaskAgentRuntimeService, type: :service do
   describe "model_config access with string keys" do
-    let(:prompt) { create(:prompt) }
-    let(:prompt_version) do
-      create(:prompt_version,
-        prompt: prompt,
+    let(:prompt) { create(:agent) }
+    let(:agent_version) do
+      create(:agent_version,
+        agent: prompt,
         model_config: {
           "provider" => "openai",
           "api" => "chat_completions",
@@ -23,7 +23,7 @@ RSpec.describe PromptTracker::TaskAgentRuntimeService, type: :service do
     end
     let(:deployed_agent) do
       create(:deployed_agent,
-        prompt_version: prompt_version
+        agent_version: agent_version
       )
     end
     let(:task_run) { create(:task_run, deployed_agent: deployed_agent) }

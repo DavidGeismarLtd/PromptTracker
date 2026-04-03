@@ -7,8 +7,8 @@ module PromptTracker
     # Main landing page with prompts accordion
     def index
       # Load all prompts with their versions for the accordion
-      @prompts = Prompt.includes(
-        prompt_versions: [
+      @prompts = Agent.includes(
+        agent_versions: [
           :tests,
           { tests: :test_runs }
         ]

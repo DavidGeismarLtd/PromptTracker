@@ -14,13 +14,13 @@ module PromptTracker
       def index
         # Only show tracked calls (not test runs)
         @recent_responses = LlmResponse.tracked_calls
-                                       .includes(:prompt_version, :prompt, :human_evaluations, evaluations: [])
+                                       .includes(:agent_version, :prompt, :human_evaluations, evaluations: [])
                                        .order(created_at: :desc)
 
         # Apply filters
-        if params[:prompt_id].present?
-          @recent_responses = @recent_responses.joins(prompt_version: :prompt)
-                                               .where(prompt_tracker_prompts: { id: params[:prompt_id] })
+        if params[:agent_id].present?
+          @recent_responses = @recent_responses.joins(agent_version: :agent)
+                                               .where(prompt_tracker_agents: { id: params[:agent_id] })
         end
 
         if params[:environment].present?
@@ -41,7 +41,7 @@ module PromptTracker
         @recent_responses = @recent_responses.limit(50)
 
         # Get filter options
-        @prompts = Prompt.active.order(:name)
+        @prompts = Agent.active.order(:name)
         @environments = LlmResponse.tracked_calls.distinct.pluck(:environment).compact.sort
         @statuses = LlmResponse::STATUSES
         @evaluator_types = EvaluatorRegistry.all.values.map { |meta| meta[:evaluator_class].name }.uniq.sort

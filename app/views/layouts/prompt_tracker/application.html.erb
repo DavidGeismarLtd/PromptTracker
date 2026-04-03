@@ -240,10 +240,10 @@
         <div class="col-md-6 text-end">
           <div class="pt-footer-stats">
             <span class="pt-stat">
-              <i class="bi bi-file-text"></i> <%= PromptTracker::Prompt.count %> prompts
+              <i class="bi bi-file-text"></i> <%= PromptTracker::Agent.count %> prompts
             </span>
             <span class="pt-stat">
-              <i class="bi bi-layers"></i> <%= PromptTracker::PromptVersion.count %> versions
+              <i class="bi bi-layers"></i> <%= PromptTracker::AgentVersion.count %> versions
             </span>
             <span class="pt-stat">
               <i class="bi bi-chat-dots"></i> <%= PromptTracker::LlmResponse.count %> responses

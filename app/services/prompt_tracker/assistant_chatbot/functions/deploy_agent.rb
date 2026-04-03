@@ -3,10 +3,10 @@
 module PromptTracker
   module AssistantChatbot
     module Functions
-      # Deploys a PromptVersion as a conversational or task agent.
+      # Deploys a AgentVersion as a conversational or task agent.
       #
       # Arguments (JSON plan collected by the deployment wizard):
-      # - prompt_version_id: (required) ID of the prompt version to deploy
+      # - agent_version_id: (required) ID of the prompt version to deploy
       # - name: (optional) Agent name, defaults to "<prompt name> Agent"
       # - agent_type: (required) "conversational" or "task"
       # - deployment_config: (optional) Hash for conversational agents
@@ -18,12 +18,12 @@ module PromptTracker
         protected
 
         def execute
-          version = find_prompt_version
+          version = find_agent_version
           type = normalized_agent_type
           name = arg(:name).presence || default_name_for(version)
 
           attributes = {
-            prompt_version: version,
+            agent_version: version,
             name: name,
             agent_type: type
           }
@@ -40,7 +40,7 @@ module PromptTracker
             success(
               build_success_message(version, agent),
               links: build_links(agent),
-              entities: { deployed_agent_id: agent.id, prompt_version_id: version.id }
+              entities: { deployed_agent_id: agent.id, agent_version_id: version.id }
             )
           else
             failure(format_errors(agent))
@@ -48,7 +48,7 @@ module PromptTracker
         end
 
         def validate_arguments!
-          raise ArgumentError, "prompt_version_id is required" if arg(:prompt_version_id).blank?
+          raise ArgumentError, "agent_version_id is required" if arg(:agent_version_id).blank?
 
           type = (arg(:agent_type).presence || "conversational").to_s
           unless %w[conversational task].include?(type)
@@ -68,10 +68,10 @@ module PromptTracker
 
         private
 
-        def find_prompt_version
-          version_id = arg(:prompt_version_id)
-          version = PromptVersion.find_by(id: version_id)
-          raise ArgumentError, "PromptVersion #{version_id} not found" unless version
+        def find_agent_version
+          version_id = arg(:agent_version_id)
+          version = AgentVersion.find_by(id: version_id)
+          raise ArgumentError, "AgentVersion #{version_id} not found" unless version
           version
         end
 
@@ -136,7 +136,7 @@ module PromptTracker
 
         def build_success_message(version, agent)
           <<~MSG.strip
-            ✅ Deployed agent "#{agent.name}" for prompt "#{version.prompt.name}" (version #{version.name}).
+            ✅ Deployed agent "#{agent.name}" for agent "#{version.agent.name}" (version #{version.name}).
 
             🤖 Agent type: #{agent.agent_type}
             🔗 Public URL: #{agent.public_url}

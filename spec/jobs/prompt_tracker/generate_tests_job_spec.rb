@@ -4,8 +4,8 @@ require "rails_helper"
 
 RSpec.describe PromptTracker::GenerateTestsJob, type: :job do
   describe "#perform" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
 
     before do
       # Stub Turbo Stream broadcasts
@@ -18,7 +18,7 @@ RSpec.describe PromptTracker::GenerateTestsJob, type: :job do
 
     it "calls TestGeneratorService with correct parameters" do
       expect(PromptTracker::TestGeneratorService).to receive(:generate).with(
-        prompt_version: version,
+        agent_version: version,
         instructions: "Test instructions",
         count: 5
       ).and_return({ tests: [], count: 0, overall_reasoning: "Test reasoning" })

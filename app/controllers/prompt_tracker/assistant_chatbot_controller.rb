@@ -95,26 +95,26 @@ module PromptTracker
     # Extract context from the request (URL, params, referrer)
     def extract_context
         url = request.referrer || request.url
-        prompt_id = params[:prompt_id]
-        prompt_version_id = params[:version_id]
+        agent_id = params[:agent_id]
+        agent_version_id = params[:version_id]
 
-        # When chatting from a prompt version page, there are no prompt_id/version_id
+        # When chatting from a prompt version page, there are no agent_id/version_id
         # params on the /assistant endpoints, so we parse them from the referrer URL.
-        if prompt_id.blank? || prompt_version_id.blank?
+        if agent_id.blank? || agent_version_id.blank?
           if (match = url.match(%r{/prompts/(\d+)/versions/(\d+)}))
-            prompt_id ||= match[1]
-            prompt_version_id ||= match[2]
+            agent_id ||= match[1]
+            agent_version_id ||= match[2]
           elsif (match = url.match(%r{/prompts/(\d+)}))
-            prompt_id ||= match[1]
+            agent_id ||= match[1]
           end
         end
 
         context = {
           current_url: url,
           params: request.params.except(:controller, :action),
-          prompt_id: prompt_id,
-          version_id: prompt_version_id,
-          prompt_version_id: prompt_version_id,
+          agent_id: agent_id,
+          version_id: agent_version_id,
+          agent_version_id: agent_version_id,
           test_id: params[:test_id],
           run_id: params[:run_id],
           page_type: detect_page_type
@@ -130,7 +130,7 @@ module PromptTracker
 
       case url
       when %r{/prompts/\d+/versions/\d+}
-        :prompt_version_detail
+        :agent_version_detail
       when %r{/prompts/\d+}
         :prompt_detail
       when %r{/prompts}

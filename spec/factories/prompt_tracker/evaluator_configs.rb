@@ -15,7 +15,7 @@
 #
 FactoryBot.define do
   factory :evaluator_config, class: "PromptTracker::EvaluatorConfig" do
-    association :configurable, factory: :prompt_version
+    association :configurable, factory: :agent_version
     evaluator_type { "PromptTracker::Evaluators::LengthEvaluator" }
     enabled { true }
     config do
@@ -33,9 +33,9 @@ FactoryBot.define do
 
       configurable do
         if prompt
-          prompt.prompt_versions.first || association(:prompt_version, prompt: prompt)
+          prompt.agent_versions.first || association(:agent_version, agent: prompt)
         else
-          association(:prompt_version)
+          association(:agent_version)
         end
       end
     end

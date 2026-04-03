@@ -36,9 +36,9 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
   end
 
   describe ".for_testable" do
-    it "returns only evaluators compatible with PromptVersion (chat completions)" do
-      prompt = create(:prompt)
-      version = create(:prompt_version, prompt: prompt, model_config: {
+    it "returns only evaluators compatible with AgentVersion (chat completions)" do
+      prompt = create(:agent)
+      version = create(:agent_version, agent: prompt, model_config: {
         "provider" => "openai",
         "api" => "chat_completions",
         "model" => "gpt-4o"
@@ -53,9 +53,9 @@ RSpec.describe PromptTracker::EvaluatorRegistry do
       expect(evaluators.keys).to include(:conversation_judge)
     end
 
-    it "returns only evaluators compatible with PromptVersion using Assistants API" do
-      prompt = create(:prompt)
-      assistant_version = create(:prompt_version, :with_assistants, prompt: prompt)
+    it "returns only evaluators compatible with AgentVersion using Assistants API" do
+      prompt = create(:agent)
+      assistant_version = create(:agent_version, :with_assistants, agent: prompt)
 
       evaluators = described_class.for_testable(assistant_version)
 

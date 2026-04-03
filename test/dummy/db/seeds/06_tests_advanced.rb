@@ -7,18 +7,18 @@
 puts "  Creating advanced tests with multiple evaluators..."
 
 # Get prompt versions
-support_greeting_v3 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "customer_support_greeting" })
+support_greeting_v3 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "customer_support_greeting" })
   .where(status: "active")
   .first!
 
-email_summary_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "email_summary_generator" })
+email_summary_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "email_summary_generator" })
   .where(status: "active")
   .first!
 
-code_review_v1 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "code_review_assistant" })
+code_review_v1 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "code_review_assistant" })
   .where(status: "active")
   .first!
 

@@ -161,8 +161,8 @@ module PromptTracker
 
       context_parts << "PROMPT CONTEXT:"
 
-      # Handle PromptVersion testables
-      if testable.is_a?(PromptVersion)
+      # Handle AgentVersion testables
+      if testable.is_a?(AgentVersion)
         context_parts << "You are generating test data for the following LLM prompt:\n"
 
         if testable.system_prompt.present?

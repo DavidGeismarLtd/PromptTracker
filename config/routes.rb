@@ -20,8 +20,8 @@ PromptTracker::Engine.routes.draw do
       post :check_version_impact, on: :member # Check if save will create new version
     end
 
-    # Prompt versions (for testing)
-    resources :prompts, only: [ :index, :show ] do
+    # Agents (for testing)
+    resources :agents, only: [ :index, :show ] do
       # Playground for editing existing prompts
       resource :playground, only: [ :show ], controller: "playground" do
         post :preview, on: :member
@@ -34,7 +34,7 @@ PromptTracker::Engine.routes.draw do
         post :check_version_impact, on: :member # Check if save will create new version
       end
 
-      resources :prompt_versions, only: [ :show ], path: "versions" do
+      resources :agent_versions, only: [ :show ], path: "versions" do
         member do
           get :compare
           post :activate
@@ -72,7 +72,7 @@ PromptTracker::Engine.routes.draw do
     end
 
     # Tests for prompt versions (not nested under prompts for simpler URLs)
-    resources :prompt_versions, only: [], path: "versions" do
+    resources :agent_versions, only: [], path: "versions" do
       member do
         post :generate_tests
       end
@@ -107,9 +107,9 @@ PromptTracker::Engine.routes.draw do
   namespace :monitoring do
     get "/", to: "dashboard#index", as: :root
 
-    # Prompts and versions (for monitoring tracked calls)
-    resources :prompts, only: [] do
-      resources :prompt_versions, only: [ :show ], path: "versions"
+    # Agents and versions (for monitoring tracked calls)
+    resources :agents, only: [] do
+      resources :agent_versions, only: [ :show ], path: "versions"
     end
 
     # Evaluations (tracked/runtime calls from all environments)
@@ -132,16 +132,16 @@ PromptTracker::Engine.routes.draw do
     get :testing_guide
   end
 
-  # Prompts (for monitoring - evaluator configs)
-  resources :prompts, only: [] do
-    # Evaluator configs nested under prompts (for monitoring)
+  # Agents (for monitoring - evaluator configs)
+  resources :agents, only: [] do
+    # Evaluator configs nested under agents (for monitoring)
     resources :evaluator_configs, only: [ :index, :show, :create, :update, :destroy ], path: "evaluators" do
       collection do
         post :copy_from_tests
       end
     end
 
-    # A/B tests nested under prompts (for creating new tests)
+    # A/B tests nested under agents (for creating new tests)
     resources :ab_tests, only: [ :new, :create ], path: "ab-tests"
   end
 

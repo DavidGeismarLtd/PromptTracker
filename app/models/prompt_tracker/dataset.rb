@@ -17,7 +17,7 @@
 #  updated_at         :datetime         not null
 #
 module PromptTracker
-  # Represents a reusable collection of test data for any testable (PromptVersion or Assistant).
+  # Represents a reusable collection of test data for any testable (AgentVersion or Assistant).
   #
   # A Dataset stores multiple rows of test scenario data that can be used
   # to run tests at scale. Each dataset is tied to a specific testable
@@ -26,12 +26,12 @@ module PromptTracker
   # The schema is automatically copied from testable.variables_schema on creation.
   # All testables must implement the variables_schema method (via Testable concern).
   #
-  # @example Create a dataset for a PromptVersion
+  # @example Create a dataset for a AgentVersion
   #   dataset = Dataset.create!(
-  #     testable: prompt_version,
+  #     testable: agent_version,
   #     name: "customer_scenarios",
   #     description: "Common customer support scenarios"
-  #     # schema is automatically set from prompt_version.variables_schema
+  #     # schema is automatically set from agent_version.variables_schema
   #   )
   #
   # @example Create a dataset for an Assistant
@@ -58,7 +58,7 @@ module PromptTracker
       { "name" => "max_turns", "type" => "integer", "required" => false, "default" => 5 }
     ].freeze
 
-    # Polymorphic association - can belong to PromptVersion or Assistant
+    # Polymorphic association - can belong to AgentVersion or Assistant
     belongs_to :testable, polymorphic: true
 
     has_many :dataset_rows,
@@ -88,7 +88,7 @@ module PromptTracker
     # Scopes
     scope :recent, -> { order(created_at: :desc) }
     scope :by_name, -> { order(:name) }
-    scope :for_prompt_versions, -> { where(testable_type: "PromptTracker::PromptVersion") }
+    scope :for_agent_versions, -> { where(testable_type: "PromptTracker::AgentVersion") }
     scope :single_turn_datasets, -> { where(dataset_type: :single_turn) }
     scope :conversational_datasets, -> { where(dataset_type: :conversational) }
 

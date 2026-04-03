@@ -70,13 +70,13 @@ module PromptTracker
                class_name: "PromptTracker::EvaluatorConfig",
                optional: true
 
-    has_one :prompt_version,
+    has_one :agent_version,
             through: :llm_response,
-            class_name: "PromptTracker::PromptVersion"
+            class_name: "PromptTracker::AgentVersion"
 
-    has_one :prompt,
-            through: :prompt_version,
-            class_name: "PromptTracker::Prompt"
+    has_one :agent,
+            through: :agent_version,
+            class_name: "PromptTracker::Agent"
 
     has_many :human_evaluations,
              class_name: "PromptTracker::HumanEvaluation",

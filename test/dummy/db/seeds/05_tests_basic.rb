@@ -7,8 +7,8 @@
 puts "  Creating basic tests..."
 
 # Get the active customer support greeting version
-support_greeting_v3 = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "customer_support_greeting" })
+support_greeting_v3 = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "customer_support_greeting" })
   .where(status: "active")
   .first!
 

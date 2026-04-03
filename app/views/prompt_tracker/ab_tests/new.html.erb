@@ -12,7 +12,7 @@
 
 <div class="card">
   <div class="card-body">
-    <%= form_with model: @ab_test, url: prompt_ab_tests_path(@prompt), local: true do |f| %>
+    <%= form_with model: @ab_test, url: agent_ab_tests_path(@prompt), local: true do |f| %>
       <% if @ab_test.errors.any? %>
         <div class="alert alert-danger">
           <h5>Please fix the following errors:</h5>

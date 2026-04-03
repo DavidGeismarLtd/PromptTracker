@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
-  let(:prompt_version) do
-    create(:prompt_version,
+  let(:agent_version) do
+    create(:agent_version,
            system_prompt: "You are a helpful customer support assistant.",
            model_config: {
              "provider" => "openai",
@@ -16,7 +16,7 @@ RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
 
   let(:deployed_agent) do
     create(:deployed_agent,
-           prompt_version: prompt_version,
+           agent_version: agent_version,
            deployment_config: {
              auth: { type: "api_key" },
              rate_limit: { requests_per_minute: 60 },
@@ -152,7 +152,7 @@ RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
         }.to change(PromptTracker::LlmResponse, :count).by(1)
 
         llm_response = PromptTracker::LlmResponse.last
-        expect(llm_response.prompt_version).to eq(prompt_version)
+        expect(llm_response.agent_version).to eq(agent_version)
         expect(llm_response.model).to eq("gpt-4")
         expect(llm_response.tokens_prompt).to eq(100)
         expect(llm_response.tokens_completion).to eq(50)
@@ -566,8 +566,8 @@ RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
     end
 
     context "with OpenAI Assistants API" do
-      let(:assistant_prompt_version) do
-        create(:prompt_version,
+      let(:assistant_agent_version) do
+        create(:agent_version,
                system_prompt: "Assistant system prompt",
                model_config: {
                  "provider" => "openai",
@@ -581,7 +581,7 @@ RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
       end
 
       let(:assistant_agent) do
-        create(:deployed_agent, prompt_version: assistant_prompt_version)
+        create(:deployed_agent, agent_version: assistant_agent_version)
       end
 
       it "calls OpenaiAssistantService" do
@@ -615,9 +615,9 @@ RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
       end
 
       it "raises error when assistant_id is missing" do
-        bad_config = assistant_prompt_version.model_config.dup
+        bad_config = assistant_agent_version.model_config.dup
         bad_config["metadata"] = {}
-        assistant_prompt_version.update!(model_config: bad_config)
+        assistant_agent_version.update!(model_config: bad_config)
 
         result = described_class.call(
           deployed_agent: assistant_agent,
@@ -632,8 +632,8 @@ RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
     end
 
     context "with OpenAI Responses API" do
-      let(:responses_prompt_version) do
-        create(:prompt_version,
+      let(:responses_agent_version) do
+        create(:agent_version,
                model_config: {
                  "provider" => "openai",
                  "api" => "responses",
@@ -642,7 +642,7 @@ RSpec.describe PromptTracker::AgentRuntimeService, type: :service do
       end
 
       let(:responses_agent) do
-        create(:deployed_agent, prompt_version: responses_prompt_version)
+        create(:deployed_agent, agent_version: responses_agent_version)
       end
 
       it "raises not supported error" do

@@ -113,12 +113,12 @@ RSpec.describe PromptTracker::AssistantChatbotService do
 
         context "in dataset wizard mode with a final JSON plan" do
           let(:context) do
-            { page_type: :prompt_version_detail, prompt_version_id: 99 }
+            { page_type: :agent_version_detail, agent_version_id: 99 }
           end
 
           let(:json_plan) do
             {
-              "prompt_version_id" => 99,
+              "agent_version_id" => 99,
               "name" => "Wizard dataset",
               "description" => "Synthetic dataset from wizard",
               "dataset_type" => "single_turn",
@@ -156,7 +156,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
             expect(result.success?).to be true
             expect(result.pending_action).to be_present
             expect(result.pending_action[:function_name]).to eq("create_dataset")
-            expect(result.pending_action[:arguments][:prompt_version_id]).to eq(99)
+            expect(result.pending_action[:arguments][:agent_version_id]).to eq(99)
             expect(result.pending_action[:arguments][:dataset_type]).to eq("single_turn")
             expect(result.pending_action[:arguments][:count]).to eq(25)
           end
@@ -164,12 +164,12 @@ RSpec.describe PromptTracker::AssistantChatbotService do
 
         context "in deployment wizard mode with a final JSON plan" do
           let(:context) do
-            { page_type: :prompt_version_detail, prompt_version_id: 42 }
+            { page_type: :agent_version_detail, agent_version_id: 42 }
           end
 
           let(:json_plan) do
             {
-              "prompt_version_id" => 42,
+              "agent_version_id" => 42,
               "name" => "Support Agent",
               "agent_type" => "conversational",
               "deployment_config" => {
@@ -208,7 +208,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
             expect(result.success?).to be true
             expect(result.pending_action).to be_present
             expect(result.pending_action[:function_name]).to eq("deploy_agent")
-            expect(result.pending_action[:arguments][:prompt_version_id]).to eq(42)
+            expect(result.pending_action[:arguments][:agent_version_id]).to eq(42)
             expect(result.pending_action[:arguments][:agent_type]).to eq("conversational")
           end
         end
@@ -265,12 +265,12 @@ RSpec.describe PromptTracker::AssistantChatbotService do
 
       context "in test runner wizard mode with a final JSON plan" do
         let(:context) do
-          { page_type: :prompt_version_detail, prompt_version_id: 27 }
+          { page_type: :agent_version_detail, agent_version_id: 27 }
         end
 
         let(:json_plan) do
           {
-            "prompt_version_id" => 27,
+            "agent_version_id" => 27,
             "run_mode" => "dataset",
             "dataset_id" => 10,
             "test_ids" => nil,
@@ -307,7 +307,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           expect(result.success?).to be true
           expect(result.pending_action).to be_present
           expect(result.pending_action[:function_name]).to eq("run_tests")
-          expect(result.pending_action[:arguments][:prompt_version_id]).to eq(27)
+          expect(result.pending_action[:arguments][:agent_version_id]).to eq(27)
           expect(result.pending_action[:arguments][:run_mode]).to eq("dataset")
           expect(result.pending_action[:arguments][:dataset_id]).to eq(10)
         end
@@ -322,7 +322,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
               {
                 function_name: "create_dataset",
                 arguments: {
-                  prompt_version_id: 123,
+                  agent_version_id: 123,
                   name: "User provided dataset name"
                 }
               }
@@ -344,7 +344,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           expect(result.success?).to be true
           expect(result.pending_action).to be_present
           expect(result.pending_action[:function_name]).to eq("create_dataset")
-          expect(result.pending_action[:arguments][:prompt_version_id]).to eq(123)
+          expect(result.pending_action[:arguments][:agent_version_id]).to eq(123)
         end
       end
 
@@ -386,8 +386,8 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           text: "Here's the prompt info.",
           tool_calls: [
             {
-              function_name: "get_prompt_version_info",
-              arguments: { prompt_version_id: 123 }
+              function_name: "get_agent_version_info",
+              arguments: { agent_version_id: 123 }
             }
           ]
         )
@@ -469,7 +469,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
         success?: true,
         message: "Prompt created successfully!",
         links: [ { text: "View prompt", url: "/prompts/1" } ],
-        entities_created: { prompt_id: 1 },
+        entities_created: { agent_id: 1 },
         error: nil
       )
     end
@@ -512,7 +512,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
           message: nil,
           links: [],
           entities_created: {},
-          error: "Failed to create prompt: Name can't be blank"
+          error: "Failed to create agent: Name can't be blank"
         )
       end
 
@@ -530,7 +530,7 @@ RSpec.describe PromptTracker::AssistantChatbotService do
         )
 
         expect(result.success?).to be false
-        expect(result.error).to include("Failed to create prompt")
+        expect(result.error).to include("Failed to create agent")
       end
     end
   end

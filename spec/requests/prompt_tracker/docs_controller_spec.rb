@@ -16,10 +16,10 @@ RSpec.describe "PromptTracker::DocsController", type: :request do
     end
 
     context "with prompt and version context" do
-      let(:prompt) { create(:prompt, name: "test_prompt") }
+      let(:prompt) { create(:agent, name: "test_prompt") }
       let(:version) do
-        v = create(:prompt_version,
-                   prompt: prompt,
+        v = create(:agent_version,
+                   agent: prompt,
                    user_prompt: "Hello {{user_name}}, let's discuss {{topic}}",
                    status: "active")
         # Update variables_schema after creation to set specific schema
@@ -32,7 +32,7 @@ RSpec.describe "PromptTracker::DocsController", type: :request do
       end
 
       it "shows context-specific example" do
-        get "/prompt_tracker/docs/tracking", params: { prompt_id: prompt.id, version_id: version.id }
+        get "/prompt_tracker/docs/tracking", params: { agent_id: prompt.id, version_id: version.id }
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Quick Start for \"#{prompt.name}\"")
@@ -41,7 +41,7 @@ RSpec.describe "PromptTracker::DocsController", type: :request do
       end
 
       it "includes back link to monitoring" do
-        get "/prompt_tracker/docs/tracking", params: { prompt_id: prompt.id, version_id: version.id }
+        get "/prompt_tracker/docs/tracking", params: { agent_id: prompt.id, version_id: version.id }
 
         expect(response.body).to include("Back to Monitoring")
       end

@@ -3,12 +3,12 @@
 require "rails_helper"
 
 RSpec.describe PromptTracker::AssistantChatbot::Functions::DeployAgent do
-  let(:prompt_version) { create(:prompt_version) }
+  let(:agent_version) { create(:agent_version) }
   let(:context) { {} }
 
   let(:arguments) do
     {
-      prompt_version_id: prompt_version.id,
+      agent_version_id: agent_version.id,
       name: "Support Agent",
       agent_type: "conversational",
       deployment_config: {
@@ -28,13 +28,13 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::DeployAgent do
 
       agent = PromptTracker::DeployedAgent.last
       expect(agent).to be_present
-      expect(agent.prompt_version).to eq(prompt_version)
+      expect(agent.agent_version).to eq(agent_version)
       expect(agent.agent_type_conversational?).to be true
       expect(agent.name).to eq("Support Agent")
       expect(agent.deployment_config["conversation_ttl"]).to eq(1800)
 
       expect(result.entities_created[:deployed_agent_id]).to eq(agent.id)
-      expect(result.entities_created[:prompt_version_id]).to eq(prompt_version.id)
+      expect(result.entities_created[:agent_version_id]).to eq(agent_version.id)
     end
 
     it "creates a task agent when agent_type is task" do
@@ -55,13 +55,13 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::DeployAgent do
       expect(agent.task_config["initial_prompt"]).to eq("Do something important")
     end
 
-    it "returns a failure result when prompt_version_id is missing" do
-      arguments.delete(:prompt_version_id)
+    it "returns a failure result when agent_version_id is missing" do
+      arguments.delete(:agent_version_id)
 
       result = function.call
 
       expect(result.success?).to be false
-      expect(result.error).to include("prompt_version_id is required")
+      expect(result.error).to include("agent_version_id is required")
     end
 
     it "returns a failure result for invalid agent_type" do
@@ -85,12 +85,12 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::DeployAgent do
     end
 
     it "returns a failure result when prompt version is not found" do
-      arguments[:prompt_version_id] = -1
+      arguments[:agent_version_id] = -1
 
       result = function.call
 
       expect(result.success?).to be false
-      expect(result.error).to include("PromptVersion -1 not found")
+      expect(result.error).to include("AgentVersion -1 not found")
     end
   end
 end

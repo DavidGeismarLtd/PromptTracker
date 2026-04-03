@@ -24,9 +24,9 @@ module PromptTracker
         end
       end
 
-      let(:prompt) { create(:prompt) }
-      let(:version) { create(:prompt_version, prompt: prompt) }
-      let(:llm_response) { create(:llm_response, prompt_version: version) }
+      let(:prompt) { create(:agent) }
+      let(:version) { create(:agent_version, agent: prompt) }
+      let(:llm_response) { create(:llm_response, agent_version: version) }
 
       describe ".param_schema" do
         it "returns empty hash by default" do

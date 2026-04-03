@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe PromptTracker::ExecuteTaskAgentJob, type: :job do
-  let(:prompt_version) do
-    create(:prompt_version,
+  let(:agent_version) do
+    create(:agent_version,
            system_prompt: "You are a helpful task automation assistant.",
            model_config: {
              provider: "openai",
@@ -17,7 +17,7 @@ RSpec.describe PromptTracker::ExecuteTaskAgentJob, type: :job do
     create(:deployed_agent,
            :task_agent,
            :with_functions,
-           prompt_version: prompt_version,
+           agent_version: agent_version,
            task_config: {
              initial_prompt: "Process data",
              execution: {

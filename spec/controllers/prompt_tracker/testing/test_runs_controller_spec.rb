@@ -7,8 +7,8 @@ module PromptTracker
     RSpec.describe TestRunsController, type: :controller do
       routes { PromptTracker::Engine.routes }
 
-      let(:prompt) { create(:prompt) }
-      let(:version) { create(:prompt_version, prompt: prompt) }
+      let(:prompt) { create(:agent) }
+      let(:version) { create(:agent_version, agent: prompt) }
       let(:test) { create(:test, testable: version) }
       let(:dataset) { create(:dataset, testable: version) }
       let(:dataset_row) { create(:dataset_row, dataset: dataset) }
@@ -51,7 +51,7 @@ module PromptTracker
 
           it "redirects to the testable show page" do
             post :rerun, params: { id: test_run.id }
-            expect(response).to redirect_to(testing_prompt_prompt_version_path(prompt, version))
+            expect(response).to redirect_to(testing_agent_agent_version_path(prompt, version))
           end
 
           it "sets a success notice" do
@@ -91,9 +91,9 @@ module PromptTracker
           end
         end
 
-        context "with assistant testable (PromptVersion with assistants API)" do
-          let(:assistant_prompt) { create(:prompt) }
-          let(:assistant_version) { create(:prompt_version, :with_assistants, prompt: assistant_prompt) }
+        context "with assistant testable (AgentVersion with assistants API)" do
+          let(:assistant_prompt) { create(:agent) }
+          let(:assistant_version) { create(:agent_version, :with_assistants, agent: assistant_prompt) }
           let(:assistant_test) { create(:test, testable: assistant_version) }
           let(:assistant_dataset) { create(:dataset, testable: assistant_version) }
           let(:assistant_dataset_row) { create(:dataset_row, dataset: assistant_dataset) }
@@ -112,7 +112,7 @@ module PromptTracker
 
           it "redirects to the prompt version show page" do
             post :rerun, params: { id: test_run.id }
-            expect(response).to redirect_to(testing_prompt_prompt_version_path(assistant_prompt, assistant_version))
+            expect(response).to redirect_to(testing_agent_agent_version_path(assistant_prompt, assistant_version))
           end
         end
       end

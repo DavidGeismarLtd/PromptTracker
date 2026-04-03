@@ -3,19 +3,19 @@
 require "rails_helper"
 
 RSpec.describe PromptTracker::LlmResponse, type: :model do
-  let(:prompt) { create(:prompt, :with_active_version) }
+  let(:prompt) { create(:agent, :with_active_version) }
   let(:version) { prompt.active_version }
 
   describe "scopes" do
     let!(:production_response) do
       create(:llm_response,
-             prompt_version: version,
+             agent_version: version,
              environment: "production")
     end
 
     let!(:staging_response) do
       create(:llm_response,
-             prompt_version: version,
+             agent_version: version,
              environment: "staging")
     end
 
@@ -26,7 +26,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
 
       it "includes responses from any environment" do
         dev_response = create(:llm_response,
-                              prompt_version: version,
+                              agent_version: version,
                               environment: "development")
 
         expect(described_class.tracked_calls).to include(production_response, staging_response, dev_response)
@@ -36,13 +36,13 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     describe "scope chaining" do
       let!(:recent_tracked) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                created_at: 1.hour.ago)
       end
 
       let!(:old_tracked) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                created_at: 2.days.ago)
       end
 
@@ -73,7 +73,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
       # Test runs store their output in TestRun.output_data instead
 
       tracked = create(:llm_response,
-                       prompt_version: version,
+                       agent_version: version,
                        user_id: "user123",
                        session_id: "session456")
 
@@ -85,7 +85,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
       # Test runs store their output in TestRun.output_data instead
 
       # All LlmResponses are tracked calls
-      response = create(:llm_response, prompt_version: version)
+      response = create(:llm_response, agent_version: version)
       expect(described_class.tracked_calls).to include(response)
       expect(described_class.count).to eq(described_class.tracked_calls.count)
     end

@@ -18,7 +18,7 @@
 #  minimum_sample_size       :integer          default(100)
 #  name                      :string           not null
 #  optimization_direction    :string           default("minimize"), not null
-#  prompt_id                 :bigint           not null
+#  agent_id                 :bigint           not null
 #  results                   :jsonb
 #  started_at                :datetime
 #  status                    :string           default("draft"), not null
@@ -63,8 +63,8 @@ module PromptTracker
     OPTIMIZATION_DIRECTIONS = %w[minimize maximize].freeze
 
     # Associations
-    belongs_to :prompt,
-               class_name: "PromptTracker::Prompt",
+    belongs_to :agent,
+               class_name: "PromptTracker::Agent",
                inverse_of: :ab_tests
 
     has_many :llm_responses,
@@ -117,9 +117,9 @@ module PromptTracker
     scope :cancelled, -> { where(status: "cancelled") }
 
     # Returns tests for a specific prompt
-    # @param prompt_id [Integer] the prompt ID
+    # @param agent_id [Integer] the prompt ID
     # @return [ActiveRecord::Relation<AbTest>]
-    scope :for_prompt, ->(prompt_id) { where(prompt_id: prompt_id) }
+    scope :for_prompt, ->(agent_id) { where(agent_id: agent_id) }
 
     # Returns tests optimizing a specific metric
     # @param metric [String] the metric name
@@ -190,15 +190,15 @@ module PromptTracker
       traffic_split.keys.first
     end
 
-    # Returns the PromptVersion for a given variant.
+    # Returns the AgentVersion for a given variant.
     #
     # @param variant_name [String] the variant name (e.g., "A", "B")
-    # @return [PromptVersion, nil] the version or nil if not found
+    # @return [AgentVersion, nil] the version or nil if not found
     def version_for_variant(variant_name)
       variant = variants.find { |v| v["name"] == variant_name }
       return nil unless variant
 
-      prompt.prompt_versions.find_by(id: variant["version_id"])
+      agent.agent_versions.find_by(id: variant["version_id"])
     end
 
     # Returns all variant names.
@@ -329,13 +329,13 @@ module PromptTracker
 
     # Validates that variants reference valid prompt versions
     def variants_must_reference_valid_versions
-      return if variants.blank? || prompt.nil?
+      return if variants.blank? || agent.nil?
       return unless variants.is_a?(Array)
 
       variants.each do |variant|
         next unless variant.is_a?(Hash) && variant["version_id"].present?
 
-        version = prompt.prompt_versions.find_by(id: variant["version_id"])
+        version = agent.agent_versions.find_by(id: variant["version_id"])
         unless version
           errors.add(:variants, "variant '#{variant['name']}' references non-existent version #{variant['version_id']}")
         end
@@ -345,9 +345,9 @@ module PromptTracker
     # Validates that only one test is running per prompt
     def only_one_running_test_per_prompt
       return unless status == "running"
-      return if prompt.nil?
+      return if agent.nil?
 
-      existing_running = prompt.ab_tests.running.where.not(id: id).exists?
+      existing_running = agent.ab_tests.running.where.not(id: id).exists?
       if existing_running
         errors.add(:base, "Only one running test allowed per prompt")
       end

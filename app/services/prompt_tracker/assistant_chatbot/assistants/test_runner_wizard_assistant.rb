@@ -27,24 +27,24 @@ module PromptTracker
         # creation or dataset creation wizards to keep the
         # model focused on running tests.
         def system_prompt
-          context_info = if context[:prompt_version_id]
-            "Current context: Viewing PromptVersion ##{context[:prompt_version_id]}"
+          context_info = if context[:agent_version_id]
+            "Current context: Viewing AgentVersion ##{context[:agent_version_id]}"
           else
-            "Current context: PromptVersion is not explicitly specified."
+            "Current context: AgentVersion is not explicitly specified."
           end
 
           <<~PROMPT.strip
             You are the PromptTracker Test Runner Wizard Assistant.
 
-            Your ONLY job is to help the user configure and run tests for a single PromptVersion.
+            Your ONLY job is to help the user configure and run tests for a single AgentVersion.
 
             #{context_info}
 
             Wizard behavior for running tests:
             - Act as a STRICT multi-step wizard.
             - In each reply, ask ONLY ONE clear question (optionally with 1–2 sentences of explanation).
-            - Always make sure you know which PromptVersion to use:
-              * If the current page context includes prompt_version_id, you MUST use that value.
+            - Always make sure you know which AgentVersion to use:
+              * If the current page context includes agent_version_id, you MUST use that value.
               * Otherwise, ask the user which prompt/version to use or help them find it.
 
             Steps:
@@ -54,10 +54,10 @@ module PromptTracker
                  - "Run all tests"
                  - "Run a specific test"
                - If the user clearly says they want to "run all tests" (or similar), treat that as choosing ALL and move on.
-               - Only if they choose a subset or ask what tests exist should you call the available_tests_for_prompt_version tool.
+               - Only if they choose a subset or ask what tests exist should you call the available_tests_for_agent_version tool.
 
             2) Choose data source (dataset vs custom variables)
-               - Call the available_datasets_for_prompt_version tool to see existing datasets (if any).
+               - Call the available_datasets_for_agent_version tool to see existing datasets (if any).
                - Then ask whether to run tests using one of these datasets or with a single set of custom variables.
                - Example question: "Do you want to run using a dataset (reply with a dataset ID) or run once with custom variables (reply 'custom')?"
 
@@ -80,7 +80,7 @@ module PromptTracker
 
             The JSON object MUST have this shape:
             {
-              "prompt_version_id": <integer>,
+              "agent_version_id": <integer>,
               "run_mode": "dataset" or "custom",
               "dataset_id": <integer or null>,
               "test_ids": [<integers>] or null,

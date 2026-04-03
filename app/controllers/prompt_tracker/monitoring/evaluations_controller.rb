@@ -8,7 +8,7 @@ module PromptTracker
       # List all tracked evaluations with filtering
       def index
         @evaluations = Evaluation.tracked
-                                 .includes(llm_response: { prompt_version: :prompt })
+                                 .includes(llm_response: { agent_version: :agent })
                                  .order(created_at: :desc)
 
         # Filter by passed/failed
@@ -27,9 +27,9 @@ module PromptTracker
         end
 
         # Filter by prompt
-        if params[:prompt_id].present?
-          @evaluations = @evaluations.joins(llm_response: { prompt_version: :prompt })
-                                     .where(prompt_tracker_prompts: { id: params[:prompt_id] })
+        if params[:agent_id].present?
+          @evaluations = @evaluations.joins(llm_response: { agent_version: :agent })
+                                     .where(prompt_tracker_agents: { id: params[:agent_id] })
         end
 
         # Filter by environment
@@ -62,7 +62,7 @@ module PromptTracker
         @evaluations = @evaluations.page(params[:page]).per(50)
 
         # Get filter options
-        @prompts = Prompt.active.order(:name)
+        @prompts = Agent.active.order(:name)
         @evaluator_types = EvaluatorRegistry.all.values.map { |meta| meta[:evaluator_class].name }.uniq.sort
         @environments = LlmResponse.tracked_calls.distinct.pluck(:environment).compact.sort
         @user_ids = LlmResponse.tracked_calls.distinct.pluck(:user_id).compact.sort
@@ -77,10 +77,10 @@ module PromptTracker
       # GET /monitoring/evaluations/:id
       # Show evaluation details (monitoring context - runtime calls)
       def show
-        @evaluation = Evaluation.tracked.includes(:human_evaluations, llm_response: { prompt_version: :prompt }).find(params[:id])
+        @evaluation = Evaluation.tracked.includes(:human_evaluations, llm_response: { agent_version: :agent }).find(params[:id])
         @response = @evaluation.llm_response
-        @version = @response.prompt_version
-        @prompt = @version.prompt
+        @version = @response.agent_version
+        @prompt = @version.agent
         @monitoring_context = true  # Flag to indicate we're in monitoring context
 
         # Reuse the shared template

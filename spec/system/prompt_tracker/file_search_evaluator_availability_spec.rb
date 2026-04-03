@@ -3,13 +3,13 @@
 require "rails_helper"
 
 RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
-  describe "for PromptVersions with Responses API" do
-    let(:prompt) { create(:prompt) }
+  describe "for AgentVersions with Responses API" do
+    let(:prompt) { create(:agent) }
 
     context "when no vector store is attached" do
       let(:version) do
-        create(:prompt_version,
-               prompt: prompt,
+        create(:agent_version,
+               agent: prompt,
                status: "active",
                model_config: {
                  "provider" => "openai",
@@ -19,7 +19,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "disables the file search evaluator checkbox" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -32,8 +32,8 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
 
     context "when vector store is attached" do
       let(:version) do
-        create(:prompt_version,
-               prompt: prompt,
+        create(:agent_version,
+               agent: prompt,
                status: "active",
                model_config: {
                  "provider" => "openai",
@@ -59,7 +59,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "enables the file search evaluator" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -70,7 +70,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "shows files from the vector store when evaluator is selected" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -93,7 +93,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "updates the hidden JSON field when file checkboxes are selected" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -125,7 +125,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "updates the hidden JSON field when multiple files are selected" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -155,7 +155,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "removes files from the JSON when checkboxes are unchecked" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -195,13 +195,13 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
     end
   end
 
-  describe "for PromptVersions with Assistants API" do
-    let(:prompt) { create(:prompt) }
+  describe "for AgentVersions with Assistants API" do
+    let(:prompt) { create(:agent) }
 
     context "when no vector store is attached" do
       let(:version) do
-        create(:prompt_version,
-               prompt: prompt,
+        create(:agent_version,
+               agent: prompt,
                status: "active",
                model_config: {
                  "provider" => "openai",
@@ -212,7 +212,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "disables the file search evaluator checkbox" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -225,8 +225,8 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
 
     context "when vector store is attached" do
       let(:version) do
-        create(:prompt_version,
-               prompt: prompt,
+        create(:agent_version,
+               agent: prompt,
                status: "active",
                model_config: {
                  "provider" => "openai",
@@ -253,7 +253,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "enables the file search evaluator" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)
@@ -264,7 +264,7 @@ RSpec.describe "File Search Evaluator Availability", type: :system, js: true do
       end
 
       it "shows files from the vector store when evaluator is selected" do
-        visit "/prompt_tracker/testing/prompts/#{prompt.id}/versions/#{version.id}"
+        visit "/prompt_tracker/testing/agents/#{prompt.id}/versions/#{version.id}"
         click_button "New Test"
 
         expect(page).to have_css("#new-test-modal", visible: true)

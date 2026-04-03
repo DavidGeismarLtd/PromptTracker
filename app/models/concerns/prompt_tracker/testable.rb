@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module PromptTracker
-  # Shared interface for all testable models (PromptVersion, Assistant, etc.)
+  # Shared interface for all testable models (AgentVersion, Assistant, etc.)
   #
   # This concern defines the common behavior and associations that all testable
   # models must implement. It ensures a consistent polymorphic interface across
@@ -12,7 +12,7 @@ module PromptTracker
   # - name: Returns a human-readable name for the testable
   #
   # @example Include in a model
-  #   class PromptVersion < ApplicationRecord
+  #   class AgentVersion < ApplicationRecord
   #     include Testable
   #
   #     # variables_schema is already a database column, so it's automatically available
@@ -90,7 +90,7 @@ module PromptTracker
     #
     #    @return [Array<Hash>] array of variable definitions
     #
-    #    @example PromptVersion schema (from database column)
+    #    @example AgentVersion schema (from database column)
     #      [
     #        { "name" => "customer_name", "type" => "string", "required" => true },
     #        { "name" => "issue", "type" => "text", "required" => false }
@@ -107,7 +107,7 @@ module PromptTracker
     #
     #    @return [String] the name
     #
-    #    @example PromptVersion
+    #    @example AgentVersion
     #      "v1" or "v2 (draft)"
     #
     #    @example Assistant
@@ -118,19 +118,19 @@ module PromptTracker
     #   "prompt_tracker/testing/tests/#{class_name.gsub('PromptTracker::', '').underscore.gsub('/', '_').pluralize}/test_row"
     #
     # Examples:
-    #   PromptTracker::PromptVersion -> prompt_tracker/testing/tests/prompt_versions/test_row
+    #   PromptTracker::AgentVersion -> prompt_tracker/testing/tests/agent_versions/test_row
 
     # Returns the partial path segment for this testable type
     # This is the single source of truth for deriving partial paths
     #
-    # @return [String] the partial path segment (e.g., "prompt_versions")
+    # @return [String] the partial path segment (e.g., "agent_versions")
     #
-    # @example PromptVersion
-    #   testable.partial_path_segment # => "prompt_versions"
+    # @example AgentVersion
+    #   testable.partial_path_segment # => "agent_versions"
     #
     def partial_path_segment
       # Remove PromptTracker:: prefix, convert to underscore, replace / with _, pluralize
-      # PromptTracker::PromptVersion -> "prompt_versions"
+      # PromptTracker::AgentVersion -> "agent_versions"
       self.class.name.gsub("PromptTracker::", "").underscore.gsub("/", "_").pluralize
     end
 
@@ -153,8 +153,8 @@ module PromptTracker
     #
     # @return [String] the full partial path
     #
-    # @example PromptVersion
-    #   testable.test_row_partial # => "prompt_tracker/testing/tests/prompt_versions/test_row"
+    # @example AgentVersion
+    #   testable.test_row_partial # => "prompt_tracker/testing/tests/agent_versions/test_row"
     #
     # @example Assistant
     #   testable.test_row_partial # => "prompt_tracker/testing/tests/openai_assistants/test_row"
@@ -168,8 +168,8 @@ module PromptTracker
     #
     # @return [String] the stream name
     #
-    # @example PromptVersion
-    #   version.testable_stream_name # => "prompt_version_123"
+    # @example AgentVersion
+    #   version.testable_stream_name # => "agent_version_123"
     #
     # @example Assistant
     #   assistant.testable_stream_name # => "openai_assistant_456"
@@ -184,7 +184,7 @@ module PromptTracker
     # @param test [Test] the test to render
     # @return [Hash] the locals hash
     #
-    # @example PromptVersion
+    # @example AgentVersion
     #   version.test_row_locals(test) # => { test: test, version: version, prompt: prompt }
     #
     # @example Assistant
@@ -203,7 +203,7 @@ module PromptTracker
     #
     # @return [Symbol] the API type constant from PromptTracker::ApiTypes
     #
-    # @example PromptVersion (determined by model_config provider and api)
+    # @example AgentVersion (determined by model_config provider and api)
     #   version.api_type # => :openai_chat_completions or :openai_responses
     #
     # @example Assistant

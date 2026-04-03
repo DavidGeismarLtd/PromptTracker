@@ -14,12 +14,12 @@ puts "\n🤖 Seeding Task Agents..."
 # ============================================================================
 
 # Get the news analyst prompt version (created in 04c_prompts_with_tools.rb)
-news_prompt = PromptTracker::Prompt.find_by(name: "news_analyst")
-news_version = news_prompt&.prompt_versions&.active&.first
+news_prompt = PromptTracker::Agent.find_by(name: "news_analyst")
+news_version = news_prompt&.agent_versions&.active&.first
 
 if news_version
   news_agent = PromptTracker::DeployedAgent.create!(
-    prompt_version: news_version,
+    agent_version: news_version,
     name: "Daily Tech News Monitor",
     agent_type: "task",
     task_config: {
@@ -91,12 +91,12 @@ end
 # 2. Tech Support Automation Task Agent
 # ============================================================================
 
-tech_support_prompt = PromptTracker::Prompt.find_by(name: "tech_support_assistant_claude")
-tech_support_version = tech_support_prompt&.prompt_versions&.active&.first
+tech_support_prompt = PromptTracker::Agent.find_by(name: "tech_support_assistant_claude")
+tech_support_version = tech_support_prompt&.agent_versions&.active&.first
 
 if tech_support_version
   support_agent = PromptTracker::DeployedAgent.create!(
-    prompt_version: tech_support_version,
+    agent_version: tech_support_version,
     name: "Automated Support Ticket Handler",
     agent_type: "task",
     task_config: {

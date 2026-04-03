@@ -6,7 +6,7 @@ module PromptTracker
     #
     # @example Generate suggestions
     #   suggestions = ContextDetector.suggestions_for({
-    #     page_type: :prompt_version_detail,
+    #     page_type: :agent_version_detail,
     #     version_id: 123
     #   })
     #
@@ -21,8 +21,8 @@ module PromptTracker
 
       def suggestions
         case @context[:page_type]
-        when :prompt_version_detail
-          prompt_version_suggestions
+        when :agent_version_detail
+          agent_version_suggestions
         when :prompt_detail
           prompt_suggestions
         when :prompts_list
@@ -40,7 +40,7 @@ module PromptTracker
 
       private
 
-      def prompt_version_suggestions
+      def agent_version_suggestions
         [
           "Write tests for this prompt",
           "Run all tests",

@@ -2,7 +2,7 @@
   Generate Tests with AI Modal
 
   Required locals:
-    - version: the PromptVersion to generate tests for
+    - version: the AgentVersion to generate tests for
 %>
 <% version ||= @version %>
 
@@ -18,7 +18,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <%= form_with url: generate_tests_testing_prompt_version_path(version),
+      <%= form_with url: generate_tests_testing_agent_version_path(version),
                     method: :post,
                     data: {
                       turbo: true,

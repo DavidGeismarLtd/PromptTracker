@@ -72,8 +72,8 @@
                   <strong><%= run.test.name %></strong>
                 </td>
                 <td>
-                  <%= link_to "v#{run.prompt_version.version_number}",
-                              testing_prompt_prompt_version_path(run.prompt_version.prompt, run.prompt_version) %>
+                  <%= link_to "v#{run.agent_version.version_number}",
+                              testing_agent_agent_version_path(run.agent_version.agent, run.agent_version) %>
                 </td>
                 <td>
                   <% case run.status %>

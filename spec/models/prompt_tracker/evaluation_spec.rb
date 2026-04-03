@@ -37,9 +37,9 @@ RSpec.describe PromptTracker::Evaluation, type: :model do
   end
 
   describe "scopes" do
-    let!(:prompt) { create(:prompt) }
-    let!(:version) { create(:prompt_version, prompt: prompt) }
-    let!(:response) { create(:llm_response, prompt_version: version) }
+    let!(:prompt) { create(:agent) }
+    let!(:version) { create(:agent_version, agent: prompt) }
+    let!(:response) { create(:llm_response, agent_version: version) }
 
     let!(:tracked_eval) do
       create(:evaluation,
@@ -79,9 +79,9 @@ RSpec.describe PromptTracker::Evaluation, type: :model do
   end
 
   describe "evaluation_context default" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
-    let(:response) { create(:llm_response, prompt_version: version) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
+    let(:response) { create(:llm_response, agent_version: version) }
 
     it "defaults to tracked_call when not specified" do
       evaluation = described_class.create!(
@@ -126,9 +126,9 @@ RSpec.describe PromptTracker::Evaluation, type: :model do
   end
 
   describe "enum methods" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
-    let(:response) { create(:llm_response, prompt_version: version) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
+    let(:response) { create(:llm_response, agent_version: version) }
     let(:evaluation) do
       create(:evaluation,
              llm_response: response,

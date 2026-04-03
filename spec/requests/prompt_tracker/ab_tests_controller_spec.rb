@@ -3,12 +3,12 @@
 require "rails_helper"
 
 RSpec.describe "PromptTracker::AbTestsController", type: :request do
-  let(:prompt) { create(:prompt, :with_active_version) }
+  let(:prompt) { create(:agent, :with_active_version) }
   let(:version_a) { prompt.active_version }
-  let(:version_b) { create(:prompt_version, prompt: prompt) }
+  let(:version_b) { create(:agent_version, agent: prompt) }
   let(:ab_test) do
     create(:ab_test,
-           prompt: prompt,
+           agent: prompt,
            version_a: version_a,
            version_b: version_b,
            status: "draft")
@@ -21,8 +21,8 @@ RSpec.describe "PromptTracker::AbTestsController", type: :request do
     end
 
     it "filters by status" do
-      draft_test = create(:ab_test, :draft, prompt: prompt, version_a: version_a, version_b: version_b)
-      running_test = create(:ab_test, :running, prompt: prompt, version_a: version_a, version_b: version_b)
+      draft_test = create(:ab_test, :draft, agent: prompt, version_a: version_a, version_b: version_b)
+      running_test = create(:ab_test, :running, agent: prompt, version_a: version_a, version_b: version_b)
 
       get "/prompt_tracker/ab-tests", params: { status: "draft" }
       expect(response).to have_http_status(:success)
@@ -32,11 +32,11 @@ RSpec.describe "PromptTracker::AbTestsController", type: :request do
 
     it "filters by prompt" do
       ab_test # create the main test
-      other_prompt = create(:prompt, :with_active_version)
+      other_prompt = create(:agent, :with_active_version)
       other_version = other_prompt.active_version
-      other_test = create(:ab_test, prompt: other_prompt, version_a: other_version, version_b: other_version)
+      other_test = create(:ab_test, agent: other_prompt, version_a: other_version, version_b: other_version)
 
-      get "/prompt_tracker/ab-tests", params: { prompt_id: prompt.id }
+      get "/prompt_tracker/ab-tests", params: { agent_id: prompt.id }
       expect(response).to have_http_status(:success)
       expect(response.body).to include(ab_test.name)
       expect(response.body).not_to include(other_test.name)
@@ -50,7 +50,7 @@ RSpec.describe "PromptTracker::AbTestsController", type: :request do
     end
 
     it "paginates ab_tests" do
-      create_list(:ab_test, 25, prompt: prompt, version_a: version_a, version_b: version_b)
+      create_list(:ab_test, 25, agent: prompt, version_a: version_a, version_b: version_b)
 
       get "/prompt_tracker/ab-tests"
       expect(response).to have_http_status(:success)
@@ -72,8 +72,8 @@ RSpec.describe "PromptTracker::AbTestsController", type: :request do
       ab_test.update!(status: "running", started_at: Time.current)
 
       # Create responses for both variants
-      create_list(:llm_response, 10, prompt_version: version_a, ab_test: ab_test, ab_variant: "A")
-      create_list(:llm_response, 10, prompt_version: version_b, ab_test: ab_test, ab_variant: "B")
+      create_list(:llm_response, 10, agent_version: version_a, ab_test: ab_test, ab_variant: "A")
+      create_list(:llm_response, 10, agent_version: version_b, ab_test: ab_test, ab_variant: "B")
 
       get "/prompt_tracker/ab-tests/#{ab_test.id}"
       expect(response).to have_http_status(:success)
@@ -85,25 +85,25 @@ RSpec.describe "PromptTracker::AbTestsController", type: :request do
     end
   end
 
-  describe "GET /prompts/:prompt_id/ab-tests/new" do
+  describe "GET /agents/:agent_id/ab-tests/new" do
     it "shows new ab_test form" do
-      get "/prompt_tracker/prompts/#{prompt.id}/ab-tests/new"
+      get "/prompt_tracker/agents/#{prompt.id}/ab-tests/new"
       expect(response).to have_http_status(:success)
       expect(response.body).to include("New A/B Test")
     end
 
     it "sets default values" do
-      get "/prompt_tracker/prompts/#{prompt.id}/ab-tests/new"
+      get "/prompt_tracker/agents/#{prompt.id}/ab-tests/new"
       expect(response).to have_http_status(:success)
       # Default traffic split should be 50/50
       expect(response.body).to include("50")
     end
   end
 
-  describe "POST /prompts/:prompt_id/ab-tests" do
+  describe "POST /agents/:agent_id/ab-tests" do
     it "creates ab_test" do
       expect {
-        post "/prompt_tracker/prompts/#{prompt.id}/ab-tests", params: {
+        post "/prompt_tracker/agents/#{prompt.id}/ab-tests", params: {
           ab_test: {
             name: "New Test",
             description: "Testing",
@@ -127,7 +127,7 @@ RSpec.describe "PromptTracker::AbTestsController", type: :request do
 
     it "handles invalid ab_test" do
       expect {
-        post "/prompt_tracker/prompts/#{prompt.id}/ab-tests", params: {
+        post "/prompt_tracker/agents/#{prompt.id}/ab-tests", params: {
           ab_test: {
             name: "", # Invalid - blank
             metric_to_optimize: "cost",
@@ -419,8 +419,8 @@ RSpec.describe "PromptTracker::AbTestsController", type: :request do
       ab_test.update!(status: "running", started_at: 1.hour.ago)
 
       # Create responses for analysis
-      create_list(:llm_response, 10, prompt_version: version_a, ab_test: ab_test, ab_variant: "A")
-      create_list(:llm_response, 10, prompt_version: version_b, ab_test: ab_test, ab_variant: "B")
+      create_list(:llm_response, 10, agent_version: version_a, ab_test: ab_test, ab_variant: "A")
+      create_list(:llm_response, 10, agent_version: version_b, ab_test: ab_test, ab_variant: "B")
 
       get "/prompt_tracker/ab-tests/#{ab_test.id}/analyze", headers: { "Accept" => "application/json" }
       expect(response).to have_http_status(:success)

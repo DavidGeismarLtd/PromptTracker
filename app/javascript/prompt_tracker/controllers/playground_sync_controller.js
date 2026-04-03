@@ -9,7 +9,7 @@ import { Controller } from "@hotwired/stimulus"
  *
  * @responsibilities
  * - Push local changes to remote entity (OpenAI Assistant, etc.)
- * - Pull latest from remote entity and update local PromptVersion
+ * - Pull latest from remote entity and update local AgentVersion
  * - Show loading state during sync operations
  * - Display sync errors with user-friendly messages
  * - Reload page after pull to show updated data

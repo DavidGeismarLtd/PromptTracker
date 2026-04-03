@@ -5,7 +5,7 @@ require "rails_helper"
 module PromptTracker
   RSpec.describe EvaluationHelpers do
     let(:prompt) do
-      Prompt.create!(
+      Agent.create!(
         name: "test_prompt",
         description: "Test",
         category: "test"
@@ -13,7 +13,7 @@ module PromptTracker
     end
 
     let(:version) do
-      prompt.prompt_versions.create!(
+      prompt.agent_versions.create!(
           system_prompt: "You are a helpful assistant.",
         user_prompt: "Test",
         status: "active",
@@ -137,7 +137,7 @@ module PromptTracker
       end
 
       it "returns nil when no responses" do
-        empty_version = prompt.prompt_versions.create!(
+        empty_version = prompt.agent_versions.create!(
             system_prompt: "You are a helpful assistant.",
           user_prompt: "Empty",
           status: "draft",
@@ -237,7 +237,7 @@ module PromptTracker
 
     describe ".compare_versions" do
       it "compares two versions" do
-        version2 = prompt.prompt_versions.create!(
+        version2 = prompt.agent_versions.create!(
             system_prompt: "You are a helpful assistant.",
           user_prompt: "Test 2",
           status: "draft",
@@ -281,7 +281,7 @@ module PromptTracker
 
     describe ".best_version" do
       it "finds the best version" do
-        version2 = prompt.prompt_versions.create!(
+        version2 = prompt.agent_versions.create!(
             system_prompt: "You are a helpful assistant.",
           user_prompt: "Test 2",
           status: "draft",
@@ -322,7 +322,7 @@ module PromptTracker
       end
 
       it "returns nil when no evaluations" do
-        version2 = prompt.prompt_versions.create!(
+        version2 = prompt.agent_versions.create!(
             system_prompt: "You are a helpful assistant.",
           user_prompt: "Test 2",
           status: "draft",

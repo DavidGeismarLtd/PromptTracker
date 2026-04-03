@@ -52,8 +52,8 @@ module PromptTracker
              dependent: :nullify,
              inverse_of: :dataset_row
 
-    # Delegate to get prompt_version through dataset
-    has_one :prompt_version, through: :dataset
+    # Delegate to get agent_version through dataset
+    has_one :agent_version, through: :dataset
 
     # Validations
     validates :row_data, presence: true

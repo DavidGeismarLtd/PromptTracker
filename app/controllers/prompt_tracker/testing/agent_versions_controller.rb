@@ -1,0 +1,151 @@
+# frozen_string_literal: true
+
+module PromptTracker
+  module Testing
+    # Controller for viewing prompt versions in the Testing section
+    class AgentVersionsController < ApplicationController
+    before_action :set_prompt, except: [ :generate_tests ]
+    before_action :set_version, only: [ :show, :compare, :activate ]
+    before_action :set_version_standalone, only: [ :generate_tests ]
+
+    # Make path helpers available to views
+    helper_method :load_more_runs_path, :run_test_path, :datasets_path
+
+    # GET /prompts/:agent_id/versions/:id
+    # Show version details with tests
+    def show
+      @tests = @version.tests.includes(:test_runs).order(created_at: :desc)
+
+      # Calculate metrics from test runs (not from llm_responses which are production tracked calls)
+      test_runs = TestRun.joins(:test).where(prompt_tracker_tests: { testable: @version })
+      @total_calls = test_runs.count
+      @avg_response_time = test_runs.average(:execution_time_ms)
+      @total_cost = test_runs.sum(:cost_usd)
+
+      # Calculate average score from evaluations on test runs
+      test_evaluations = Evaluation.where(test_run: test_runs)
+      @avg_score = test_evaluations.any? ? test_evaluations.average(:score) : nil
+
+      # Calculate test pass/fail counts
+      @tests_passing = @tests.select(&:passing?).count
+      @tests_failing = @tests.reject(&:passing?).count
+      @total_tests = @tests.count
+    end
+
+    # GET /prompts/:agent_id/versions/:id/compare
+    # Compare this version with another
+    def compare
+      # Get comparison version (from params or default to previous version)
+      if params[:compare_with].present?
+        @compare_version = @prompt.agent_versions.find(params[:compare_with])
+      else
+        # Default to previous version
+        @compare_version = @prompt.agent_versions
+                                  .where("version_number < ?", @version.version_number)
+                                  .order(version_number: :desc)
+                                  .first
+      end
+
+      if @compare_version
+        # Calculate metrics for both versions
+        @version_metrics = calculate_version_metrics(@version)
+        @compare_metrics = calculate_version_metrics(@compare_version)
+
+        # Calculate differences
+        @metrics_diff = {
+          calls: @version_metrics[:calls] - @compare_metrics[:calls],
+          avg_response_time: @version_metrics[:avg_response_time].to_f - @compare_metrics[:avg_response_time].to_f,
+          total_cost: @version_metrics[:total_cost].to_f - @compare_metrics[:total_cost].to_f,
+          avg_score: (@version_metrics[:avg_score].to_f - @compare_metrics[:avg_score].to_f).round(2)
+        }
+      end
+
+      # Get all versions for comparison dropdown
+      @all_versions = @prompt.agent_versions.order(version_number: :desc)
+    end
+
+    # POST /prompts/:agent_id/versions/:id/activate
+    # Activate this version and deprecate all others
+    def activate
+      unless @version.draft? || @version.deprecated?
+        redirect_to testing_agent_agent_version_path(@prompt, @version), alert: "Version is already active."
+        return
+      end
+
+      @version.activate!
+      redirect_to testing_agent_agent_version_path(@prompt, @version), notice: "Version activated successfully."
+    end
+
+    # POST /testing/versions/:id/generate_tests
+    # Generate tests with AI for this prompt version
+    def generate_tests
+      instructions = params[:instructions].presence
+      count = params[:count].to_i.clamp(1, 10) # Ensure count is between 1 and 10
+
+      # Enqueue background job
+      GenerateTestsJob.perform_later(
+        @version.id,
+        instructions: instructions,
+        count: count
+      )
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update(
+            "test-generation-status",
+            partial: "prompt_tracker/testing/tests/generation_status",
+            locals: { status: "running", message: "Generating tests with AI..." }
+          )
+        end
+        format.html do
+          redirect_to testing_agent_agent_version_path(@version.agent, @version),
+                      notice: "Generating tests in the background. Tests will appear shortly."
+        end
+      end
+    end
+
+    private
+
+    def set_prompt
+      @prompt = Agent.find(params[:agent_id])
+    end
+
+    def set_version
+      @version = @prompt.agent_versions.includes(:llm_responses).find(params[:id])
+    end
+
+    # Set version without requiring agent_id (for standalone routes)
+    def set_version_standalone
+      @version = AgentVersion.find(params[:id])
+    end
+
+    def calculate_version_metrics(version)
+      # Get metrics from test runs (not from llm_responses which are production tracked calls)
+      test_runs = TestRun.joins(:test).where(prompt_tracker_tests: { testable: version })
+      test_evaluations = Evaluation.where(test_run: test_runs)
+
+      {
+        calls: test_runs.count,
+        avg_response_time: test_runs.average(:execution_time_ms) || 0,
+        total_cost: test_runs.sum(:cost_usd) || 0,
+        avg_score: test_evaluations.any? ? test_evaluations.average(:score) : 0
+      }
+    end
+
+    # Helper method for generating load_more_runs path
+    def load_more_runs_path(test, offset:, limit:)
+      load_more_runs_testing_agent_version_test_path(@version, test, offset: offset, limit: limit)
+    end
+
+    # Helper method for generating run_test path
+    def run_test_path(test)
+      run_testing_agent_version_test_path(@version, test)
+    end
+
+    # Helper method for generating datasets path
+    def datasets_path
+      testing_agent_agent_version_datasets_path(@prompt, @version)
+    end
+    end
+  end
+end

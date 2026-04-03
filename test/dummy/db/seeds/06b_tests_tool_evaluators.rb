@@ -10,8 +10,8 @@ puts "  Creating tests for prompts with tool evaluators..."
 # 1. Research Assistant Tests (WebSearchEvaluator)
 # ============================================================================
 
-research_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "research_assistant" })
+research_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "research_assistant" })
   .where(status: "active")
   .first!
 
@@ -47,8 +47,8 @@ puts "  ✓ Created research assistant test with WebSearchEvaluator"
 # 2. Competitive Intelligence Tests (WebSearchEvaluator + Domain Validation)
 # ============================================================================
 
-competitor_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "competitive_intelligence" })
+competitor_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "competitive_intelligence" })
   .where(status: "active")
   .first!
 
@@ -86,8 +86,8 @@ puts "  ✓ Created competitive intelligence test with domain validation"
 # 3. Data Analysis Tests (CodeInterpreterEvaluator)
 # ============================================================================
 
-data_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "data_analyst" })
+data_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "data_analyst" })
   .where(status: "active")
   .first!
 
@@ -126,8 +126,8 @@ puts "  ✓ Created data analysis test with CodeInterpreterEvaluator"
 # 4. Financial Modeling Tests (CodeInterpreterEvaluator + File Output)
 # ============================================================================
 
-finance_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "financial_modeler" })
+finance_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "financial_modeler" })
   .where(status: "active")
   .first!
 
@@ -165,8 +165,8 @@ puts "  ✓ Created financial modeling test with file output evaluation"
 # 5. Travel Booking Tests (FunctionCallEvaluator)
 # ============================================================================
 
-travel_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "travel_booking_assistant" })
+travel_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "travel_booking_assistant" })
   .where(status: "active")
   .first!
 
@@ -227,8 +227,8 @@ puts "  ✓ Created travel booking tests with FunctionCallEvaluator"
 # 6. E-commerce Tests (FunctionCallEvaluator)
 # ============================================================================
 
-ecommerce_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "ecommerce_assistant" })
+ecommerce_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "ecommerce_assistant" })
   .where(status: "active")
   .first!
 
@@ -321,8 +321,8 @@ puts "  ✓ Created e-commerce tests with FunctionCallEvaluator"
 # 7. News Analyst Tests (WebSearchEvaluator + Query Validation)
 # ============================================================================
 
-news_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "news_analyst" })
+news_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "news_analyst" })
   .where(status: "active")
   .first!
 
@@ -359,8 +359,8 @@ puts "  ✓ Created news analyst test with query validation"
 # 8. Tech Support Assistant Tests (Anthropic + FunctionCallEvaluator)
 # ============================================================================
 
-tech_support_version = PromptTracker::PromptVersion.joins(:prompt)
-  .where(prompt_tracker_prompts: { name: "tech_support_assistant_claude" })
+tech_support_version = PromptTracker::AgentVersion.joins(:agent)
+  .where(prompt_tracker_agents: { name: "tech_support_assistant_claude" })
   .where(status: "active")
   .first!
 

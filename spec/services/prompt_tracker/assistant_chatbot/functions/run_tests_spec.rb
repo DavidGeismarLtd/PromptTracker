@@ -11,19 +11,19 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::RunTests do
     end
 
     context "when running with a dataset" do
-      let!(:prompt_version) { create(:prompt_version) }
-      let!(:test1) { create(:test, testable: prompt_version, name: "First test") }
-      let!(:test2) { create(:test, testable: prompt_version, name: "Second test") }
+      let!(:agent_version) { create(:agent_version) }
+      let!(:test1) { create(:test, testable: agent_version, name: "First test") }
+      let!(:test2) { create(:test, testable: agent_version, name: "Second test") }
 
       let!(:dataset) do
-        create(:dataset, testable: prompt_version, dataset_type: :single_turn).tap do |ds|
+        create(:dataset, testable: agent_version, dataset_type: :single_turn).tap do |ds|
           create_list(:dataset_row, 2, dataset: ds)
         end
       end
 
       let(:arguments) do
         {
-          prompt_version_id: prompt_version.id,
+          agent_version_id: agent_version.id,
           run_mode: "dataset",
           dataset_id: dataset.id
         }
@@ -51,8 +51,8 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::RunTests do
     end
 
       context "when running with custom variables in single mode" do
-        let!(:prompt_version) do
-          create(:prompt_version).tap do |version|
+        let!(:agent_version) do
+          create(:agent_version).tap do |version|
             version.update!(
               variables_schema: [
                 { "name" => "name", "type" => "string", "required" => true }
@@ -60,12 +60,12 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::RunTests do
             )
           end
         end
-      let!(:test1) { create(:test, testable: prompt_version) }
-      let!(:test2) { create(:test, testable: prompt_version) }
+      let!(:test1) { create(:test, testable: agent_version) }
+      let!(:test2) { create(:test, testable: agent_version) }
 
       let(:arguments) do
         {
-          prompt_version_id: prompt_version.id,
+          agent_version_id: agent_version.id,
           run_mode: "custom",
           execution_mode: "single",
           custom_variables: {
@@ -94,8 +94,8 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::RunTests do
     end
 
       context "when running with custom variables in conversation mode" do
-        let!(:prompt_version) do
-          create(:prompt_version).tap do |version|
+        let!(:agent_version) do
+          create(:agent_version).tap do |version|
             version.update!(
               variables_schema: [
                 { "name" => "name", "type" => "string", "required" => true }
@@ -103,11 +103,11 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::RunTests do
             )
           end
         end
-      let!(:test) { create(:test, testable: prompt_version) }
+      let!(:test) { create(:test, testable: agent_version) }
 
       let(:arguments) do
         {
-          prompt_version_id: prompt_version.id,
+          agent_version_id: agent_version.id,
           run_mode: "custom",
           execution_mode: "conversation",
           custom_variables: {
@@ -136,8 +136,8 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::RunTests do
     end
 
       context "when required custom variables are missing" do
-        let!(:prompt_version) do
-          create(:prompt_version).tap do |version|
+        let!(:agent_version) do
+          create(:agent_version).tap do |version|
             version.update!(
               variables_schema: [
                 { "name" => "name", "type" => "string", "required" => true }
@@ -145,11 +145,11 @@ RSpec.describe PromptTracker::AssistantChatbot::Functions::RunTests do
             )
           end
         end
-      let!(:test) { create(:test, testable: prompt_version) }
+      let!(:test) { create(:test, testable: agent_version) }
 
       let(:arguments) do
         {
-          prompt_version_id: prompt_version.id,
+          agent_version_id: agent_version.id,
           run_mode: "custom",
           execution_mode: "single",
           custom_variables: {} # missing required "name"

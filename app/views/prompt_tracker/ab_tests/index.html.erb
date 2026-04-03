@@ -22,8 +22,8 @@
       </div>
 
       <div class="col-md-3">
-        <%= f.label :prompt_id, "Prompt", class: "form-label" %>
-        <%= f.select :prompt_id, options_for_select([["All", ""]] + @prompts.map { |p| [p.name, p.id] }, params[:prompt_id]), {}, class: "form-select" %>
+        <%= f.label :agent_id, "Prompt", class: "form-label" %>
+        <%= f.select :agent_id, options_for_select([["All", ""]] + @prompts.map { |p| [p.name, p.id] }, params[:agent_id]), {}, class: "form-select" %>
       </div>
 
       <div class="col-md-3">
@@ -74,9 +74,9 @@
                     <br><small class="text-muted"><%= truncate(ab_test.description, length: 60) %></small>
                   <% end %>
                 </td>
-                <td>
-                  <%= ab_test.prompt.name %>
-                </td>
+	            <td>
+	              <%= ab_test.agent.name %>
+	            </td>
                 <td>
                   <% case ab_test.status %>
                   <% when "draft" %>
@@ -163,7 +163,7 @@
         <i class="bi bi-graph-up" style="font-size: 3rem; color: var(--bs-secondary);"></i>
         <h3 class="mt-3">No A/B Tests Found</h3>
         <p class="text-muted">
-          <% if params[:q].present? || params[:status].present? || params[:prompt_id].present? %>
+          <% if params[:q].present? || params[:status].present? || params[:agent_id].present? %>
             Try adjusting your filters.
           <% else %>
             Create your first A/B test to start optimizing your prompts.

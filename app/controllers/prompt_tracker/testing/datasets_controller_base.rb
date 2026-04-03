@@ -8,7 +8,7 @@ module PromptTracker
     # Subclasses only need to implement `set_testable` to set @testable.
     #
     # Supported testable types:
-    # - PromptTracker::PromptVersion
+    # - PromptTracker::AgentVersion
     #
     class DatasetsControllerBase < ApplicationController
       include DatasetsHelper

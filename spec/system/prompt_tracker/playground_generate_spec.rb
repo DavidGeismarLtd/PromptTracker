@@ -3,9 +3,9 @@
 require "rails_helper"
 
 RSpec.describe "Playground Generate Feature", type: :system, js: true do
-  let(:prompt) { PromptTracker::Prompt.create!(name: "test_prompt", description: "Test") }
-  let(:prompt_version) do
-    prompt.prompt_versions.create!(
+  let(:prompt) { PromptTracker::Agent.create!(name: "test_prompt", description: "Test") }
+  let(:agent_version) do
+    prompt.agent_versions.create!(
         system_prompt: "Initial system prompt that will be cleared in the UI",
       user_prompt: "placeholder",  # Will be cleared in the UI
       status: "draft"
@@ -25,7 +25,7 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
 
   describe "Generate button visibility" do
     it "shows Generate button when prompts are empty" do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
 
       # Clear the prompts in the UI
       page.execute_script("document.getElementById('system-prompt-editor').value = ''")
@@ -38,7 +38,7 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
 
   describe "Generate modal interaction" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
 
       # Clear the prompts in the UI to show Generate button
       page.execute_script("document.getElementById('system-prompt-editor').value = ''")
@@ -67,7 +67,7 @@ RSpec.describe "Playground Generate Feature", type: :system, js: true do
 
   describe "Prompt generation flow" do
     before do
-      visit prompt_tracker.testing_prompt_prompt_version_playground_path(prompt, prompt_version)
+      visit prompt_tracker.testing_agent_agent_version_playground_path(prompt, agent_version)
 
       # Clear the prompts in the UI to show Generate button
       page.execute_script("document.getElementById('system-prompt-editor').value = ''")

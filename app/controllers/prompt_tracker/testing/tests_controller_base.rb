@@ -11,7 +11,7 @@ module PromptTracker
     # - `test_path` to return the path to a specific test's show page
     #
     # Supported testable types:
-    # - PromptTracker::PromptVersion
+    # - PromptTracker::AgentVersion
     #
     class TestsControllerBase < ApplicationController
       before_action :set_testable
@@ -248,7 +248,7 @@ module PromptTracker
         # For Assistants:
         #   - Always uses Dataset::CONVERSATIONAL_FIELDS (interlocutor_simulation_prompt, etc.)
         #
-        # For PromptVersions:
+        # For AgentVersions:
         #   - In "single" execution mode: uses the testable's variables_schema
         #   - In "conversation" execution mode: requires both variables_schema and
         #     conversational fields so custom runs and conversational datasets share
@@ -257,7 +257,7 @@ module PromptTracker
         # @param execution_mode [String, Symbol] "single" or "conversation"
         # @return [Array<String>] required variable names
         def required_custom_run_variables(execution_mode: "single")
-          # PromptVersions: start from their own variables_schema
+          # AgentVersions: start from their own variables_schema
           base_required = (@testable.variables_schema || [])
             .select { |v| v["required"] }
             .map { |v| v["name"] }

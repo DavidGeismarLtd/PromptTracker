@@ -6,7 +6,7 @@
 
 puts "  Creating code review prompts..."
 
-code_review = PromptTracker::Prompt.create!(
+code_review = PromptTracker::Agent.create!(
   name: "code_review_assistant",
   description: "Provides constructive code review feedback",
   category: "development",
@@ -14,7 +14,7 @@ code_review = PromptTracker::Prompt.create!(
   created_by: "engineering@example.com"
 )
 
-code_review_v1 = code_review.prompt_versions.create!(
+code_review_v1 = code_review.agent_versions.create!(
     system_prompt: "You are a code review assistant that provides constructive feedback on code snippets.",
     user_prompt: <<~TEMPLATE,
     Review the following {{language}} code and provide constructive feedback:

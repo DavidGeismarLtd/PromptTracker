@@ -7,10 +7,10 @@ module PromptTracker
     module Openai
       module Assistants
         RSpec.describe PushService do
-          let(:prompt) { create(:prompt, name: "Test Assistant") }
-          let(:prompt_version) do
-            create(:prompt_version,
-              prompt: prompt,
+          let(:prompt) { create(:agent, name: "Test Assistant") }
+          let(:agent_version) do
+            create(:agent_version,
+              agent: prompt,
               system_prompt: "You are a helpful assistant.",
               notes: "Test description",
               model_config: {
@@ -51,27 +51,27 @@ module PromptTracker
                 )
               ).and_return(create_response)
 
-              result = described_class.create(prompt_version: prompt_version)
+              result = described_class.create(agent_version: agent_version)
 
               expect(result.success?).to be true
               expect(result.assistant_id).to eq("asst_abc123")
             end
 
-            it "updates PromptVersion with assistant_id" do
+            it "updates AgentVersion with assistant_id" do
               allow(assistants_api).to receive(:create).and_return(create_response)
 
-              described_class.create(prompt_version: prompt_version)
+              described_class.create(agent_version: agent_version)
 
-              prompt_version.reload
-              expect(prompt_version.model_config["metadata"]["assistant_id"]).to eq("asst_abc123")
-              expect(prompt_version.model_config["metadata"]["sync_status"]).to eq("synced")
-              expect(prompt_version.model_config["metadata"]["synced_at"]).to be_present
+              agent_version.reload
+              expect(agent_version.model_config["metadata"]["assistant_id"]).to eq("asst_abc123")
+              expect(agent_version.model_config["metadata"]["sync_status"]).to eq("synced")
+              expect(agent_version.model_config["metadata"]["synced_at"]).to be_present
             end
 
             it "returns failure result on error" do
               allow(assistants_api).to receive(:create).and_raise(StandardError.new("API Error"))
 
-              result = described_class.create(prompt_version: prompt_version)
+              result = described_class.create(agent_version: agent_version)
 
               expect(result.success?).to be false
               expect(result.errors).to include("API Error")
@@ -89,9 +89,9 @@ module PromptTracker
             end
 
             before do
-              updated_config = prompt_version.model_config.deep_dup
+              updated_config = agent_version.model_config.deep_dup
               updated_config["metadata"] = { "assistant_id" => "asst_abc123" }
-              prompt_version.update!(model_config: updated_config)
+              agent_version.update!(model_config: updated_config)
             end
 
             it "updates an existing assistant on OpenAI" do
@@ -103,7 +103,7 @@ module PromptTracker
                 )
               ).and_return(update_response)
 
-              result = described_class.update(prompt_version: prompt_version)
+              result = described_class.update(agent_version: agent_version)
 
               expect(result.success?).to be true
               expect(result.assistant_id).to eq("asst_abc123")
@@ -112,17 +112,17 @@ module PromptTracker
             it "updates sync metadata" do
               allow(assistants_api).to receive(:modify).and_return(update_response)
 
-              described_class.update(prompt_version: prompt_version)
+              described_class.update(agent_version: agent_version)
 
-              prompt_version.reload
-              expect(prompt_version.model_config["metadata"]["sync_status"]).to eq("synced")
-              expect(prompt_version.model_config["metadata"]["synced_at"]).to be_present
+              agent_version.reload
+              expect(agent_version.model_config["metadata"]["sync_status"]).to eq("synced")
+              expect(agent_version.model_config["metadata"]["synced_at"]).to be_present
             end
 
             it "returns failure result when assistant_id is missing" do
-              prompt_version.update!(model_config: { provider: "openai", api: "assistants" })
+              agent_version.update!(model_config: { provider: "openai", api: "assistants" })
 
-              result = described_class.update(prompt_version: prompt_version)
+              result = described_class.update(agent_version: agent_version)
 
               expect(result.success?).to be false
               expect(result.errors).to include(/No assistant_id/)
@@ -131,7 +131,7 @@ module PromptTracker
             it "returns failure result on API error" do
               allow(assistants_api).to receive(:modify).and_raise(StandardError.new("API Error"))
 
-              result = described_class.update(prompt_version: prompt_version)
+              result = described_class.update(agent_version: agent_version)
 
               expect(result.success?).to be false
               expect(result.errors).to include("API Error")

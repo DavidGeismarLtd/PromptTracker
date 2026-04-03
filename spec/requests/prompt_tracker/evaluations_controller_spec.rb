@@ -3,9 +3,9 @@
 require "rails_helper"
 
 RSpec.describe "PromptTracker::EvaluationsController", type: :request do
-  let(:prompt) { create(:prompt, :with_active_version) }
+  let(:prompt) { create(:agent, :with_active_version) }
   let(:version) { prompt.active_version }
-  let(:llm_response) { create(:llm_response, prompt_version: version) }
+  let(:llm_response) { create(:llm_response, agent_version: version) }
   let!(:evaluation) { create(:evaluation, llm_response: llm_response) }
 
   describe "GET /evaluations" do

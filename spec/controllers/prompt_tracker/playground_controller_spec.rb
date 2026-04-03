@@ -7,12 +7,12 @@ module PromptTracker
     RSpec.describe PlaygroundController, type: :controller do
       routes { PromptTracker::Engine.routes }
 
-      let!(:prompt) { create(:prompt) }
-      let!(:version) { create(:prompt_version, prompt: prompt, user_prompt: "Hello {{name}}!", status: "active") }
+      let!(:prompt) { create(:agent) }
+      let!(:version) { create(:agent_version, agent: prompt, user_prompt: "Hello {{name}}!", status: "active") }
 
     describe "GET #show" do
       it "renders the playground page" do
-        get :show, params: { prompt_id: prompt.id }
+        get :show, params: { agent_id: prompt.id }
 
         expect(response).to have_http_status(:success)
         expect(assigns(:prompt)).to eq(prompt)
@@ -20,13 +20,13 @@ module PromptTracker
       end
 
       it "extracts variables from template" do
-        get :show, params: { prompt_id: prompt.id }
+        get :show, params: { agent_id: prompt.id }
 
         expect(assigns(:variables)).to include("name")
       end
 
       it "builds sample variables hash" do
-        get :show, params: { prompt_id: prompt.id }
+        get :show, params: { agent_id: prompt.id }
 
         expect(assigns(:sample_variables)).to be_a(Hash)
         expect(assigns(:sample_variables)).to have_key("name")
@@ -36,7 +36,7 @@ module PromptTracker
     describe "POST #preview" do
       it "renders template successfully" do
         post :preview, params: {
-          prompt_id: prompt.id,
+          agent_id: prompt.id,
           user_prompt: "Hello {{name}}!",
           variables: { name: "John" }
         }, format: :json
@@ -50,7 +50,7 @@ module PromptTracker
 
       it "detects Liquid templates" do
         post :preview, params: {
-          prompt_id: prompt.id,
+          agent_id: prompt.id,
           user_prompt: "Hello {{ name | upcase }}!",
           variables: { name: "john" }
         }, format: :json
@@ -64,7 +64,7 @@ module PromptTracker
 
       it "returns errors for invalid templates" do
         post :preview, params: {
-          prompt_id: prompt.id,
+          agent_id: prompt.id,
           user_prompt: "{% if %}",
           variables: {}
         }, format: :json
@@ -77,7 +77,7 @@ module PromptTracker
 
       it "extracts variables from template" do
         post :preview, params: {
-          prompt_id: prompt.id,
+          agent_id: prompt.id,
           user_prompt: "Hello {{name}}, welcome to {{place}}!",
           variables: { name: "Alice", place: "Wonderland" }
         }, format: :json
@@ -92,13 +92,13 @@ module PromptTracker
       it "creates a new draft version" do
         expect {
           post :save, params: {
-            prompt_id: prompt.id,
+            agent_id: prompt.id,
               system_prompt: "You are a helpful assistant.",
             user_prompt: "New template {{var}}",
             notes: "Test draft",
             save_action: "new_version"
           }, format: :json
-        }.to change(PromptVersion, :count).by(1)
+        }.to change(AgentVersion, :count).by(1)
 
         expect(response).to have_http_status(:success)
         json = JSON.parse(response.body)
@@ -106,25 +106,25 @@ module PromptTracker
         expect(json["version_id"]).to be_present
         expect(json["action"]).to eq("created")
 
-        new_version = PromptVersion.find(json["version_id"])
+        new_version = AgentVersion.find(json["version_id"])
         expect(new_version.user_prompt).to eq("New template {{var}}")
         expect(new_version.status).to eq("draft")
         expect(new_version.notes).to eq("Test draft")
       end
 
       it "updates existing version when save_action is 'update' and version has no responses" do
-        draft_version = create(:prompt_version, prompt: prompt, status: "draft", user_prompt: "Old template")
+        draft_version = create(:agent_version, agent: prompt, status: "draft", user_prompt: "Old template")
 
         expect {
           post :save, params: {
-            prompt_id: prompt.id,
-            prompt_version_id: draft_version.id,
+            agent_id: prompt.id,
+            agent_version_id: draft_version.id,
               system_prompt: "You are a helpful assistant.",
             user_prompt: "Updated template {{var}}",
             notes: "Updated notes",
             save_action: "update"
           }, format: :json
-        }.not_to change(PromptVersion, :count)
+        }.not_to change(AgentVersion, :count)
 
         expect(response).to have_http_status(:success)
         json = JSON.parse(response.body)
@@ -138,19 +138,19 @@ module PromptTracker
       end
 
       it "creates new version when save_action is 'update' but version has responses" do
-        version_with_responses = create(:prompt_version, prompt: prompt, status: "active")
-        create(:llm_response, prompt_version: version_with_responses)
+        version_with_responses = create(:agent_version, agent: prompt, status: "active")
+        create(:llm_response, agent_version: version_with_responses)
 
         expect {
           post :save, params: {
-            prompt_id: prompt.id,
-            prompt_version_id: version_with_responses.id,
+            agent_id: prompt.id,
+            agent_version_id: version_with_responses.id,
               system_prompt: "You are a helpful assistant.",
             user_prompt: "New template {{var}}",
             notes: "Should create new version",
             save_action: "update"
           }, format: :json
-        }.to change(PromptVersion, :count).by(1)
+        }.to change(AgentVersion, :count).by(1)
 
         expect(response).to have_http_status(:success)
         json = JSON.parse(response.body)
@@ -163,18 +163,18 @@ module PromptTracker
       end
 
       it "creates new version when save_action is 'new_version' even if version has no responses" do
-        draft_version = create(:prompt_version, prompt: prompt, status: "draft")
+        draft_version = create(:agent_version, agent: prompt, status: "draft")
 
         expect {
           post :save, params: {
-            prompt_id: prompt.id,
-            prompt_version_id: draft_version.id,
+            agent_id: prompt.id,
+            agent_version_id: draft_version.id,
               system_prompt: "You are a helpful assistant.",
             user_prompt: "New template {{var}}",
             notes: "Force new version",
             save_action: "new_version"
           }, format: :json
-        }.to change(PromptVersion, :count).by(1)
+        }.to change(AgentVersion, :count).by(1)
 
         expect(response).to have_http_status(:success)
         json = JSON.parse(response.body)
@@ -184,7 +184,7 @@ module PromptTracker
 
       it "returns errors when both prompts are empty" do
         post :save, params: {
-          prompt_id: prompt.id,
+          agent_id: prompt.id,
           user_prompt: "",
           system_prompt: "",
           notes: "Empty prompts"
@@ -211,30 +211,30 @@ module PromptTracker
         it "saves response_schema when creating a new version" do
           expect {
             post :save, params: {
-              prompt_id: prompt.id,
+              agent_id: prompt.id,
                 system_prompt: "You are a helpful assistant.",
               user_prompt: "Analyze: {{text}}",
               notes: "With structured output",
               save_action: "new_version",
               response_schema: valid_response_schema
             }, format: :json
-          }.to change(PromptVersion, :count).by(1)
+          }.to change(AgentVersion, :count).by(1)
 
           expect(response).to have_http_status(:success)
           json = JSON.parse(response.body)
           expect(json["success"]).to be true
 
-          new_version = PromptVersion.find(json["version_id"])
+          new_version = AgentVersion.find(json["version_id"])
           expect(new_version.response_schema).to eq(valid_response_schema)
           expect(new_version.has_response_schema?).to be true
         end
 
         it "saves response_schema when updating an existing version" do
-          draft_version = create(:prompt_version, prompt: prompt, status: "draft", user_prompt: "Old template")
+          draft_version = create(:agent_version, agent: prompt, status: "draft", user_prompt: "Old template")
 
           post :save, params: {
-            prompt_id: prompt.id,
-            prompt_version_id: draft_version.id,
+            agent_id: prompt.id,
+            agent_version_id: draft_version.id,
               system_prompt: "You are a helpful assistant.",
             user_prompt: "Analyze: {{text}}",
             notes: "Added structured output",
@@ -252,16 +252,16 @@ module PromptTracker
         end
 
         it "clears response_schema when empty is passed" do
-          version_with_schema = create(:prompt_version,
-            prompt: prompt,
+          version_with_schema = create(:agent_version,
+            agent: prompt,
             status: "draft",
             user_prompt: "Old template",
             response_schema: valid_response_schema
           )
 
           post :save, params: {
-            prompt_id: prompt.id,
-            prompt_version_id: version_with_schema.id,
+            agent_id: prompt.id,
+            agent_version_id: version_with_schema.id,
               system_prompt: "You are a helpful assistant.",
             user_prompt: "Updated template",
             notes: "Removed structured output",
@@ -280,7 +280,7 @@ module PromptTracker
           invalid_schema = { "invalid" => "schema" } # Missing 'type' property
 
           post :save, params: {
-            prompt_id: prompt.id,
+            agent_id: prompt.id,
             user_prompt: "Template {{var}}",
             notes: "Invalid schema",
             save_action: "new_version",

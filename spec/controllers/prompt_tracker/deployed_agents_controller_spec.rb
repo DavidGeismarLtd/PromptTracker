@@ -5,9 +5,9 @@ require "rails_helper"
 RSpec.describe PromptTracker::DeployedAgentsController, type: :controller do
   routes { PromptTracker::Engine.routes }
 
-  let(:prompt) { create(:prompt) }
-  let(:version) { create(:prompt_version, prompt: prompt) }
-  let(:agent) { create(:deployed_agent, prompt_version: version) }
+  let(:prompt) { create(:agent) }
+  let(:version) { create(:agent_version, agent: prompt) }
+  let(:agent) { create(:deployed_agent, agent_version: version) }
 
   describe "GET #index" do
     it "returns a successful response" do
@@ -45,14 +45,14 @@ RSpec.describe PromptTracker::DeployedAgentsController, type: :controller do
 
   describe "GET #new" do
     it "returns a successful response" do
-      get :new, params: { prompt_version_id: version.id }
+      get :new, params: { agent_version_id: version.id }
       expect(response).to be_successful
     end
 
     it "assigns @agent with defaults" do
-      get :new, params: { prompt_version_id: version.id }
+      get :new, params: { agent_version_id: version.id }
       expect(assigns(:agent)).to be_a_new(PromptTracker::DeployedAgent)
-      expect(assigns(:agent).prompt_version).to eq(version)
+      expect(assigns(:agent).agent_version).to eq(version)
     end
   end
 
@@ -61,7 +61,7 @@ RSpec.describe PromptTracker::DeployedAgentsController, type: :controller do
       let(:valid_params) do
         {
           deployed_agent: {
-            prompt_version_id: version.id,
+            agent_version_id: version.id,
             name: "Test Agent",
             agent_type: "conversational",
             deployment_config: {
@@ -95,7 +95,7 @@ RSpec.describe PromptTracker::DeployedAgentsController, type: :controller do
       let(:task_params) do
         {
           deployed_agent: {
-            prompt_version_id: version.id,
+            agent_version_id: version.id,
             name: "Task Agent",
             agent_type: "task",
             task_config: {

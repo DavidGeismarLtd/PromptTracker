@@ -2,7 +2,7 @@
 
 module PromptTracker
   module Testing
-    # Controller for managing datasets for PromptVersions in the Testing section
+    # Controller for managing datasets for AgentVersions in the Testing section
     #
     # Datasets are collections of test data (variable values) that can be
     # used to run tests at scale.
@@ -12,10 +12,10 @@ module PromptTracker
     class DatasetsController < DatasetsControllerBase
       private
 
-      # Set the testable (PromptVersion) and related instance variables
+      # Set the testable (AgentVersion) and related instance variables
       def set_testable
-        @version = PromptVersion.find(params[:prompt_version_id])
-        @prompt = @version.prompt
+        @version = AgentVersion.find(params[:agent_version_id])
+        @prompt = @version.agent
         @testable = @version
       end
     end

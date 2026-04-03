@@ -35,9 +35,9 @@ module PromptTracker
 
           expect(result.success?).to be true
           expect(result.action).to eq(:created)
-          expect(result.prompt).to be_persisted
-          expect(result.prompt.name).to eq("My New Prompt")
-          expect(result.prompt.slug).to eq("my_new_prompt")
+          expect(result.agent).to be_persisted
+          expect(result.agent.name).to eq("My New Prompt")
+          expect(result.agent.slug).to eq("my_new_prompt")
           expect(result.version).to be_persisted
           expect(result.version.user_prompt).to eq("Hello {{name}}")
           expect(result.version.status).to eq("draft")
@@ -50,13 +50,13 @@ module PromptTracker
           result = described_class.call(params: params_without_slug)
 
           expect(result.success?).to be true
-          expect(result.prompt.slug).to eq("my_new_prompt")
+          expect(result.agent.slug).to eq("my_new_prompt")
         end
 
         it "sets description from notes" do
           result = described_class.call(params: params)
 
-          expect(result.prompt.description).to eq("Test notes")
+          expect(result.agent.description).to eq("Test notes")
         end
 
         it "fails when prompt_name is blank" do
@@ -66,7 +66,7 @@ module PromptTracker
 
           expect(result.success?).to be false
           expect(result.errors).to include("Prompt name is required")
-          expect(result.prompt).to be_nil
+          expect(result.agent).to be_nil
           expect(result.version).to be_nil
         end
 
@@ -81,9 +81,9 @@ module PromptTracker
       end
 
       context "when creating a new version for existing prompt" do
-        let!(:prompt) { Prompt.create!(name: "Existing Prompt", slug: "existing_prompt") }
+        let!(:prompt) { Agent.create!(name: "Existing Prompt", slug: "existing_prompt") }
         let!(:existing_version) do
-          prompt.prompt_versions.create!(
+          prompt.agent_versions.create!(
             user_prompt: "Old prompt",
               system_prompt: "You are a helpful assistant.",
               version_number: 1,
@@ -92,7 +92,7 @@ module PromptTracker
         end
 
         it "creates a new draft version" do
-          result = described_class.call(params: valid_params, prompt: prompt)
+          result = described_class.call(params: valid_params, agent: prompt)
 
           expect(result.success?).to be true
           expect(result.action).to eq(:created)
@@ -103,14 +103,14 @@ module PromptTracker
         end
 
         it "preserves the existing prompt" do
-          result = described_class.call(params: valid_params, prompt: prompt)
+          result = described_class.call(params: valid_params, agent: prompt)
 
-          expect(result.prompt).to eq(prompt)
-          expect(prompt.prompt_versions.count).to eq(2)
+          expect(result.agent).to eq(prompt)
+          expect(prompt.agent_versions.count).to eq(2)
         end
 
         it "saves model_config" do
-          result = described_class.call(params: valid_params, prompt: prompt)
+          result = described_class.call(params: valid_params, agent: prompt)
 
           expect(result.version.model_config).to eq({ "provider" => "openai", "model" => "gpt-4o" })
         end
@@ -127,8 +127,8 @@ module PromptTracker
 
           result = described_class.call(
             params: params_with_update,
-            prompt: prompt,
-            prompt_version: existing_version
+            agent: prompt,
+            agent_version: existing_version
           )
 
           expect(result.success?).to be true
@@ -146,8 +146,8 @@ module PromptTracker
 
           result = described_class.call(
             params: params_with_structural_change,
-            prompt: prompt,
-            prompt_version: existing_version
+            agent: prompt,
+            agent_version: existing_version
           )
 
           expect(result.success?).to be true
@@ -181,8 +181,8 @@ module PromptTracker
 
           result = described_class.call(
             params: params_content_change,
-            prompt: prompt,
-            prompt_version: existing_version
+            agent: prompt,
+            agent_version: existing_version
           )
 
           expect(result.success?).to be true
@@ -196,8 +196,8 @@ module PromptTracker
 
           result = described_class.call(
             params: params_with_new_version,
-            prompt: prompt,
-            prompt_version: existing_version
+            agent: prompt,
+            agent_version: existing_version
           )
 
           expect(result.success?).to be true
@@ -207,9 +207,9 @@ module PromptTracker
       end
 
       context "when updating an existing version" do
-        let!(:prompt) { Prompt.create!(name: "Existing Prompt", slug: "existing_prompt") }
+        let!(:prompt) { Agent.create!(name: "Existing Prompt", slug: "existing_prompt") }
         let!(:draft_version) do
-          prompt.prompt_versions.create!(
+          prompt.agent_versions.create!(
             user_prompt: "Old prompt",
               system_prompt: "You are a helpful assistant.",
               version_number: 1,
@@ -221,8 +221,8 @@ module PromptTracker
         it "updates the existing version when it has no responses" do
           result = described_class.call(
             params: update_params,
-            prompt: prompt,
-            prompt_version: draft_version
+            agent: prompt,
+            agent_version: draft_version
           )
 
           expect(result.success?).to be true
@@ -237,8 +237,8 @@ module PromptTracker
         it "preserves version_number when updating" do
           result = described_class.call(
             params: update_params,
-            prompt: prompt,
-            prompt_version: draft_version
+            agent: prompt,
+            agent_version: draft_version
           )
 
           expect(result.version.version_number).to eq(1)
@@ -247,8 +247,8 @@ module PromptTracker
         it "updates notes" do
           result = described_class.call(
             params: update_params,
-            prompt: prompt,
-            prompt_version: draft_version
+            agent: prompt,
+            agent_version: draft_version
           )
 
           expect(result.version.notes).to eq("Test notes")
@@ -256,7 +256,7 @@ module PromptTracker
       end
 
       context "with response_schema" do
-        let!(:prompt) { Prompt.create!(name: "Schema Prompt", slug: "schema_prompt") }
+        let!(:prompt) { Agent.create!(name: "Schema Prompt", slug: "schema_prompt") }
         let(:response_schema) do
           {
             "type" => "object",
@@ -280,14 +280,14 @@ module PromptTracker
         it "saves response_schema when creating new version" do
           result = described_class.call(
             params: valid_params.merge(response_schema: response_schema),
-            prompt: prompt
+            agent: prompt
           )
 
           expect(result.version.response_schema).to eq(response_schema)
         end
 
         it "clears response_schema when nil is passed" do
-          version = prompt.prompt_versions.create!(
+          version = prompt.agent_versions.create!(
             user_prompt: "Test",
               system_prompt: "You are a helpful assistant.",
             version_number: 1,
@@ -298,8 +298,8 @@ module PromptTracker
 
           result = described_class.call(
             params: params_clear_schema,
-            prompt: prompt,
-            prompt_version: version
+            agent: prompt,
+            agent_version: version
           )
 
           expect(result.success?).to be true
@@ -314,7 +314,7 @@ module PromptTracker
         result = described_class::Result.new(
           success?: true,
           action: :created,
-          prompt: nil,
+          agent: nil,
           version: nil,
           errors: [],
           version_created_reason: :production_immutable
@@ -322,7 +322,7 @@ module PromptTracker
 
         expect(result).to respond_to(:success?)
         expect(result).to respond_to(:action)
-        expect(result).to respond_to(:prompt)
+        expect(result).to respond_to(:agent)
         expect(result).to respond_to(:version)
         expect(result).to respond_to(:errors)
         expect(result).to respond_to(:version_created_reason)
@@ -333,7 +333,7 @@ module PromptTracker
         result = described_class::Result.new(
           success?: true,
           action: :updated,
-          prompt: nil,
+          agent: nil,
           version: nil,
           errors: [],
           version_created_reason: nil

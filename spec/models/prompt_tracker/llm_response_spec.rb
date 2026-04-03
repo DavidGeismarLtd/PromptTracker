@@ -4,23 +4,23 @@ require "rails_helper"
 
 RSpec.describe PromptTracker::LlmResponse, type: :model do
   describe "associations" do
-    it { should belong_to(:prompt_version) }
+    it { should belong_to(:agent_version) }
     it { should have_many(:evaluations).dependent(:destroy) }
   end
 
   describe "scopes" do
-    let!(:prompt) { create(:prompt) }
-    let!(:version) { create(:prompt_version, prompt: prompt) }
+    let!(:prompt) { create(:agent) }
+    let!(:version) { create(:agent_version, agent: prompt) }
 
     let!(:production_response) do
       create(:llm_response,
-             prompt_version: version,
+             agent_version: version,
              environment: "production")
     end
 
     let!(:staging_response) do
       create(:llm_response,
-             prompt_version: version,
+             agent_version: version,
              environment: "staging")
     end
 
@@ -32,15 +32,15 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
   end
 
   describe "callbacks" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
 
     it "triggers auto-evaluation after create" do
       expect(PromptTracker::AutoEvaluationService).to receive(:evaluate)
         .with(instance_of(described_class), context: "tracked_call")
 
       described_class.create!(
-        prompt_version: version,
+        agent_version: version,
         rendered_prompt: "Test prompt",
         provider: "openai",
         model: "gpt-4",
@@ -51,11 +51,11 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
   end
 
   describe "#trigger_auto_evaluation" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
     let(:response) do
       described_class.new(
-        prompt_version: version,
+        agent_version: version,
         rendered_prompt: "Test prompt",
         provider: "openai",
         model: "gpt-4",
@@ -73,25 +73,25 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
   end
 
   describe "Response API features" do
-    let!(:prompt) { create(:prompt) }
-    let!(:version) { create(:prompt_version, prompt: prompt) }
+    let!(:prompt) { create(:agent) }
+    let!(:version) { create(:agent_version, agent: prompt) }
 
     describe "validations" do
       it "validates turn_number is a positive integer" do
-        response = build(:llm_response, prompt_version: version, turn_number: 0)
+        response = build(:llm_response, agent_version: version, turn_number: 0)
         expect(response).not_to be_valid
         expect(response.errors[:turn_number]).to include("must be greater than or equal to 1")
       end
 
       it "validates tools_used is an array" do
-        response = build(:llm_response, prompt_version: version)
+        response = build(:llm_response, agent_version: version)
         response.tools_used = "not an array"
         expect(response).not_to be_valid
         expect(response.errors[:tools_used]).to include("must be an array")
       end
 
       it "validates tool_outputs is a hash" do
-        response = build(:llm_response, prompt_version: version)
+        response = build(:llm_response, agent_version: version)
         response.tool_outputs = "not a hash"
         expect(response).not_to be_valid
         expect(response.errors[:tool_outputs]).to include("must be a hash")
@@ -101,18 +101,18 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     describe "scopes" do
       let!(:response_with_tools) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                tools_used: %w[web_search file_search],
                tool_outputs: { "web_search" => { results: [] } })
       end
 
       let!(:response_without_tools) do
-        create(:llm_response, prompt_version: version, tools_used: [])
+        create(:llm_response, agent_version: version, tools_used: [])
       end
 
       let!(:conversation_response_1) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                conversation_id: "conv_123",
                turn_number: 1,
                response_id: "resp_001")
@@ -120,7 +120,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
 
       let!(:conversation_response_2) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                conversation_id: "conv_123",
                turn_number: 2,
                response_id: "resp_002",
@@ -128,7 +128,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
       end
 
       let!(:single_response) do
-        create(:llm_response, prompt_version: version, conversation_id: nil)
+        create(:llm_response, agent_version: version, conversation_id: nil)
       end
 
       describe ".with_tools" do
@@ -179,7 +179,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     describe "instance methods" do
       let!(:response_with_tools) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                tools_used: %w[web_search file_search],
                tool_outputs: {
                  "web_search" => { results: [ { title: "Result 1" } ] },
@@ -188,7 +188,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
       end
 
       let!(:response_without_tools) do
-        create(:llm_response, prompt_version: version, tools_used: [])
+        create(:llm_response, agent_version: version, tools_used: [])
       end
 
       describe "#used_tools?" do
@@ -236,7 +236,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     describe "conversation navigation" do
       let!(:response_1) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                conversation_id: "conv_nav",
                turn_number: 1,
                response_id: "resp_nav_001")
@@ -244,7 +244,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
 
       let!(:response_2) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                conversation_id: "conv_nav",
                turn_number: 2,
                response_id: "resp_nav_002",
@@ -253,7 +253,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
 
       let!(:response_3) do
         create(:llm_response,
-               prompt_version: version,
+               agent_version: version,
                conversation_id: "conv_nav",
                turn_number: 3,
                response_id: "resp_nav_003",
@@ -266,7 +266,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
         end
 
         it "returns false for single responses" do
-          single = create(:llm_response, prompt_version: version, conversation_id: nil)
+          single = create(:llm_response, agent_version: version, conversation_id: nil)
           expect(single.multi_turn?).to be false
         end
       end
@@ -287,7 +287,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
         end
 
         it "returns empty relation for single responses" do
-          single = create(:llm_response, prompt_version: version, conversation_id: nil)
+          single = create(:llm_response, agent_version: version, conversation_id: nil)
           expect(single.conversation_responses).to be_empty
         end
       end
@@ -316,19 +316,19 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
     describe "auto turn_number assignment" do
       it "auto-increments turn_number when conversation_id is set" do
         response_1 = create(:llm_response,
-                            prompt_version: version,
+                            agent_version: version,
                             conversation_id: "conv_auto",
                             turn_number: nil)
         expect(response_1.turn_number).to eq(1)
 
         response_2 = create(:llm_response,
-                            prompt_version: version,
+                            agent_version: version,
                             conversation_id: "conv_auto",
                             turn_number: nil)
         expect(response_2.turn_number).to eq(2)
 
         response_3 = create(:llm_response,
-                            prompt_version: version,
+                            agent_version: version,
                             conversation_id: "conv_auto",
                             turn_number: nil)
         expect(response_3.turn_number).to eq(3)
@@ -336,7 +336,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
 
       it "respects explicitly set turn_number" do
         response = create(:llm_response,
-                          prompt_version: version,
+                          agent_version: version,
                           conversation_id: "conv_explicit",
                           turn_number: 5)
         expect(response.turn_number).to eq(5)
@@ -344,7 +344,7 @@ RSpec.describe PromptTracker::LlmResponse, type: :model do
 
       it "does not set turn_number for single responses" do
         response = create(:llm_response,
-                          prompt_version: version,
+                          agent_version: version,
                           conversation_id: nil,
                           turn_number: nil)
         expect(response.turn_number).to be_nil

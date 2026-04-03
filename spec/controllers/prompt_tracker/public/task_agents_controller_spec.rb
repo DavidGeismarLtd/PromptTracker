@@ -5,11 +5,11 @@ require "rails_helper"
 RSpec.describe PromptTracker::Public::TaskAgentsController, type: :controller do
   routes { PromptTracker::Engine.routes }
 
-  let(:prompt_version) { create(:prompt_version) }
+  let(:agent_version) { create(:agent_version) }
   let(:task_agent) do
     agent = create(:deployed_agent,
                    :task_agent,
-                   prompt_version: prompt_version,
+                   agent_version: agent_version,
                    task_config: {
                      initial_prompt: "Process {{source_url}}",
                      variables: { source_url: "https://default.com" },
@@ -20,7 +20,7 @@ RSpec.describe PromptTracker::Public::TaskAgentsController, type: :controller do
   end
   let(:conversational_agent) do
     agent = create(:deployed_agent,
-                   prompt_version: prompt_version)
+                   agent_version: agent_version)
     agent.update!(api_key: "test_api_key_456")
     agent
   end

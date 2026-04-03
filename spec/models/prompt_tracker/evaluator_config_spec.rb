@@ -21,18 +21,18 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
   end
 
   describe "polymorphic association" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
     let(:test) { create(:test, testable: version) }
 
-    it "can belong to a PromptVersion" do
+    it "can belong to a AgentVersion" do
       config = described_class.create!(
         configurable: version,
         evaluator_type: "PromptTracker::Evaluators::KeywordEvaluator",
         enabled: true
       )
 
-      expect(config.configurable_type).to eq("PromptTracker::PromptVersion")
+      expect(config.configurable_type).to eq("PromptTracker::AgentVersion")
       expect(config.configurable).to eq(version)
     end
 
@@ -55,8 +55,8 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
 
     describe "uniqueness of evaluator_type" do
       it "validates uniqueness scoped to configurable" do
-        prompt = create(:prompt)
-        version = create(:prompt_version, prompt: prompt)
+        prompt = create(:agent)
+        version = create(:agent_version, agent: prompt)
         create(:evaluator_config, configurable: version, evaluator_type: "PromptTracker::Evaluators::KeywordEvaluator")
 
         duplicate = build(:evaluator_config, configurable: version, evaluator_type: "PromptTracker::Evaluators::KeywordEvaluator")
@@ -65,9 +65,9 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
       end
 
       it "allows same evaluator_type for different configurables" do
-        prompt = create(:prompt)
-        version1 = create(:prompt_version, prompt: prompt)
-        version2 = create(:prompt_version, prompt: prompt)
+        prompt = create(:agent)
+        version1 = create(:agent_version, agent: prompt)
+        version2 = create(:agent_version, agent: prompt)
 
         create(:evaluator_config, configurable: version1, evaluator_type: "PromptTracker::Evaluators::KeywordEvaluator")
         duplicate = build(:evaluator_config, configurable: version2, evaluator_type: "PromptTracker::Evaluators::KeywordEvaluator")
@@ -78,9 +78,9 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
 
     describe "evaluator compatibility with testable" do
       context "when configurable is a Test" do
-        it "allows PromptVersion evaluators for PromptVersion tests" do
-          prompt = create(:prompt)
-          version = create(:prompt_version, prompt: prompt)
+        it "allows AgentVersion evaluators for AgentVersion tests" do
+          prompt = create(:agent)
+          version = create(:agent_version, agent: prompt)
           test = create(:test, testable: version)
 
           config = test.evaluator_configs.build(
@@ -90,12 +90,12 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
           expect(config).to be_valid
         end
 
-        it "allows ConversationJudgeEvaluator for PromptVersion tests (conversational tests)" do
+        it "allows ConversationJudgeEvaluator for AgentVersion tests (conversational tests)" do
           # ConversationJudgeEvaluator now extends BaseConversationalEvaluator which is
-          # compatible with both PromptVersion (for Response API conversational tests)
+          # compatible with both AgentVersion (for Response API conversational tests)
           # and Openai::Assistant
-          prompt = create(:prompt)
-          version = create(:prompt_version, prompt: prompt)
+          prompt = create(:agent)
+          version = create(:agent_version, agent: prompt)
           test = create(:test, testable: version)
 
           config = test.evaluator_configs.build(
@@ -105,9 +105,9 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
           expect(config).to be_valid
         end
 
-        it "allows Assistant evaluators for PromptVersion with Assistants API tests" do
-          prompt = create(:prompt)
-          assistant_version = create(:prompt_version, :with_assistants, prompt: prompt)
+        it "allows Assistant evaluators for AgentVersion with Assistants API tests" do
+          prompt = create(:agent)
+          assistant_version = create(:agent_version, :with_assistants, agent: prompt)
           test = create(:test, testable: assistant_version)
 
           config = test.evaluator_configs.build(
@@ -117,11 +117,11 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
           expect(config).to be_valid
         end
 
-        it "allows normalized evaluators for PromptVersion with Assistants API tests" do
+        it "allows normalized evaluators for AgentVersion with Assistants API tests" do
           # After the evaluator refactoring, all BaseNormalizedEvaluator subclasses
-          # (including LengthEvaluator) are compatible with PromptVersion (including assistants)
-          prompt = create(:prompt)
-          assistant_version = create(:prompt_version, :with_assistants, prompt: prompt)
+          # (including LengthEvaluator) are compatible with AgentVersion (including assistants)
+          prompt = create(:agent)
+          assistant_version = create(:agent_version, :with_assistants, agent: prompt)
           test = create(:test, testable: assistant_version)
 
           config = test.evaluator_configs.build(
@@ -132,8 +132,8 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
         end
 
         it "handles invalid evaluator class gracefully" do
-          prompt = create(:prompt)
-          version = create(:prompt_version, prompt: prompt)
+          prompt = create(:agent)
+          version = create(:agent_version, agent: prompt)
           test = create(:test, testable: version)
 
           config = test.evaluator_configs.build(
@@ -146,11 +146,11 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
       end
 
       context "when configurable is not a Test" do
-        it "skips validation for PromptVersion" do
-          prompt = create(:prompt)
-          version = create(:prompt_version, prompt: prompt)
+        it "skips validation for AgentVersion" do
+          prompt = create(:agent)
+          version = create(:agent_version, agent: prompt)
 
-          # PromptVersion doesn't have a testable, so validation should be skipped
+          # AgentVersion doesn't have a testable, so validation should be skipped
           config = version.evaluator_configs.build(
             evaluator_type: "PromptTracker::Evaluators::LengthEvaluator"
           )
@@ -162,8 +162,8 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
   end
 
   describe "scopes" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
 
     describe ".enabled" do
       it "returns only enabled configs" do
@@ -177,8 +177,8 @@ RSpec.describe PromptTracker::EvaluatorConfig, type: :model do
   end
 
   describe "instance methods" do
-    let(:prompt) { create(:prompt) }
-    let(:version) { create(:prompt_version, prompt: prompt) }
+    let(:prompt) { create(:agent) }
+    let(:version) { create(:agent_version, agent: prompt) }
     let(:config) { create(:evaluator_config, :keyword_evaluator, configurable: version) }
 
     describe "#name" do

@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe PromptTracker::TaskAgentRuntimeService, type: :service do
-  let(:prompt_version) do
-    create(:prompt_version,
+  let(:agent_version) do
+    create(:agent_version,
            system_prompt: "You are a helpful task automation assistant.",
            model_config: {
              provider: "openai",
@@ -16,7 +16,7 @@ RSpec.describe PromptTracker::TaskAgentRuntimeService, type: :service do
   let(:task_agent) do
     create(:deployed_agent,
            :task_agent,
-           prompt_version: prompt_version,
+           agent_version: agent_version,
            task_config: {
              initial_prompt: "Fetch data from {{url}} and process it",
              variables: { url: "https://example.com" },

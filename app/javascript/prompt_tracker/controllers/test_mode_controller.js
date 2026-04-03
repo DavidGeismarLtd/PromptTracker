@@ -13,7 +13,7 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["evaluatorCard", "evaluatorsContainer"]
   static values = {
-    testableType: String  // "assistant" or "prompt_version"
+    testableType: String  // "assistant" or "agent_version"
   }
 
   connect() {

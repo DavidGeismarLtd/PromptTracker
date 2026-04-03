@@ -49,7 +49,7 @@ module PromptTracker
 
       # Returns evaluators compatible with a specific testable's API type
       #
-      # @param testable [Object] the testable to filter by (e.g., PromptVersion, Assistant)
+      # @param testable [Object] the testable to filter by (e.g., AgentVersion, Assistant)
       # @return [Hash] hash of evaluator_key => metadata for compatible evaluators
       def for_testable(testable)
         api_type = testable.api_type
@@ -84,14 +84,14 @@ module PromptTracker
       #
       # @param key [Symbol, String] the evaluator key
       # @param evaluated_data [String, Hash] the data to evaluate
-      #   - For PromptVersion evaluators: String (response_text)
+      #   - For AgentVersion evaluators: String (response_text)
       #   - For Assistant evaluators: Hash (conversation_data)
       # @param config [Hash] configuration for the evaluator
       #   - Should include :llm_response or :test_run for context
       # @return [BaseEvaluator] an instance of the evaluator
       # @raise [ArgumentError] if evaluator not found
       #
-      # @example Building a PromptVersion evaluator
+      # @example Building a AgentVersion evaluator
       #   evaluator = EvaluatorRegistry.build(
       #     :length,
       #     llm_response.response_text,

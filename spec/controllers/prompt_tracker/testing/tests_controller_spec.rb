@@ -7,8 +7,8 @@ module PromptTracker
     RSpec.describe TestsController, type: :controller do
       routes { PromptTracker::Engine.routes }
 
-      let(:prompt) { create(:prompt) }
-      let(:version) { create(:prompt_version, prompt: prompt, status: "active") }
+      let(:prompt) { create(:agent) }
+      let(:version) { create(:agent_version, agent: prompt, status: "active") }
       let(:test) { create(:test, testable: version) }
 
       describe "GET #load_more_runs" do
@@ -25,7 +25,7 @@ module PromptTracker
         it "returns turbo stream response" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 5, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 5, limit: 5 },
               format: :turbo_stream
 
           expect(response).to have_http_status(:success)
@@ -35,7 +35,7 @@ module PromptTracker
         it "loads the correct number of additional runs" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 5, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 5, limit: 5 },
               format: :turbo_stream
 
           expect(assigns(:additional_runs).count).to eq(5)
@@ -44,7 +44,7 @@ module PromptTracker
         it "loads runs with correct offset" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 5, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 5, limit: 5 },
               format: :turbo_stream
 
           # Should get runs 6-10 (offset 5, limit 5)
@@ -59,7 +59,7 @@ module PromptTracker
         it "calculates next offset correctly" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 5, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 5, limit: 5 },
               format: :turbo_stream
 
           expect(assigns(:next_offset)).to eq(10)
@@ -68,7 +68,7 @@ module PromptTracker
         it "includes total runs count" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 5, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 5, limit: 5 },
               format: :turbo_stream
 
           expect(assigns(:total_runs_count)).to eq(12)
@@ -77,7 +77,7 @@ module PromptTracker
         it "handles offset beyond available runs" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 20, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 20, limit: 5 },
               format: :turbo_stream
 
           expect(assigns(:additional_runs).count).to eq(0)
@@ -86,7 +86,7 @@ module PromptTracker
         it "uses default offset and limit when not provided" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id },
               format: :turbo_stream
 
           # Default offset should be 5, limit should be 5
@@ -111,7 +111,7 @@ module PromptTracker
 
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 5, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 5, limit: 5 },
               format: :turbo_stream
 
           # Verify includes are working (no N+1 queries)
@@ -122,7 +122,7 @@ module PromptTracker
         it "assigns prompt and version for view" do
           request.headers["Accept"] = "text/vnd.turbo-stream.html"
           get :load_more_runs,
-              params: { prompt_id: prompt.id, prompt_version_id: version.id, id: test.id, offset: 5, limit: 5 },
+              params: { agent_id: prompt.id, agent_version_id: version.id, id: test.id, offset: 5, limit: 5 },
               format: :turbo_stream
 
           expect(assigns(:prompt)).to eq(prompt)

@@ -12,10 +12,10 @@ module PromptTracker
       allow_any_instance_of(TestRun).to receive(:broadcast_status_change)
     end
 
-    let(:prompt) { create(:prompt, name: "test_prompt") }
+    let(:prompt) { create(:agent, name: "test_prompt") }
     let(:version) do
-      create(:prompt_version,
-             prompt: prompt,
+      create(:agent_version,
+             agent: prompt,
              user_prompt: "Hello {{name}}",
              variables_schema: [
                { "name" => "name", "type" => "string", "required" => true }

@@ -1,0 +1,208 @@
+<%= turbo_stream_from @version.testable_stream_name %>
+
+<% content_for :breadcrumbs do %>
+  <li class="breadcrumb-item active"><%= @prompt.name %>-v<%= @version.version_number %></li>
+<% end %>
+
+<div class="testing-prompt-version-show">
+  <!-- Header -->
+  <div class="page-header" style="background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 1.5rem; margin-bottom: 2rem;">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h1 style="color: #1E40AF; margin: 0;">
+          <i class="bi bi-flask"></i> <%= @prompt.name %>
+          <span class="badge bg-primary">v<%= @version.version_number %></span>
+          <%= status_badge(@version.status) %>
+        </h1>
+        <div style="margin-top: 0.5rem;">
+          <code style="background-color: #DBEAFE; color: #1E40AF; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.875rem;">
+            prompt_slug: "<%= @prompt.slug %>"
+          </code>
+        </div>
+        <% if @version.notes.present? %>
+          <p style="color: #1E40AF; margin: 0.5rem 0 0 0;">
+            <%= @version.notes %>
+          </p>
+        <% end %>
+      </div>
+      <%# Actions Dropdown - All actions consolidated %>
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-three-dots-vertical"></i> Actions
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <%# Primary Actions %>
+          <li>
+            <%= link_to testing_agent_agent_version_playground_path(@prompt, @version), class: "dropdown-item" do %>
+              <i class="bi bi-pencil-square text-primary"></i> Edit in Playground
+            <% end %>
+          </li>
+
+          <%# Agent Action: Deploy or View (mutually exclusive) %>
+          <% if @version.deployed_agents.any? %>
+            <li>
+              <%= link_to deployed_agent_path(@version.deployed_agents.first), class: "dropdown-item" do %>
+                <i class="bi bi-eye text-purple"></i> View Deployed Agent
+              <% end %>
+            </li>
+          <% else %>
+            <li>
+              <%= link_to new_deployed_agent_path(agent_version_id: @version.id), class: "dropdown-item" do %>
+                <i class="bi bi-robot text-purple"></i> Deploy Agent
+              <% end %>
+            </li>
+          <% end %>
+
+          <li><hr class="dropdown-divider"></li>
+
+          <%# Navigation Links %>
+          <li>
+            <%= link_to testing_agent_agent_version_datasets_path(@prompt, @version), class: "dropdown-item" do %>
+              <i class="bi bi-database text-primary"></i> Datasets
+            <% end %>
+          </li>
+          <li>
+            <%= link_to monitoring_agent_agent_version_path(@prompt, @version), class: "dropdown-item" do %>
+              <i class="bi bi-activity text-success"></i> View in Monitoring
+            <% end %>
+          </li>
+
+          <%# Version Actions %>
+          <% unless @version.active? %>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <%= button_to activate_testing_agent_agent_version_path(@prompt, @version),
+                  method: :post,
+                  class: "dropdown-item",
+                  data: { confirm: "Activate this version? This will deprecate all other versions." },
+                  form: { style: "display: inline;" } do %>
+                <i class="bi bi-check-circle text-success"></i> Activate Version
+              <% end %>
+            </li>
+          <% end %>
+
+          <% if @prompt.agent_versions.count > 1 %>
+            <li>
+              <%= link_to compare_testing_agent_agent_version_path(@prompt, @version), class: "dropdown-item" do %>
+                <i class="bi bi-arrow-left-right text-info"></i> Compare Versions
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="stat-card" style="background: white; border: 2px solid #DBEAFE; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Total Tests</div>
+      <div style="color: #3B82F6; font-size: 1.5rem; font-weight: bold;"><%= @total_tests %></div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #D1FAE5; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Passing</div>
+      <div style="color: #10B981; font-size: 1.5rem; font-weight: bold;"><%= @tests_passing %></div>
+      <div style="color: #64748B; font-size: 0.75rem; margin-top: 0.25rem;">
+        <% if @total_tests > 0 %>
+          <%= ((@tests_passing.to_f / @total_tests) * 100).round(1) %>% pass rate
+        <% end %>
+      </div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #FEE2E2; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Failing</div>
+      <div style="color: #EF4444; font-size: 1.5rem; font-weight: bold;"><%= @tests_failing %></div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #DBEAFE; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Test Cost</div>
+      <div style="color: #3B82F6; font-size: 1.5rem; font-weight: bold;"><%= format_cost(@total_cost) %></div>
+      <div style="color: #64748B; font-size: 0.75rem; margin-top: 0.25rem;">From test runs</div>
+    </div>
+    <div class="stat-card" style="background: white; border: 2px solid #DBEAFE; border-radius: 8px; padding: 1rem;">
+      <div style="color: #64748B; font-size: 0.875rem; margin-bottom: 0.5rem;">Avg Response Time</div>
+      <div style="color: #3B82F6; font-size: 1.5rem; font-weight: bold;"><%= format_duration(@avg_response_time) %></div>
+      <div style="color: #64748B; font-size: 0.75rem; margin-top: 0.25rem;">Test runs average</div>
+    </div>
+  </div>
+</div>
+
+<!-- Variables Schema Card -->
+<% if @version.variables_schema.present? && @version.variables_schema.any? %>
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #F0F9FF; border-bottom: 2px solid #0EA5E9;">
+      <h6 class="mb-0" style="color: #0369A1;">
+        <i class="bi bi-input-cursor-text"></i> Variables
+      </h6>
+      <span class="badge bg-info"><%= @version.variables_schema.length %> variable<%= @version.variables_schema.length == 1 ? '' : 's' %></span>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2">
+        <% @version.variables_schema.each do |var| %>
+          <code class="px-2 py-1 bg-light border rounded">{{ <%= var["name"] %> }}</code>
+        <% end %>
+      </div>
+      <div class="text-muted small mt-3">
+        <i class="bi bi-info-circle"></i> These variables are automatically extracted from the system and user prompts
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Prompts & Model Config -->
+<div class="row mb-4">
+  <div class="col-md-<%= @version.model_config.present? && @version.model_config.any? ? '8' : '12' %>">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-file-text"></i> Prompts</h6>
+        <span class="badge bg-secondary"><%= (@version.system_prompt.to_s.length + @version.user_prompt.to_s.length) %> chars</span>
+      </div>
+      <div class="card-body">
+        <% if @version.system_prompt.present? %>
+          <div class="<%= @version.user_prompt.present? ? 'mb-3' : '' %>">
+            <div class="badge bg-secondary mb-2">System Prompt</div>
+            <pre class="mb-0 border-start border-3 border-secondary ps-3" style="max-height: 300px; overflow-y: auto;"><code><%= @version.system_prompt %></code></pre>
+          </div>
+        <% end %>
+        <% if @version.user_prompt.present? %>
+          <div>
+            <div class="badge bg-primary mb-2">User Prompt</div>
+            <pre class="mb-0 border-start border-3 border-primary ps-3" style="max-height: 150px; overflow-y: auto;"><code><%= @version.user_prompt %></code></pre>
+          </div>
+        <% end %>
+        <% if @version.system_prompt.blank? && @version.user_prompt.blank? %>
+          <p class="text-muted mb-0">No prompts configured</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <% if @version.model_config.present? && @version.model_config.any? %>
+    <div class="col-md-4">
+      <%= render "prompt_tracker/testing/agent_versions/model_config_card", version: @version %>
+    </div>
+  <% end %>
+</div>
+
+<%= render "prompt_tracker/testing/tests/tests_card", tests: @tests, testable_param: @version %>
+
+<%# Generate Tests with AI Modal %>
+<%= render "prompt_tracker/testing/tests/generate_tests_modal", version: @version %>
+
+<%= render "prompt_tracker/testing/tests/new_test_modal",
+           badge_html: content_tag(:span, "v#{@version.version_number}", class: "badge bg-primary"),
+           form_partial_path: "prompt_tracker/testing/tests/agent_versions/form",
+           form_locals: { prompt: @prompt, version: @version, test: PromptTracker::Test.new(testable: @version, enabled: true), in_modal: true } %>
+
+<%# Run All Tests Modal %>
+<% if @tests.any? %>
+  <%= render "prompt_tracker/testing/tests/run_test_modal",
+      testable: @version,
+      tests: @tests,
+      form_url: run_all_testing_agent_version_tests_path(@version),
+      modal_id: "runAllTestsModal",
+      modal_title: "Run All Tests",
+      submit_button_text: "Run All Tests",
+      datasets_path: testing_agent_agent_version_datasets_path(@prompt, @version),
+      intro_text: "Choose how to run all #{@tests.count} test(s):",
+      dataset_mode_description: "Execute each test for all rows in a dataset",
+      custom_mode_description: "Execute each test once with manually entered values",
+      custom_variables_context: "Enter values for the prompt variables (will be used for all tests):" %>
+<% end %>

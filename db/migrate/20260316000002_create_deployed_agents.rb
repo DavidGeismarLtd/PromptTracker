@@ -8,9 +8,9 @@ class CreateDeployedAgents < ActiveRecord::Migration[7.2]
     # Deployed prompt versions accessible via unique URLs
     # ============================================================================
     create_table :prompt_tracker_deployed_agents do |t|
-      t.references :prompt_version,
+      t.references :agent_version,
                    null: false,
-                   foreign_key: { to_table: :prompt_tracker_prompt_versions },
+                   foreign_key: { to_table: :prompt_tracker_agent_versions },
                    index: true
 
       t.string :name, null: false

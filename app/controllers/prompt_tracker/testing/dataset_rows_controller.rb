@@ -2,7 +2,7 @@
 
 module PromptTracker
   module Testing
-    # Controller for managing dataset rows for PromptVersions
+    # Controller for managing dataset rows for AgentVersions
     #
     # Handles CRUD operations for individual rows within a dataset.
     # Inherits shared logic from DatasetRowsControllerBase.
@@ -11,13 +11,13 @@ module PromptTracker
       private
 
       def set_dataset
-        @version = PromptVersion.find(params[:prompt_version_id])
-        @prompt = @version.prompt
+        @version = AgentVersion.find(params[:agent_version_id])
+        @prompt = @version.agent
         @dataset = @version.datasets.find(params[:dataset_id])
       end
 
       def redirect_path
-        testing_prompt_prompt_version_dataset_path(@prompt, @version, @dataset)
+        testing_agent_agent_version_dataset_path(@prompt, @version, @dataset)
       end
     end
   end

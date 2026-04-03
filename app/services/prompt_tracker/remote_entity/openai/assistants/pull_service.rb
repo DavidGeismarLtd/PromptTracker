@@ -4,41 +4,41 @@ module PromptTracker
   module RemoteEntity
     module Openai
       module Assistants
-        # Service for pulling OpenAI Assistant data to update an existing PromptVersion.
+        # Service for pulling OpenAI Assistant data to update an existing AgentVersion.
         #
         # This service handles one-way synchronization:
-        # - OpenAI Assistants (remote) → PromptTracker PromptVersions (local)
+        # - OpenAI Assistants (remote) → PromptTracker AgentVersions (local)
         #
         # Use case:
         # - When the assistant has been modified directly in OpenAI's interface
-        # - User wants to pull those changes into their local PromptVersion
+        # - User wants to pull those changes into their local AgentVersion
         #
         # @example Pull latest assistant data
-        #   result = PullService.call(prompt_version: version)
+        #   result = PullService.call(agent_version: version)
         #   result.success? # => true
-        #   result.prompt_version # => updated PromptVersion
+        #   result.agent_version # => updated AgentVersion
         #
         class PullService
-          Result = Data.define(:success?, :prompt_version, :synced_at, :errors)
+          Result = Data.define(:success?, :agent_version, :synced_at, :errors)
 
           class PullError < StandardError; end
 
-          # Pull assistant data from OpenAI and update the PromptVersion.
+          # Pull assistant data from OpenAI and update the AgentVersion.
           #
-          # @param prompt_version [PromptVersion] the prompt version to update
-          # @return [Result] result with success?, prompt_version, synced_at, errors
-          def self.call(prompt_version:)
-            new(prompt_version: prompt_version).call
+          # @param agent_version [AgentVersion] the prompt version to update
+          # @return [Result] result with success?, agent_version, synced_at, errors
+          def self.call(agent_version:)
+            new(agent_version: agent_version).call
           end
 
-          attr_reader :prompt_version, :model_config
+          attr_reader :agent_version, :model_config
 
-          def initialize(prompt_version:)
-            @prompt_version = prompt_version
-            @model_config = prompt_version.model_config || {}
+          def initialize(agent_version:)
+            @agent_version = agent_version
+            @model_config = agent_version.model_config || {}
           end
 
-          # Fetch assistant from OpenAI and update the PromptVersion.
+          # Fetch assistant from OpenAI and update the AgentVersion.
           #
           # @return [Result] result object
           def call
@@ -54,8 +54,8 @@ module PromptTracker
             # Convert to PromptTracker format using FieldNormalizer
             attributes = FieldNormalizer.from_openai(assistant_data, vector_store_names: vector_store_names)
 
-            # Update the PromptVersion with the remote data
-            prompt_version.update!(
+            # Update the AgentVersion with the remote data
+            agent_version.update!(
               system_prompt: attributes[:system_prompt],
               notes: attributes[:notes],
               model_config: attributes[:model_config]
@@ -106,7 +106,7 @@ module PromptTracker
           def success_result
             Result.new(
               success?: true,
-              prompt_version: prompt_version,
+              agent_version: agent_version,
               synced_at: Time.current,
               errors: []
             )
@@ -116,7 +116,7 @@ module PromptTracker
           def failure_result(errors)
             Result.new(
               success?: false,
-              prompt_version: prompt_version,
+              agent_version: agent_version,
               synced_at: nil,
               errors: errors
             )

@@ -8,7 +8,7 @@
 #
 # Tables created (in dependency order):
 # 1. prompts - Container for prompt versions
-# 2. prompt_versions - Individual versions of prompts
+# 2. agent_versions - Individual versions of prompts
 # 3. assistants - OpenAI assistants for conversation testing
 # 4. llm_responses - Responses from LLM API calls
 # 5. evaluations - Quality ratings for responses
@@ -53,11 +53,11 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_index :prompt_tracker_prompts, :score_aggregation_strategy, name: "index_prompts_on_aggregation_strategy"
 
     # ============================================================================
-    # TABLE 2: prompt_versions
+    # TABLE 2: agent_versions
     # Individual versions of a prompt with template and configuration
     # ============================================================================
-    create_table :prompt_tracker_prompt_versions do |t|
-      t.bigint :prompt_id, null: false
+    create_table :prompt_tracker_agent_versions do |t|
+      t.bigint :agent_id, null: false
       t.text :user_prompt, null: false
       t.text :system_prompt
       t.integer :version_number, null: false
@@ -71,18 +71,18 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :prompt_tracker_prompt_versions, :prompt_id
-    add_index :prompt_tracker_prompt_versions, [ :prompt_id, :status ], name: "index_prompt_versions_on_prompt_and_status"
-    add_index :prompt_tracker_prompt_versions, [ :prompt_id, :version_number ], unique: true, name: "index_prompt_versions_on_prompt_and_version_number"
-    add_index :prompt_tracker_prompt_versions, :status
-    add_index :prompt_tracker_prompt_versions, :archived_at
+    add_index :prompt_tracker_agent_versions, :agent_id
+    add_index :prompt_tracker_agent_versions, [ :agent_id, :status ], name: "index_agent_versions_on_prompt_and_status"
+    add_index :prompt_tracker_agent_versions, [ :agent_id, :version_number ], unique: true, name: "index_agent_versions_on_prompt_and_version_number"
+    add_index :prompt_tracker_agent_versions, :status
+    add_index :prompt_tracker_agent_versions, :archived_at
 
     # ============================================================================
     # TABLE 3: llm_responses
     # Responses from LLM API calls with metadata and performance metrics
     # ============================================================================
     create_table :prompt_tracker_llm_responses do |t|
-      t.bigint :prompt_version_id, null: false
+      t.bigint :agent_version_id, null: false
       t.text :rendered_prompt, null: false
       t.text :rendered_system_prompt
       t.jsonb :variables_used, default: {}
@@ -125,7 +125,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :prompt_tracker_llm_responses, :prompt_version_id
+    add_index :prompt_tracker_llm_responses, :agent_version_id
     add_index :prompt_tracker_llm_responses, :status
     add_index :prompt_tracker_llm_responses, :provider
     add_index :prompt_tracker_llm_responses, :model
@@ -177,7 +177,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     # A/B testing experiments for comparing prompt versions
     # ============================================================================
     create_table :prompt_tracker_ab_tests do |t|
-      t.bigint :prompt_id, null: false
+      t.bigint :agent_id, null: false
       t.string :name, null: false
       t.text :description
       t.string :hypothesis
@@ -198,12 +198,12 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :prompt_tracker_ab_tests, :prompt_id
+    add_index :prompt_tracker_ab_tests, :agent_id
     add_index :prompt_tracker_ab_tests, :status
     add_index :prompt_tracker_ab_tests, :metric_to_optimize
     add_index :prompt_tracker_ab_tests, :started_at
     add_index :prompt_tracker_ab_tests, :completed_at
-    add_index :prompt_tracker_ab_tests, [ :prompt_id, :status ], name: "index_prompt_tracker_ab_tests_on_prompt_id_and_status"
+    add_index :prompt_tracker_ab_tests, [ :agent_id, :status ], name: "index_prompt_tracker_ab_tests_on_agent_id_and_status"
 
     # ============================================================================
     # TABLE 5: evaluator_configs
@@ -231,7 +231,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     # Test cases for validating prompt/assistant behavior
     # ============================================================================
     create_table :prompt_tracker_tests do |t|
-      # Polymorphic association to testable (PromptVersion or Assistant)
+      # Polymorphic association to testable (AgentVersion or Assistant)
       t.string :testable_type
       t.bigint :testable_id
 
@@ -256,7 +256,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     create_table :prompt_tracker_prompt_test_suites do |t|
       t.string :name, null: false
       t.text :description
-      t.bigint :prompt_id
+      t.bigint :agent_id
       t.boolean :enabled, default: true, null: false
       t.jsonb :tags, default: [], null: false
       t.jsonb :metadata, default: {}, null: false
@@ -264,7 +264,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     end
 
     add_index :prompt_tracker_prompt_test_suites, :name, unique: true
-    add_index :prompt_tracker_prompt_test_suites, :prompt_id
+    add_index :prompt_tracker_prompt_test_suites, :agent_id
     add_index :prompt_tracker_prompt_test_suites, :enabled
     add_index :prompt_tracker_prompt_test_suites, :tags, using: :gin
 
@@ -377,7 +377,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     # Reusable test data collections
     # ============================================================================
     create_table :prompt_tracker_datasets do |t|
-      # Polymorphic association to testable (PromptVersion or Assistant)
+      # Polymorphic association to testable (AgentVersion or Assistant)
       t.string :testable_type
       t.bigint :testable_id
 
@@ -514,7 +514,7 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     # FOREIGN KEYS
     # Add all foreign key constraints
     # ============================================================================
-    add_foreign_key :prompt_tracker_ab_tests, :prompt_tracker_prompts, column: :prompt_id
+    add_foreign_key :prompt_tracker_ab_tests, :prompt_tracker_prompts, column: :agent_id
     add_foreign_key :prompt_tracker_dataset_rows, :prompt_tracker_datasets, column: :dataset_id
     # llm_response_id is optional - evaluations can be for test_runs (no llm_response) or tracked_calls (has llm_response)
     # Don't add foreign key constraint to allow NULL values
@@ -523,13 +523,13 @@ class CreatePromptTrackerSchema < ActiveRecord::Migration[7.2]
     add_foreign_key :prompt_tracker_human_evaluations, :prompt_tracker_llm_responses, column: :llm_response_id
     add_foreign_key :prompt_tracker_human_evaluations, :prompt_tracker_test_runs, column: :test_run_id
     add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_ab_tests, column: :ab_test_id
-    add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_prompt_versions, column: :prompt_version_id
+    add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_agent_versions, column: :agent_version_id
     add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_spans, column: :span_id
     add_foreign_key :prompt_tracker_llm_responses, :prompt_tracker_traces, column: :trace_id
     add_foreign_key :prompt_tracker_test_runs, :prompt_tracker_tests, column: :test_id
     add_foreign_key :prompt_tracker_test_runs, :prompt_tracker_datasets, column: :dataset_id
     add_foreign_key :prompt_tracker_test_runs, :prompt_tracker_dataset_rows, column: :dataset_row_id
-    add_foreign_key :prompt_tracker_prompt_versions, :prompt_tracker_prompts, column: :prompt_id
+    add_foreign_key :prompt_tracker_agent_versions, :prompt_tracker_prompts, column: :agent_id
     add_foreign_key :prompt_tracker_spans, :prompt_tracker_spans, column: :parent_span_id
     add_foreign_key :prompt_tracker_spans, :prompt_tracker_traces, column: :trace_id
     add_foreign_key :prompt_tracker_function_executions, :prompt_tracker_function_definitions, column: :function_definition_id
